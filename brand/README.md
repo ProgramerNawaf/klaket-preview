@@ -162,7 +162,7 @@ The Arabic pages switch the body to Plex Sans Arabic (`html[lang="ar"]`).
 | action | أكشن | Action |
 
 ## Motion
-The splash plays **once per browser session** and takes **1.2 seconds**: the slate appears, the dots type, a short flash, then "أكشن · ACTION".
+The splash plays **once per browser session and after each sign-in**, and takes **3 seconds** so it can be read: the slate appears, the dots type, a short flash, then "أكشن · ACTION".
 - It's skipped entirely with `prefers-reduced-motion`.
 - The full official 4-second motion (with the stick opening and the clap) needs the MP4 from the brand kit, or the mark's parts as separate files.
 - Everywhere else, loading uses the plain typing-dots loader (`.kl-dots`).

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<script src="js/theme.js?v=50"></script>
+<script src="js/theme.js?v=51"></script>
 <title>Klaket | كلاكيت</title>
 <meta name="description" content="Klaket | كلاكيت: the whole crew in one conversation, from the first brief to shoot day.">
 <meta name="theme-color" content="#FBF5EC">
@@ -17,23 +17,23 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/app.css?v=50">
-<link rel="stylesheet" href="css/platform.css?v=50">
-<link rel="stylesheet" href="css/styles.css?v=50">
+<link rel="stylesheet" href="css/app.css?v=51">
+<link rel="stylesheet" href="css/platform.css?v=51">
+<link rel="stylesheet" href="css/styles.css?v=51">
 <!-- per-module styles (a missing file is harmless) -->
-<link rel="stylesheet" href="css/views/script-breakdown.css?v=50">
-<link rel="stylesheet" href="css/views/shots-schedule-crew.css?v=50">
-<link rel="stylesheet" href="css/views/budget-callsheets.css?v=50">
-<link rel="stylesheet" href="css/views/overview.css?v=50">
-<link rel="stylesheet" href="css/views/treatment-storyboard.css?v=50">
-<link rel="stylesheet" href="css/views/calendar-locations.css?v=50">
-<link rel="stylesheet" href="css/views/shootday.css?v=50">
-<link rel="stylesheet" href="css/views/docs-ratecard.css?v=50">
-<link rel="stylesheet" href="css/views/brief.css?v=50">
+<link rel="stylesheet" href="css/views/script-breakdown.css?v=51">
+<link rel="stylesheet" href="css/views/shots-schedule-crew.css?v=51">
+<link rel="stylesheet" href="css/views/budget-callsheets.css?v=51">
+<link rel="stylesheet" href="css/views/overview.css?v=51">
+<link rel="stylesheet" href="css/views/treatment-storyboard.css?v=51">
+<link rel="stylesheet" href="css/views/calendar-locations.css?v=51">
+<link rel="stylesheet" href="css/views/shootday.css?v=51">
+<link rel="stylesheet" href="css/views/docs-ratecard.css?v=51">
+<link rel="stylesheet" href="css/views/brief.css?v=51">
 </head>
 <body>
 <div id="app"></div>
-<!-- splash: once per session and after each sign-in, 1.2 s; not shown with reduced motion (see .kl-splash) -->
+<!-- splash: once per session and after each sign-in, 3 s; not shown with reduced motion (see .kl-splash) -->
 <div class="kl-splash" id="kl-splash" hidden aria-hidden="true">
   <img class="kl-mark-img kl-for-light" src="brand/klaket-mark-on-light.svg" alt=""><img class="kl-mark-img kl-for-dark" src="brand/klaket-mark-on-dark.svg" alt="">
   <span class="kl-dots"><i></i><i></i><i></i></span>
@@ -43,7 +43,7 @@
   (function () { // the splash plays once per browser session, and again right after signing in (MPH.splash)
     var tpl = document.getElementById('kl-splash'), still = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
     var MPH = (window.MPH = window.MPH || {}), keep = tpl.cloneNode(true);
-    /* play it now; the returned function ends it, but never before the 1.2 s sequence has finished */
+    /* play it now; the returned function ends it, but never before the 3 s sequence has finished */
     MPH.splash = function (el) {
       if (still) return function () {};
       el = el || keep.cloneNode(true);
@@ -52,7 +52,7 @@
       var t0 = Date.now(), ended = false;
       return function () {
         if (ended) return; ended = true;
-        setTimeout(function () { el.classList.add('done'); setTimeout(function () { el.remove(); }, 300); }, Math.max(0, 1200 - (Date.now() - t0)));
+        setTimeout(function () { el.classList.add('done'); setTimeout(function () { el.remove(); }, 500); }, Math.max(0, 3000 - (Date.now() - t0)));
       };
     };
     var seen = false;
@@ -66,36 +66,36 @@
 
 <script src="https://cdn.jsdelivr.net/npm/lucide@0.453.0/dist/umd/lucide.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-<script src="js/config.js?v=50"></script>
-<script src="js/core.js?v=50"></script>
-<script src="js/brand.js?v=50"></script>
-<script src="js/ui.js?v=50"></script>
-<script src="js/api.js?v=50"></script>
-<script src="js/art.js?v=50"></script>
-<script src="js/sketch.js?v=50"></script>
-<script src="js/illustrate.js?v=50"></script>
-<script src="js/importer.js?v=50"></script>
+<script src="js/config.js?v=51"></script>
+<script src="js/core.js?v=51"></script>
+<script src="js/brand.js?v=51"></script>
+<script src="js/ui.js?v=51"></script>
+<script src="js/api.js?v=51"></script>
+<script src="js/art.js?v=51"></script>
+<script src="js/sketch.js?v=51"></script>
+<script src="js/illustrate.js?v=51"></script>
+<script src="js/importer.js?v=51"></script>
 <!-- views: each file registers itself with MPH.view(id, {...}) -->
-<script src="js/views/home.js?v=50"></script>
-<script src="js/views/productions.js?v=50"></script>
-<script src="js/views/overview.js?v=50"></script>
-<script src="js/views/team.js?v=50"></script>
-<script src="js/views/account.js?v=50"></script>
-<script src="js/views/brief.js?v=50"></script>
-<script src="js/views/script.js?v=50"></script>
-<script src="js/views/breakdown.js?v=50"></script>
-<script src="js/views/shotlist.js?v=50"></script>
-<script src="js/views/stripboard.js?v=50"></script>
-<script src="js/views/crew.js?v=50"></script>
-<script src="js/views/budget.js?v=50"></script>
-<script src="js/views/callsheets.js?v=50"></script>
-<script src="js/views/treatment.js?v=50"></script>
-<script src="js/views/storyboard.js?v=50"></script>
-<script src="js/views/calendar.js?v=50"></script>
-<script src="js/views/locations.js?v=50"></script>
-<script src="js/views/shootday.js?v=50"></script>
-<script src="js/views/docs.js?v=50"></script>
-<script src="js/views/deliverables.js?v=50"></script>
-<script src="js/app.js?v=50"></script>
+<script src="js/views/home.js?v=51"></script>
+<script src="js/views/productions.js?v=51"></script>
+<script src="js/views/overview.js?v=51"></script>
+<script src="js/views/team.js?v=51"></script>
+<script src="js/views/account.js?v=51"></script>
+<script src="js/views/brief.js?v=51"></script>
+<script src="js/views/script.js?v=51"></script>
+<script src="js/views/breakdown.js?v=51"></script>
+<script src="js/views/shotlist.js?v=51"></script>
+<script src="js/views/stripboard.js?v=51"></script>
+<script src="js/views/crew.js?v=51"></script>
+<script src="js/views/budget.js?v=51"></script>
+<script src="js/views/callsheets.js?v=51"></script>
+<script src="js/views/treatment.js?v=51"></script>
+<script src="js/views/storyboard.js?v=51"></script>
+<script src="js/views/calendar.js?v=51"></script>
+<script src="js/views/locations.js?v=51"></script>
+<script src="js/views/shootday.js?v=51"></script>
+<script src="js/views/docs.js?v=51"></script>
+<script src="js/views/deliverables.js?v=51"></script>
+<script src="js/app.js?v=51"></script>
 </body>
 </html>
