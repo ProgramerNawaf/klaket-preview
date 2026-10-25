@@ -387,7 +387,8 @@
           const { error } = await api.signIn(email, pass);
           if (error) throw new Error(error.message === 'Invalid login credentials' ? 'That email and password don’t match an account.' : error.message);
         }
-        await api.loadSession();
+        const endSplash = MPH.splash ? MPH.splash() : () => {}; // أكشن: the slate claps while the workspace opens
+        try { await api.loadSession(); } finally { endSplash(); }
         go(next ? decodeURIComponent(next) : 'home');
       } catch (ex) {
         show(ex.message); reset();
