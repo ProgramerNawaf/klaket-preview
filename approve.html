@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0F5C57">
+<script src="js/theme.js"></script>
+<title>Approve the brief · Klaket | كلاكيت</title>
+<meta name="description" content="Klaket (كلاكيت): from idea to screen. من الفكرة إلى الشاشة.">
+<link rel="icon" href="brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="brand/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" sizes="16x16" href="brand/favicon-16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="brand/favicon-32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="brand/favicon-48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="brand/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="css/app.css?v=42">
+<style>
+  /* Public approval page (no login; the emailed link is the credential): light, readable on a phone. */
+  /* Public approval page (no login; the emailed link is the credential): the app's tokens, light or dark */
+  body.apv { background: var(--bg); color: var(--text); font-size: 16px; line-height: 1.5; }
+  #apv { height: auto; min-height: 100%; }
+  .apv-wrap { max-width: 640px; margin-inline: auto; padding: 0 0 calc(32px + env(safe-area-inset-bottom, 0px)); }
+  .apv-top { background: var(--surface-brand); color: var(--paper); padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 16px; }
+  .apv-top .apv-brand { margin: -2px 0 8px -2px; }
+  .apv-top .o { font-size: 13px; opacity: .8; }
+  .apv-top .t { font: 700 22px/1.2 var(--font-display); overflow-wrap: anywhere; }
+  .apv-main { padding: 16px; display: grid; gap: 14px; }
+  .apv-card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .apv-card h2 { font: 700 16px/1.3 var(--font-display); margin: 0 0 8px; }
+  .apv-kv { display: grid; grid-template-columns: minmax(96px, max-content) 1fr; gap: 6px 14px; margin: 0; font-size: 15px; }
+  .apv-kv dt { color: var(--muted); }
+  .apv-kv dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+  .apv-films { margin: 0; padding-inline-start: 18px; display: grid; gap: 4px; }
+  .apv-state { border-radius: 12px; padding: 12px 14px; font-size: 15px; }
+  .apv-state.ok { background: var(--ok-soft); color: var(--ok); }
+  .apv-state.warn { background: transparent; color: var(--warn); border: 1px solid var(--warn-line); }
+  .apv-state.bad { background: var(--danger-soft); color: var(--danger); }
+  .apv-field { display: grid; gap: 6px; margin-block-end: 12px; }
+  .apv-field label { font-weight: 600; font-size: 14px; }
+  .apv-field input, .apv-field textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 8px; background: #fff; color: var(--text); }
+  .apv-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .apv-btns button { font: 600 16px/1 var(--font-body, inherit); padding: 13px 18px; border-radius: 10px; cursor: pointer; border: 1px solid var(--accent); }
+  .apv-btns .yes { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .apv-btns .yes:hover { background: var(--accent-2); }
+  .apv-btns .no { background: #fff; color: var(--accent); }
+  .apv-btns button[disabled] { opacity: .6; cursor: default; }
+  .apv-small { font-size: 13px; color: var(--muted); }
+  .apv-err { color: var(--danger); font-size: 14px; min-height: 1em; }
+</style>
+</head>
+<body class="apv">
+<main id="apv" class="apv-wrap"><div class="apv-main"><p class="apv-small">Loading…</p></div></main>
+
+<script src="js/config.js"></script>
+<script src="js/brand.js"></script>
+<script>
+(function () {
+  'use strict';
+  var root = document.getElementById('apv');
+  var cfg = window.MPH_CONFIG || {};
+  var q = new URLSearchParams(location.search);
+  var token = q.get('t') || '';
+  var mode = q.get('a') || 'view';
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var sar = function (n) { return Number(n) ? 'SAR ' + Math.round(Number(n)).toLocaleString('en-US') : ''; };
+  var dur = function (s) { s = Number(s) || 0; return !s ? '' : (s < 60 || s % 60 ? s + 's' : s / 60 + ' min'); };
+  var day = function (iso) { if (!iso) return ''; var d = new Date(String(iso).length === 10 ? iso + 'T00:00:00' : iso); return isNaN(d) ? String(iso) : d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }); };
+  var MEDIA = { digital: 'Digital', tv: 'TV', cinema: 'Cinema', ooh: 'Outdoor', all: 'All media' };
+
+  function call(action, extra) {
+    var body = Object.assign({ action: action, token: token }, extra || {});
+    return fetch(String(cfg.supabaseUrl).replace(/\/$/, '') + '/functions/v1/approvals', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: cfg.supabaseKey, Authorization: 'Bearer ' + cfg.supabaseKey }, body: JSON.stringify(body),
+    }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || 'Something went wrong. Try again.'); return j; }); });
+  }
+
+  function shell(top, inner) {
+    root.innerHTML = '<header class="apv-top"><div class="apv-brand">' + MPH.logo({ variant: 'horizontal', size: 44, tone: 'on-teal' }) + '</div>' + top + '</header><div class="apv-main">' + inner + '</div>';
+  }
+  function fail(msg) { shell('<div class="t">Approval link</div>', '<div class="apv-state bad">' + esc(msg) + '</div>'); }
+
+  function briefHtml(d) {
+    var f = d.brief.fields || {};
+    var rows = [['Client', [f.client_company, f.brand].filter(Boolean).join(' · ')], ['Agency', f.agency], ['Objective', f.objective], ['Key message', f.key_message],
+      ['Audience', f.audience], ['Tone', f.tone], ['Budget', [sar(f.budget_min_sar), sar(f.budget_max_sar)].filter(Boolean).join(' to ')],
+      ['Delivery', day(f.delivery_date)], ['Go-live', day(f.go_live_date)], ['Mandatories', f.mandatories], ['Revision rounds', f.revision_rounds], ['Feedback', f.feedback_owner]]
+      .filter(function (r) { return r[1] !== undefined && r[1] !== null && r[1] !== ''; });
+    var films = (d.brief.deliverables || []).map(function (x) {
+      return '<li dir="auto">' + esc([x.name || 'Untitled', dur(x.duration_s), x.aspect_ratio, x.platform, x.language, x.subtitles ? 'subtitled' : '', x.clean_version ? 'clean version' : ''].filter(Boolean).join(' · ')) + '</li>';
+    }).join('');
+    var usage = (d.brief.usage || []).map(function (u) { return '<li dir="auto">' + esc([MEDIA[u.media] || u.media, u.territory, u.term_months ? u.term_months + ' months' : ''].filter(Boolean).join(' · ')) + '</li>'; }).join('');
+    return '<section class="apv-card"><h2>The brief (v' + esc(d.brief.version) + ')</h2><dl class="apv-kv">' +
+      rows.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd dir="auto">' + esc(r[1]) + '</dd>'; }).join('') + '</dl></section>' +
+      (films ? '<section class="apv-card"><h2>Deliverables</h2><ul class="apv-films">' + films + '</ul></section>' : '') +
+      (usage ? '<section class="apv-card"><h2>Usage rights</h2><ul class="apv-films">' + usage + '</ul></section>' : '');
+  }
+
+  function render(d) {
+    var top = '<div class="o">' + esc(d.org) + (d.client ? ' · for ' + esc(d.client) : '') + '</div><div class="t" dir="auto">' + esc(d.production) + '</div>';
+    var approver = d.recipient.role === 'approver';
+    var state = '';
+    if (d.response) state = '<div class="apv-state ok">You ' + (d.response.decision === 'approved' ? 'approved this brief' : 'asked for changes') + ' on ' + esc(day(d.response.responded_at)) + ' as ' + esc(d.response.confirmed_name) + '.</div>';
+    else if (d.request.status === 'cancelled') state = '<div class="apv-state warn">This request was replaced or already decided in the client portal. Ask the production team for the latest link.</div>';
+    else if (d.request.status !== 'open') state = '<div class="apv-state ok">This brief was already ' + (d.request.status === 'approved' ? 'approved' : 'sent back for changes') + '.</div>';
+    else if (d.request.expired) state = '<div class="apv-state bad">This link expired on ' + esc(day(d.request.expires_at)) + '. Ask the production team to send the brief again.</div>';
+    else if (d.current.version !== d.request.version || d.current.status !== 'sent') state = '<div class="apv-state warn">The production team has changed this brief since the link was sent. Ask them for the latest version.</div>';
+    var open = !state && approver;
+    var note = d.request.note ? '<section class="apv-card"><h2>Note from the production team</h2><p dir="auto" style="margin:0">' + esc(d.request.note) + '</p></section>' : '';
+    var form = !open ? '' : '<section class="apv-card" id="apv-form"><h2>Your decision</h2>' +
+      '<div class="apv-field"><label for="apv-name">Your name</label><input id="apv-name" dir="auto" maxlength="200" value="' + esc(d.recipient.name || '') + '" autocomplete="name"></div>' +
+      '<div class="apv-field"><label for="apv-comment">' + (mode === 'changes' ? 'What should change?' : 'Comment <span class="apv-small">(optional when approving, needed for changes)</span>') + '</label><textarea id="apv-comment" rows="4" dir="auto" maxlength="2000"></textarea></div>' +
+      '<div class="apv-btns"><button class="yes" data-d="approved">Approve the brief</button><button class="no" data-d="changes_requested">Request changes</button></div>' +
+      '<p class="apv-err" id="apv-err" role="alert"></p>' +
+      '<p class="apv-small">This link works once and expires on ' + esc(day(d.request.expires_at)) + '. Klaket records your name, the time, this version (v' + esc(d.request.version) + ') and your IP address.</p></section>';
+    var info = !approver && !d.response ? '<div class="apv-state ok">You’re kept informed on this brief. The client’s approver decides.</div>' : '';
+    shell(top, (state || info) + note + (mode === 'changes' && open ? form + briefHtml(d) : briefHtml(d) + form) +
+      '<p class="apv-small"><a href="?' + esc(new URLSearchParams({ t: token, a: 'optout', db: q.get('db') || '' }).toString()) + '">Stop approval emails from Klaket</a></p>');
+    if (open) mount(d);
+    if (mode === 'changes' && open) document.getElementById('apv-comment').focus();
+  }
+
+  function mount(d) {
+    var form = document.getElementById('apv-form');
+    form.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-d]');
+      if (!b) return;
+      var name = document.getElementById('apv-name').value.trim();
+      var comment = document.getElementById('apv-comment').value.trim();
+      var err = document.getElementById('apv-err');
+      if (!name) { err.textContent = 'Type your name to confirm.'; return document.getElementById('apv-name').focus(); }
+      if (b.dataset.d === 'changes_requested' && !comment) { err.textContent = 'Say what should change.'; return document.getElementById('apv-comment').focus(); }
+      form.querySelectorAll('button').forEach(function (x) { x.disabled = true; });
+      err.textContent = '';
+      call('decide', { decision: b.dataset.d, name: name, comment: comment }).then(function (r) {
+        var msg = r.decision === 'approved'
+          ? (r.outcome === 'waiting' ? 'Thank you. Your approval is recorded. The brief is approved once the other approvers agree.' : 'Thank you. The brief is approved, and the production team can start work.')
+          : 'Thank you. Your request for changes went to the production team.';
+        form.innerHTML = '<div class="apv-state ok">' + esc(msg) + '</div>';
+      }).catch(function (ex) {
+        err.textContent = ex.message;
+        form.querySelectorAll('button').forEach(function (x) { x.disabled = false; });
+      });
+    });
+  }
+
+  function optout() {
+    shell('<div class="t">Approval emails</div>', '<section class="apv-card"><h2>Stop approval emails from Klaket?</h2><p>You won’t be asked to approve anything for this production by email again. The production team can still reach you directly.</p>' +
+      '<div class="apv-btns"><button class="no" id="apv-stop">Stop approval emails</button></div><p class="apv-err" id="apv-err"></p></section>');
+    document.getElementById('apv-stop').addEventListener('click', function (e) {
+      e.currentTarget.disabled = true;
+      call('optout').then(function () {
+        shell('<div class="t">Approval emails</div>', '<div class="apv-state ok">Done. You won’t get approval emails from Klaket for this production.</div>');
+      }).catch(function (ex) { document.getElementById('apv-err').textContent = ex.message; });
+    });
+  }
+
+  if (!token) return fail('This page opens from the link in your approval email.');
+  if (mode === 'optout') return optout();
+  call('view').then(render).catch(function (ex) { fail(ex.message); });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+/* Brief (bf-). Version bar, notes and save state reuse the treatment's tr- classes. */
+.bf-page { gap: 16px; }
+.bf-stats .stat .v { font-size: 20px; }
+.bf-doc { display: grid; gap: 14px; }
+.bf-group { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 14px 16px; display: grid; gap: 12px; min-width: 0; }
+.bf-group-head { display: flex; align-items: center; gap: 8px; }
+.bf-group-head > svg.lucide { width: 16px; height: 16px; color: var(--accent); flex: none; }
+.bf-group-head .count { font: 600 11px/1 var(--font-mono); color: var(--muted); background: var(--raised); border-radius: 6px; padding: 3px 6px; }
+.bf-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.bf-grid .bf-wide { grid-column: 1 / -1; }
+.bf-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.bf-kv { grid-template-columns: minmax(120px, max-content) 1fr; }
+.bf-pre { white-space: pre-wrap; }
+.bf-refs { margin: 0; padding-inline-start: 18px; display: grid; gap: 4px; }
+.bf-none { margin: 0; }
+.bf-table-wrap { overflow-x: auto; margin-inline: -4px; }
+.bf-table td, .bf-table th { white-space: nowrap; }
+.bf-table td:first-child { min-width: 160px; white-space: normal; }
+.bf-table .c { text-align: center; }
+.bf-table .r { text-align: end; }
+.bf-table td.c svg.lucide { width: 15px; height: 15px; color: var(--ok); }
+.bf-ratio { display: inline-block; padding: 2px 7px; border-radius: 6px; border: 1px solid var(--line-2); font: 600 11px/1.4 var(--font-mono); color: var(--text-2); }
+.bf-start { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.bf-start-ic { width: 44px; height: 44px; border-radius: var(--radius-lg); display: grid; place-items: center; background: var(--accent-soft, var(--raised)); color: var(--accent); flex: none; }
+.bf-start-ic svg.lucide { width: 22px; height: 22px; }
+.bf-guard { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 720px) {
+  .bf-grid, .bf-pair { grid-template-columns: 1fr; }
+  .bf-kv { grid-template-columns: 1fr; }
+  .bf-kv dt { margin-block-start: 6px; }
+}
+
+/* sources and suggestions (M2) */
+.bf-review { border-color: var(--accent-line, var(--line-2)); }
+.bf-sugs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.bf-sug { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: var(--radius); background: var(--bg-2, var(--raised)); border: 1px solid var(--line); }
+.bf-sug.is-conflict { border-color: var(--warn); }
+.bf-sug-main { display: grid; gap: 4px; min-width: 0; flex: 1; }
+.bf-sug-f { font-weight: 600; font-size: 13px; color: var(--muted); }
+.bf-sug-v { font-size: 14px; color: var(--text); min-width: 0; overflow-wrap: anywhere; }
+.bf-sug-q { font-size: 12.5px; color: var(--text-2); font-style: italic; border-inline-start: 2px solid var(--line-2); padding-inline-start: 8px; margin: 0; overflow-wrap: anywhere; }
+.bf-sug-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bf-sug-act { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: none; }
+.bf-conf { display: flex; align-items: center; gap: 6px; color: var(--warn); }
+.bf-conf svg.lucide { width: 14px; height: 14px; flex: none; }
+.bf-link { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.bf-link:hover { text-decoration: underline; }
+.bf-prov { display: flex; align-items: baseline; gap: 6px; max-width: 100%; margin-block-start: 2px; background: none; border: 0; padding: 0; cursor: pointer; text-align: start; font-size: 11.5px; color: var(--muted); }
+.bf-prov svg.lucide { width: 12px; height: 12px; flex: none; align-self: center; }
+.bf-prov.is-ai { color: var(--accent); }
+.bf-prov-s { flex: none; }
+.bf-prov-q { color: var(--faint); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.bf-prov:hover .bf-prov-s { text-decoration: underline; }
+.bf-row-ai { display: inline-flex; color: var(--accent); margin-inline-start: 6px; vertical-align: middle; }
+.bf-row-ai svg.lucide { width: 13px; height: 13px; }
+.bf-last .bf-notes { margin: 0; padding-inline-start: 18px; }
+.bf-miss { text-transform: capitalize; }
+.bf-run { align-items: center; }
+.bf-srcs { display: grid; gap: 4px; }
+.bf-src { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border-radius: var(--radius); background: none; border: 1px solid transparent; color: var(--text); font: inherit; font-size: 13px; cursor: pointer; text-align: start; }
+.bf-src:hover { border-color: var(--line-2); background: var(--raised); }
+.bf-src > svg.lucide { width: 15px; height: 15px; color: var(--muted); flex: none; }
+.bf-raw { white-space: pre-wrap; overflow-wrap: anywhere; font: 12.5px/1.55 var(--font-mono); background: var(--bg-2, var(--raised)); border-radius: var(--radius); padding: 10px 12px; max-height: 50vh; overflow: auto; }
+@media (max-width: 720px) {
+  .bf-sug { flex-direction: column; }
+  .bf-sug-act { justify-content: flex-start; }
+}
+
+/* people (M5) */
+.bf-people tr.is-new td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
+.bf-people td:first-child { min-width: 150px; }
+.bf-noemail { border-color: var(--warn) !important; }
+.bf-noemail::placeholder { color: var(--warn); }
+.bf-att { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; }
+.bf-att svg.lucide { width: 13px; height: 13px; }
+.bf-att.ok { color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.bf-att.no { color: var(--faint); background: var(--raised); }
+.bf-people td:first-child { min-width: 180px; }
+.bf-people select[data-pf="side"] { min-width: 104px; }
+.bf-people select[data-pf="role"] { min-width: 150px; }
+.bf-people .bf-noemail { min-width: 220px; }
+
+/* email approvals (M6) */
+.bf-approvals .list-row { padding-inline: 0; }
+.bf-audit summary { cursor: pointer; color: var(--muted); margin-block: 4px; }
+.bf-ap-list { max-height: 46vh; overflow: auto; }

@@ -1,0 +1,14 @@
+{
+  "name": "Klaket | كلاكيت",
+  "short_name": "Klaket",
+  "description": "The whole crew in one conversation · الطاقم كله في محادثة وحدة",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FBF5EC",
+  "theme_color": "#0F5C57",
+  "icons": [
+    { "src": "brand/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "brand/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
