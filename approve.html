@@ -51,6 +51,7 @@
   .apv-btns button[disabled] { opacity: .6; cursor: default; }
   .apv-small { font-size: 13px; color: var(--muted); }
   .apv-err { color: var(--danger); font-size: 14px; min-height: 1em; }
+.apv-av { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; } @media (max-width: 600px) { .apv-av { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body class="apv">
@@ -100,28 +101,98 @@
       (usage ? '<section class="apv-card"><h2>Usage rights</h2><ul class="apv-films">' + usage + '</ul></section>' : '');
   }
 
-  function render(d) {
+  function render(d, opt) {
+    opt = opt || { html: null, what: 'brief' };
+    var what = opt.what;
     var top = '<div class="o">' + esc(d.org) + (d.client ? ' · for ' + esc(d.client) : '') + '</div><div class="t" dir="auto">' + esc(d.production) + '</div>';
     var approver = d.recipient.role === 'approver';
     var state = '';
-    if (d.response) state = '<div class="apv-state ok">You ' + (d.response.decision === 'approved' ? 'approved this brief' : 'asked for changes') + ' on ' + esc(day(d.response.responded_at)) + ' as ' + esc(d.response.confirmed_name) + '.</div>';
+    if (d.response) state = '<div class="apv-state ok">You ' + (d.response.decision === 'approved' ? 'approved this ' + what : 'asked for changes') + ' on ' + esc(day(d.response.responded_at)) + ' as ' + esc(d.response.confirmed_name) + '.</div>';
     else if (d.request.status === 'cancelled') state = '<div class="apv-state warn">This request was replaced or already decided in the client portal. Ask the production team for the latest link.</div>';
-    else if (d.request.status !== 'open') state = '<div class="apv-state ok">This brief was already ' + (d.request.status === 'approved' ? 'approved' : 'sent back for changes') + '.</div>';
-    else if (d.request.expired) state = '<div class="apv-state bad">This link expired on ' + esc(day(d.request.expires_at)) + '. Ask the production team to send the brief again.</div>';
-    else if (d.current.version !== d.request.version || d.current.status !== 'sent') state = '<div class="apv-state warn">The production team has changed this brief since the link was sent. Ask them for the latest version.</div>';
+    else if (d.request.status !== 'open') state = '<div class="apv-state ok">This ' + what + ' was already ' + (d.request.status === 'approved' ? 'approved' : 'sent back for changes') + '.</div>';
+    else if (d.request.expired) state = '<div class="apv-state bad">This link expired on ' + esc(day(d.request.expires_at)) + '. Ask the production team to send the ' + what + ' again.</div>';
+    else if (d.current.version !== d.request.version || d.current.status !== 'sent') state = '<div class="apv-state warn">The production team has changed this ' + what + ' since the link was sent. Ask them for the latest version.</div>';
     var open = !state && approver;
     var note = d.request.note ? '<section class="apv-card"><h2>Note from the production team</h2><p dir="auto" style="margin:0">' + esc(d.request.note) + '</p></section>' : '';
     var form = !open ? '' : '<section class="apv-card" id="apv-form"><h2>Your decision</h2>' +
       '<div class="apv-field"><label for="apv-name">Your name</label><input id="apv-name" dir="auto" maxlength="200" value="' + esc(d.recipient.name || '') + '" autocomplete="name"></div>' +
       '<div class="apv-field"><label for="apv-comment">' + (mode === 'changes' ? 'What should change?' : 'Comment <span class="apv-small">(optional when approving, needed for changes)</span>') + '</label><textarea id="apv-comment" rows="4" dir="auto" maxlength="2000"></textarea></div>' +
-      '<div class="apv-btns"><button class="yes" data-d="approved">Approve the brief</button><button class="no" data-d="changes_requested">Request changes</button></div>' +
+      '<div class="apv-btns"><button class="yes" data-d="approved">Approve the ' + what + '</button><button class="no" data-d="changes_requested">Request changes</button></div>' +
       '<p class="apv-err" id="apv-err" role="alert"></p>' +
       '<p class="apv-small">This link works once and expires on ' + esc(day(d.request.expires_at)) + '. Klaket records your name, the time, this version (v' + esc(d.request.version) + ') and your IP address.</p></section>';
-    var info = !approver && !d.response ? '<div class="apv-state ok">You’re kept informed on this brief. The client’s approver decides.</div>' : '';
-    shell(top, (state || info) + note + (mode === 'changes' && open ? form + briefHtml(d) : briefHtml(d) + form) +
+    var info = !approver && !d.response ? '<div class="apv-state ok">You’re kept informed on this ' + what + '. The client’s approver decides.</div>' : '';
+    var body = opt.html || briefHtml(d);
+    shell(top, (state || info) + note + (mode === 'changes' && open ? form + body : body + form) +
       '<p class="apv-small"><a href="?' + esc(new URLSearchParams({ t: token, a: 'optout', db: q.get('db') || '' }).toString()) + '">Stop approval emails from Klaket</a></p>');
     if (open) mount(d);
     if (mode === 'changes' && open) document.getElementById('apv-comment').focus();
+  }
+
+  /* a script: the client reads the scenes (time · visual · audio) and decides; never the team's notes or image prompts */
+  function scriptHtml(d) {
+    var sc = d.script, name = function (id) { return (sc.names && sc.names[id]) || String(id || '').replace(/^(char|loc|veh|prop)_/, '').replace(/_/g, ' '); };
+    var t = function (x) { x = Math.round(Number(x) || 0); return Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0'); };
+    var two = function (a, e) { return (a ? '<p dir="rtl" style="margin:0 0 2px">' + esc(a) + '</p>' : '') + (e ? '<p dir="ltr" class="apv-small" style="margin:0 0 6px">' + esc(e) + '</p>' : ''); };
+    return '<section class="apv-card"><h2 dir="auto">' + esc(sc.title || '') + (sc.title_ar ? ' · <span dir="rtl">' + esc(sc.title_ar) + '</span>' : '') + '</h2><p class="apv-small">' + (sc.duration_s ? esc(sc.duration_s) + ' seconds · ' : '') + (sc.scenes || []).length + ' scenes</p></section>' +
+      (sc.scenes || []).map(function (x) {
+        return '<section class="apv-card"><p class="apv-small"><b>' + esc(x.number) + '</b> · ' + t(x.start_s) + '–' + t(x.end_s) + ' · ' + esc(x.int_ext) + '. ' + esc(name(x.location_id)).toUpperCase() + ' – ' + esc(String(x.time_of_day || '').toUpperCase()) + '</p>' +
+          '<div class="apv-av"><div><h2 style="font-size:12px">Picture</h2>' + two(x.action_ar, x.action_en) + '</div><div><h2 style="font-size:12px">Sound</h2>' +
+          (x.dialogue || []).map(function (l) { return '<p class="apv-small" style="margin:0"><b>' + esc(name(l.character_id)) + '</b></p>' + two(l.text_ar, l.text_en); }).join('') +
+          (x.vo ? '<p class="apv-small" style="margin:0"><b>VO</b></p>' + two(x.vo.text_ar, x.vo.text_en) : '') +
+          (x.supers || []).map(function (y) { return '<p class="apv-small" dir="auto">SUPER: ' + esc(y.text) + '</p>'; }).join('') + '</div></div></section>';
+      }).join('') +
+      (sc.end_frame ? '<section class="apv-card"><p class="apv-small"><b>END FRAME</b></p><p dir="auto" style="margin:0">' + (sc.end_frame.logo ? 'Logo · ' : '') + esc(sc.end_frame.cta_text || '') + '</p></section>' : '');
+  }
+  function renderScript(d) {
+    // the same decision form as the brief, worded for a script
+    render(Object.assign({}, d, { brief: null }), { html: scriptHtml(d), what: 'script' });
+  }
+
+  /* a concept set: the client picks one idea (they see the ideas, never the team's scorecards) */
+  function renderConcepts(d) {
+    var top = '<div class="o">' + esc(d.org) + (d.client ? ' · for ' + esc(d.client) : '') + '</div><div class="t" dir="auto">' + esc(d.production) + '</div>';
+    var approver = d.recipient.role === 'approver';
+    var picked = d.response && d.ideas.filter(function (i) { return i.id === d.response.concept_id; })[0];
+    var state = '';
+    if (d.response) state = '<div class="apv-state ok">You chose “' + esc(picked ? picked.title_en : 'an idea') + '” on ' + esc(day(d.response.responded_at)) + ' as ' + esc(d.response.confirmed_name) + '.</div>';
+    else if (d.request.status === 'cancelled') state = '<div class="apv-state warn">This request was replaced or already decided in the client portal. Ask the production team for the latest link.</div>';
+    else if (d.request.status !== 'open') state = '<div class="apv-state ok">An idea was already chosen.</div>';
+    else if (d.request.expired) state = '<div class="apv-state bad">This link expired on ' + esc(day(d.request.expires_at)) + '. Ask the production team to send the ideas again.</div>';
+    var open = !state && approver;
+    var note = d.request.note ? '<section class="apv-card"><h2>Note from the production team</h2><p dir="auto" style="margin:0">' + esc(d.request.note) + '</p></section>' : '';
+    var ideas = d.ideas.map(function (i, n) {
+      return '<section class="apv-card apv-idea" data-idea="' + esc(i.id) + '"><p class="apv-small">IDEA ' + (n + 1) + '</p><h2 dir="auto">' + esc(i.title_en) + '</h2><h2 dir="rtl" style="margin-top:-4px">' + esc(i.title_ar) + '</h2>' +
+        '<p dir="auto">' + esc(i.logline_en) + '</p><p dir="rtl">' + esc(i.logline_ar) + '</p>' +
+        (i.key_message ? '<p dir="auto"><b>Key message:</b> ' + esc(i.key_message) + '</p>' : '') +
+        ((i.beats || []).length ? '<ol class="apv-films">' + i.beats.map(function (b) { return '<li dir="auto">' + esc(b) + '</li>'; }).join('') + '</ol>' : '') +
+        (open ? '<div class="apv-btns"><button class="yes" data-pick="' + esc(i.id) + '">Choose this idea</button></div>' : '') + '</section>';
+    }).join('');
+    var form = !open ? '' : '<section class="apv-card" id="apv-form" hidden><h2>Confirm your choice</h2><p id="apv-chosen" dir="auto"></p>' +
+      '<div class="apv-field"><label for="apv-name">Your name</label><input id="apv-name" dir="auto" maxlength="200" value="' + esc(d.recipient.name || '') + '" autocomplete="name"></div>' +
+      '<div class="apv-field"><label for="apv-comment">A comment for the team <span class="apv-small">(optional)</span></label><textarea id="apv-comment" rows="3" dir="auto" maxlength="2000"></textarea></div>' +
+      '<div class="apv-btns"><button class="yes" id="apv-go">Confirm</button></div><p class="apv-err" id="apv-err" role="alert"></p>' +
+      '<p class="apv-small">This link works once and expires on ' + esc(day(d.request.expires_at)) + '. Klaket records your name, the time, this version and your IP address.</p></section>';
+    shell(top, (state || (!approver ? '<div class="apv-state ok">You’re kept informed. The client’s approver chooses.</div>' : '<div class="apv-state">Three ideas from your approved brief. Choose the one to develop.</div>')) + note + ideas + form +
+      '<p class="apv-small"><a href="?' + esc(new URLSearchParams({ t: token, a: 'optout', db: q.get('db') || '' }).toString()) + '">Stop approval emails from Klaket</a></p>');
+    if (!open) return;
+    var chosen = null, f = document.getElementById('apv-form');
+    root.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-pick]');
+      if (!b) return;
+      chosen = b.dataset.pick;
+      var idea = d.ideas.filter(function (i) { return i.id === chosen; })[0];
+      document.getElementById('apv-chosen').textContent = idea.title_en + ' · ' + idea.title_ar;
+      f.hidden = false; f.scrollIntoView({ behavior: 'smooth' });
+    });
+    document.getElementById('apv-go').addEventListener('click', function (e) {
+      var name = document.getElementById('apv-name').value.trim(), err = document.getElementById('apv-err');
+      if (!name) { err.textContent = 'Type your name to confirm.'; return; }
+      e.currentTarget.disabled = true;
+      call('choose', { concept_id: chosen, name: name, comment: document.getElementById('apv-comment').value.trim() }).then(function () {
+        f.innerHTML = '<div class="apv-state ok">Thank you. Your choice went to the production team, and they start on the script.</div>';
+        root.querySelectorAll('[data-pick]').forEach(function (x) { x.remove(); });
+      }).catch(function (ex) { err.textContent = ex.message; e.target.disabled = false; });
+    });
   }
 
   function mount(d) {
@@ -138,7 +209,7 @@
       err.textContent = '';
       call('decide', { decision: b.dataset.d, name: name, comment: comment }).then(function (r) {
         var msg = r.decision === 'approved'
-          ? (r.outcome === 'waiting' ? 'Thank you. Your approval is recorded. The brief is approved once the other approvers agree.' : 'Thank you. The brief is approved, and the production team can start work.')
+          ? (r.outcome === 'waiting' ? 'Thank you. Your approval is recorded. It is approved once the other approvers agree.' : 'Thank you. It is approved, and the production team can go ahead.')
           : 'Thank you. Your request for changes went to the production team.';
         form.innerHTML = '<div class="apv-state ok">' + esc(msg) + '</div>';
       }).catch(function (ex) {
@@ -161,7 +232,7 @@
 
   if (!token) return fail('This page opens from the link in your approval email.');
   if (mode === 'optout') return optout();
-  call('view').then(render).catch(function (ex) { fail(ex.message); });
+  call('view').then(function (d) { return d.kind === 'concepts' ? renderConcepts(d) : d.kind === 'script' ? renderScript(d) : render(d); }).catch(function (ex) { fail(ex.message); });
 })();
 </script>
 </body>

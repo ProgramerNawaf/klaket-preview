@@ -346,50 +346,14 @@ p { margin: 0; }
 .page-head .grow { min-width: 220px; }
 
 /* production header + stage nav (StudioBinder-style stage groups) */
-.prod-head { border-block-end: 1px solid var(--line); background: var(--bg-2); }
-.prod-head .ph-top { display: flex; align-items: center; gap: 14px; padding: 14px 24px 10px; flex-wrap: wrap; }
 .prod-thumb { width: 38px; height: 38px; border-radius: 9px; flex: none; }
 .prod-title { font: 500 18px/1.2 var(--font-display); letter-spacing: -.01em; }
-/* phase stepper: Overview · 1 Pre-production — 2 Production — 3 Post-production */
-.phases { display: flex; align-items: center; gap: 6px; padding: 2px 24px 12px; overflow-x: auto; scrollbar-width: none; }
-.phases::-webkit-scrollbar { display: none; }
-.phase-ov, .phase {
-  display: flex; align-items: center; gap: 10px; white-space: nowrap; flex: none;
-  padding: 7px 14px 7px 8px; border-radius: 12px; border: 1px solid var(--line);
-  color: var(--muted); background: var(--bg);
-}
-.phase-ov { padding: 9px 12px; font-size: 13px; font-weight: 600; gap: 7px; }
-.phase-ov:hover, .phase:hover { color: var(--text); border-color: var(--line-2); }
-.phase-ov.active { color: var(--text); background: var(--raised); border-color: var(--line-2); }
-.phase-ov.active svg { color: var(--accent); }
+/* the numbered phase badge (the phase picker in the production nav: platform.css) */
 .phase-num {
   width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex: none;
   font: 600 12px/1 var(--font-mono); border: 1.5px solid var(--line-2); color: var(--muted);
 }
 .phase-num svg.lucide { width: 14px; height: 14px; }
-.phase-name { font-size: 13px; font-weight: 600; color: var(--text-2); }
-.phase-sub { font-size: 11px; color: var(--faint); }
-.phase.done .phase-num { background: color-mix(in srgb, var(--pc) 18%, transparent); border-color: transparent; color: var(--pc); }
-.phase.current .phase-num { border-color: var(--pc); color: var(--pc); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pc) 18%, transparent); }
-.phase.current .phase-sub { color: var(--pc); }
-:root[data-theme="dark"] .phase.current .phase-sub, :root[data-theme="dark"] .phase.current .phase-num, :root[data-theme="dark"] .phase.done .phase-num { color: var(--accent); }
-.phase.active { background: var(--raised); border-color: color-mix(in srgb, var(--pc) 45%, var(--line-2)); color: var(--text); }
-.phase.active .phase-name { color: var(--text); }
-.phase-link { flex: 0 0 18px; height: 1.5px; background: var(--line-2); }
-
-/* steps of the phase being viewed */
-.steps { display: flex; padding: 0 16px; overflow-x: auto; scrollbar-width: none; border-block-start: 1px solid var(--line); }
-.steps::-webkit-scrollbar { display: none; }
-.step-group { display: flex; gap: 2px; padding: 0 6px; position: relative; }
-.step-group + .step-group::before { content: ""; position: absolute; inset-inline-start: 0; inset-block: 12px; width: 1px; background: var(--line-2); }
-.steps a {
-  display: flex; align-items: center; gap: 6px; white-space: nowrap;
-  padding: 11px 10px 10px; color: var(--muted); font-size: 13px; font-weight: 500;
-  border-block-end: 2px solid transparent;
-}
-.steps a:hover { color: var(--text); }
-.steps a.active { color: var(--text); border-block-end-color: var(--pc, var(--primary)); }
-.steps a.active svg { color: var(--pc, var(--accent)); }
 
 /* client-view banner */
 .client-banner {
@@ -629,7 +593,7 @@ a.list-row:hover, .list-row.link:hover { background: var(--bg); cursor: pointer;
   .rail .rail-logo, .rail .rail-foot { display: none; }
   .topbar-logo { display: inline-flex; }
   .rail a { flex: 1; min-width: 56px; }
-  .topbar, .prod-head .ph-top { padding-inline: 16px; }
+  .topbar { padding-inline: 16px; }
   .search { display: none; }
   .page { padding: 18px 16px 40px; }
   .h1 { font-size: 23px; }
@@ -642,6 +606,6 @@ a.list-row:hover, .list-row.link:hover { background: var(--bg); cursor: pointer;
 /* ------------------------------------------------------------ data speaks in IBM Plex Mono (scene and take numbers,
    times, codes, department tags): SCENE 04 · TAKE 12 · 06:40 */
 .stb-num, .sl-code, .sl-code-in, .cs-day-num .strong, .cs-times td, .cs-call .v, .sd-clock, .sd-time, .sd-log-time, .sd-note-time, .sd-onclock,
-.prod-head .mono, .ov-chip.mono, .tag.dept, .bd-sc-num, td.num, .num-mono {
+.tb-meta .mono, .ov-chip.mono, .tag.dept, .bd-sc-num, td.num, .num-mono {
   font-family: var(--font-mono); font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: .02em;
 }

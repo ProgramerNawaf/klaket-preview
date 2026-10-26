@@ -463,6 +463,7 @@
   }
 
   /* ------------------------------------------------------------ view */
+  const SCRIPT_OPEN = new Set(); // producers who chose to start before the client's pick
   MPH.view('script', {
     async load(ctx) {
       const { sb, api } = ctx;
@@ -474,22 +475,34 @@
         const q = sb.from('scripts').select('*, scenes(id, num, heading, int_ext, day_night, location, synopsis, body, pages_eighths, sort)').eq('production_id', pid);
         return (ver ? q.eq('version', ver) : q.order('version', { ascending: false })).limit(1);
       };
-      const [listRes, pickRes] = await Promise.all([
-        sb.from('scripts').select('id, version, title, source_type, file_path, locked, breakdown_status, breakdown_at, created_at').eq('production_id', pid).order('version'),
+      const [listRes, pickRes, setsRes] = await Promise.all([
+        sb.from('scripts').select('id, version, title, source_type, file_path, locked, breakdown_status, breakdown_at, created_at, source, status').eq('production_id', pid).order('version'),
         pickQuery(want),
+        sb.from('concept_sets').select('status').eq('production_id', pid),
       ]);
       const list = api.must(listRes);
-      if (!list.length) return { list, script: null, scenes: [] };
+      // with creative ideas in play, Script waits for the client's pick (productions without concepts are unaffected)
+      const sets = setsRes.error ? [] : setsRes.data;
+      const gate = sets.length && !sets.some((x) => x.status === 'selected') ? 'waiting' : null;
+      if (!list.length) return MPH.scriptAI.load(ctx, { list, script: null, scenes: [], gate });
       const latest = list[list.length - 1];
       let script = api.must(pickRes)[0];
       if (!script) script = api.must(await pickQuery(null))[0]; // the remembered version was deleted
       const scenes = (script.scenes || []).sort((a, b) => (a.sort || 0) - (b.sort || 0));
       delete script.scenes;
-      return { list, latest, script, scenes, hasFile: !ctx.isClient && !!script.file_path };
+      return MPH.scriptAI.load(ctx, { list, latest, script, scenes, hasFile: !ctx.isClient && !!script.file_path, gate });
     },
 
     render(ctx, d) {
       const { ui, production: p } = ctx;
+      const h = { setVersion: (v) => { uiState(ctx).ver = v; } };
+      if (d.script && d.script.source === 'ai') return MPH.scriptAI.render(ctx, d, h);
+      // the client chose an idea and there's no script yet: the Script Agent writes it (or is writing it)
+      if (!d.script && d.selected && !ctx.isClient) return MPH.scriptAI.generatePanel(ctx, d);
+      if (!d.script && d.gate && !SCRIPT_OPEN.has(p.id)) {
+        return `<div class="page">${ui.empty('lock', 'Script unlocks when the client picks an idea', 'Send the concept set from the Concepts screen; the client’s choice opens the script.',
+          `<a class="btn btn-primary" href="#p.${esc(p.id)}.concepts">${ui.icon('lightbulb')}Open Concepts</a>${canWrite(ctx) ? ` <button class="btn btn-ghost" data-sc-open>Start the script anyway</button>` : ''}`)}</div>`;
+      }
       if (!d.script) return emptyPage(ctx);
       const st = uiState(ctx);
       const edit = canWrite(ctx);
@@ -547,6 +560,9 @@
     },
 
     mount(root, ctx, d) {
+      if ((d.script && d.script.source === 'ai') || (!d.script && d.selected && !ctx.isClient)) return MPH.scriptAI.mount(root, ctx, d, { setVersion: (v) => { uiState(ctx).ver = v; } });
+      const open = root.querySelector('[data-sc-open]');
+      if (open) open.addEventListener('click', () => { SCRIPT_OPEN.add(ctx.production.id); MPH.render(); });
       if (!d.script) {
         if (root.querySelector('[data-form]')) {
           bindForm(root, ctx, (created) => { uiState(ctx).ver = created.version; ctx.toast(`Script v${created.version} saved`); ctx.reload(); });

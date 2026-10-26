@@ -84,3 +84,17 @@
 .bf-approvals .list-row { padding-inline: 0; }
 .bf-audit summary { cursor: pointer; color: var(--muted); margin-block: 4px; }
 .bf-ap-list { max-height: 46vh; overflow: auto; }
+
+/* Brief Agent: who said it, the must-ask list, what the client said */
+.bf-said { font-size: 10.5px; letter-spacing: .04em; color: var(--faint); white-space: nowrap; }
+.bf-conf-v { font-weight: 600; }
+.bf-qs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.bf-q { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: var(--radius-pill); font-size: 12px; background: var(--raised); }
+.bf-q svg.lucide { width: 12px; height: 12px; }
+.bf-q.ok { color: var(--accent); background: var(--accent-soft); }
+.bf-q.no { color: var(--muted); }
+.bf-ins-block { padding: 6px 0; }
+.bf-ins-block + .bf-ins-block { border-top: 1px solid var(--line); }
+.bf-ins-block .eyebrow { display: flex; align-items: center; gap: 6px; margin: 6px 0; }
+.bf-ins { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.bf-ins li { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.5; }

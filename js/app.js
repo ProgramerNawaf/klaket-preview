@@ -13,12 +13,12 @@
   const PHASES = [
     /* each phase is an ordered sequence of steps, grouped into activities (tabs keep the same order) */
     { id: 'pre', label: 'Pre-production', icon: 'pencil-ruler', color: 'var(--phase-band)',
-      tabs: [['brief', 'Brief', 'clipboard-list', 1], ['script', 'Script', 'file-text', 1], ['treatment', 'Treatment & Lookbook', 'gallery-vertical-end', 1],
+      tabs: [['brief', 'Brief', 'clipboard-list', 1], ['concepts', 'Concepts', 'lightbulb', 1], ['script', 'Script', 'file-text', 1], ['treatment', 'Treatment & Lookbook', 'gallery-vertical-end', 1],
              ['breakdown', 'AI Breakdown', 'scan-text', 1],
              ['storyboard', 'Storyboard', 'layout-grid', 1], ['shotlist', 'Shot List', 'list-video', 1],
              ['stripboard', 'Stripboard', 'rows-3', 1], ['calendar', 'Calendar', 'calendar-days', 1],
              ['budget', 'Budget & Bid', 'calculator', 1]],
-      groups: [['Brief', ['brief']], ['Story', ['script', 'treatment']], ['Breakdown', ['breakdown']], ['Visualize', ['storyboard', 'shotlist']],
+      groups: [['Brief', ['brief', 'concepts']], ['Story', ['script', 'treatment']], ['Breakdown', ['breakdown']], ['Visualize', ['storyboard', 'shotlist']],
                ['Schedule', ['stripboard', 'calendar']], ['Budget', ['budget']]] },
     { id: 'prod', label: 'Production', icon: 'clapperboard', color: 'var(--phase-band)',
       tabs: [['crew', 'Crew & Talent', 'users', 1], ['locations', 'Locations', 'map-pin', 1], ['callsheets', 'Call Sheets', 'clipboard-list', 1], ['shootday', 'Shoot Day', 'radio', 1]],
@@ -28,7 +28,7 @@
              ['finishing', 'Finishing', 'wand-sparkles'], ['deliverables', 'Deliverables', 'package-check', 1], ['wrap', 'Wrap Report', 'file-bar-chart']],
       groups: [['Edit', ['dailies', 'edit']], ['Approve', ['review']], ['Finish & deliver', ['finishing', 'deliverables']], ['Close', ['wrap']]] },
   ];
-  const CLIENT_MODULES = ['overview', 'brief', 'treatment', 'script', 'storyboard', 'calendar', 'budget', 'docs'];
+  const CLIENT_MODULES = ['overview', 'brief', 'concepts', 'treatment', 'script', 'storyboard', 'calendar', 'budget', 'docs'];
   const phaseOf = (prod) => ({ 'Briefing': 'pre', 'Development': 'pre', 'Bidding': 'pre', 'Pre-production': 'pre', 'Shooting': 'prod', 'Post-production': 'post', 'Delivered': 'post' }[prod.status] || 'pre');
   const phaseForModule = (mod) => PHASES.find((ph) => ph.tabs.some(([id]) => id === mod));
   const isLive = (mod) => mod === 'overview' || mod === 'docs' || PHASES.some((ph) => ph.tabs.some(([id, , , live]) => id === mod && live));
@@ -48,6 +48,14 @@
   const closeOverlay = () => { overlay.hidden = true; overlay.innerHTML = ''; };
   overlay.addEventListener('click', (e) => { if (e.target === overlay || e.target.closest('[data-close]')) closeOverlay(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !overlay.hidden) closeOverlay(); });
+  // the phase picker in the production nav closes on a click outside it, on Escape, and once a step is chosen
+  const closePicker = (except) => document.querySelectorAll('details.phase-pick[open]').forEach((d) => { if (d !== except) d.open = false; });
+  document.addEventListener('click', (e) => {
+    const pick = e.target.closest('details.phase-pick');
+    if (pick && e.target.closest('.phase-menu a')) pick.open = false;
+    closePicker(pick);
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePicker(null); });
   MPH.frame = ({ title, sub = '', body = '', foot = '' }) => `
     <header class="overlay-head"><div class="grow stack tight" style="gap:2px"><h2 class="h2">${title}</h2>${sub ? `<span class="small muted">${sub}</span>` : ''}</div>
       <button class="btn btn-ghost btn-sm btn-icon" data-close aria-label="Close">${ui.icon('x')}</button></header>
@@ -614,24 +622,30 @@
     const sep = `<span class="faint">/</span>`;
     const house = s.org ? `<span>${esc(s.org.name)}</span>` : `<span>${esc(MPH.logo.NAME[MPH.state.lang] || cfg.brand)}</span>`;
     let crumbs = house;
+    let right = '';
     if (r.section === 'p' && prod) {
-      const ph = phaseForModule(r.view);
-      const tab = ph && ph.tabs.find(([id]) => id === r.view);
-      const here = tab ? tab[1] : r.view === 'docs' ? 'Documents' : 'Overview';
-      crumbs += `${sep}<a href="#productions">${t('Productions')}</a>${sep}<a href="#p.${prod.id}.overview">${esc(prod.title)}</a>${sep}<span class="here">${t(here)}</span>`;
+      // in a production the bar carries its identity (the old second header row): back · thumb · title · status · client
+      const title = MPH.state.lang === 'ar' && prod.title_ar ? prod.title_ar : prod.title;
+      const meta = [prod.client_name || 'No client yet', prod.agency ? `via ${prod.agency}` : '', prod.format].filter(Boolean).map(esc).join(' · ');
+      crumbs = `<a href="#productions" class="tb-back" title="${esc(t('Productions'))}" aria-label="${esc(t('Productions'))}">${ui.icon(MPH.state.lang === 'ar' ? 'chevron-right' : 'chevron-left')}<span>${t('Productions')}</span></a>
+        <a href="#p.${prod.id}.overview" class="tb-prod">${ui.prodThumb(prod, 28)}<span class="tb-title truncate" dir="auto">${esc(title)}</span></a>
+        <span class="tb-status">${ui.statusPill(prod.status)}</span>
+        <span class="tb-meta truncate">${meta}${prod.code ? ` · <span class="mono">${esc(prod.code)}</span>` : ''}</span>`;
+      right = `${prod.shoot_start ? `<span class="tb-shoot small muted nowrap">${ui.icon('calendar')}<span dir="ltr">${MPH.date(prod.shoot_start)}${prod.shoot_end && prod.shoot_end !== prod.shoot_start ? '–' + MPH.date(prod.shoot_end) : ''}</span></span>` : ''}
+        <a class="ph-docs ${r.view === 'docs' ? 'active' : ''}" href="#p.${prod.id}.docs" title="${esc(t('Documents'))}">${ui.icon('folder-open')}<span>${t('Documents')}</span></a>`;
     } else {
       const label = { home: 'Home', productions: 'Productions', team: 'Team', account: 'Account' }[r.section] || '';
       crumbs += label ? `${sep}<span class="here">${t(label)}</span>` : '';
     }
     const houseSwitch = s.orgs.length > 1 ? `<select class="select" id="org-switch" style="width:auto;height:30px">${s.orgs.map((o) => `<option value="${o.id}" ${o.id === s.org?.id ? 'selected' : ''}>${esc(o.name)}</option>`).join('')}</select>` : '';
     const preview = prod && access.canSeeInternal
-      ? `<button class="btn btn-sm ${MPH.state.previewClient ? 'btn-primary' : 'btn-outline'}" data-act="preview-client" title="See exactly what your client sees">${ui.icon(MPH.state.previewClient ? 'eye-off' : 'eye')}${MPH.state.previewClient ? t('Back to producer view') : t('Preview client view')}</button>` : '';
+      ? `<button class="btn btn-sm tb-preview ${MPH.state.previewClient ? 'btn-primary' : 'btn-outline'}" data-act="preview-client" title="See exactly what your client sees">${ui.icon(MPH.state.previewClient ? 'eye-off' : 'eye')}<span>${MPH.state.previewClient ? t('Back to producer view') : t('Preview client view')}</span></button>` : '';
     return `
-      <header class="topbar">
+      <header class="topbar ${prod ? 'in-prod' : ''}">
         <a class="topbar-logo" href="#home">${MPH.logo({ variant: 'mark', size: 32 })}</a>
-        <div class="crumbs truncate">${crumbs}</div>
+        <div class="crumbs">${crumbs}</div>
         <span class="spacer"></span>
-        ${houseSwitch}${preview}
+        ${right}${houseSwitch}${preview}
         <button class="btn btn-sm btn-ghost" data-act="toggle-lang">${MPH.state.lang === 'ar' ? 'EN' : 'عربي'}</button>
       </header>`;
   }
@@ -641,46 +655,35 @@
     const allowed = (id) => !client || CLIENT_MODULES.includes(id);
     const current = phaseOf(prod);
     const order = PHASES.map((p) => p.id);
-    const viewing = phaseForModule(r.view);
     const visible = PHASES.map((ph) => ({ ...ph, tabs: ph.tabs.filter(([id]) => allowed(id)) })).filter((ph) => ph.tabs.length);
+    // the phase whose steps show: the one you're in, else (Overview, Documents) the production's own
+    const shown = visible.find((ph) => ph.tabs.some(([id]) => id === r.view)) || visible.find((ph) => ph.id === current) || visible[0];
     const stateOf = (ph) => order.indexOf(ph.id) < order.indexOf(current) ? 'done' : ph.id === current ? 'current' : 'next';
-    const tab = ([id, label, icon, live]) => `<a href="#p.${prod.id}.${id}" class="${r.view === id ? 'active' : ''} ${live ? '' : 'soon'}">${ui.icon(icon)}${t(label)}${live ? '' : `<span class="soon-tag">${t('Soon')}</span>`}</a>`;
-    const stepper = `
-      <div class="phases" role="tablist">
-        <a href="#p.${prod.id}.overview" class="phase-ov ${r.view === 'overview' ? 'active' : ''}">${ui.icon('layout-dashboard')}<span>${t('Overview')}</span></a>
-        ${visible.map((ph, i) => {
-          const st = stateOf(ph);
-          const first = ph.tabs.find((x) => x[3]) || ph.tabs[0];
-          return `<a href="#p.${prod.id}.${first[0]}" class="phase ${st} ${viewing && viewing.id === ph.id ? 'active' : ''}" style="--pc:${ph.color}">
-            <span class="phase-num">${st === 'done' ? ui.icon('check') : i + 1}</span>
-            <span class="stack" style="gap:0"><span class="phase-name">${t(ph.label)}</span><span class="phase-sub">${st === 'done' ? 'Complete' : st === 'current' ? 'In progress' : 'Up next'} · ${ph.tabs.filter((x) => x[3]).length} live</span></span></a>`;
-        }).join('<span class="phase-link" aria-hidden="true"></span>')}
-      </div>`;
-    let steps = '';
-    if (viewing) {
-      const ph = visible.find((x) => x.id === viewing.id);
-      if (ph) {
-        // grouped, numbered activities, in sequence: "1 Story · Script, Treatment" …
-        const groups = (ph.groups || [['', ph.tabs.map(([id]) => id)]])
-          .map(([label, ids]) => [label, ph.tabs.filter(([id]) => ids.includes(id)).map(tab).join('')])
-          .filter(([, html]) => html);
-        steps = `<nav class="steps" style="--pc:${ph.color}">${groups.map(([label, html], i) => `
-          <div class="step-group">${label ? `<span class="step-group-label"><b>${i + 1}</b>${esc(t(label))}</span>` : ''}<div class="step-group-tabs">${html}</div></div>`).join('')}</nav>`;
-      }
-    }
+    const stateLabel = { done: 'Complete', current: 'In progress', next: 'Up next' };
+    const num = (ph, i) => `<span class="phase-num ${stateOf(ph)}">${stateOf(ph) === 'done' ? ui.icon('check') : i + 1}</span>`;
+    const tab = ([id, label, icon, live]) => `<a href="#p.${prod.id}.${id}" class="${r.view === id ? 'active' : ''} ${live ? '' : 'soon'}" ${r.view === id ? 'aria-current="page"' : ''}>${ui.icon(icon)}${t(label)}${live ? '' : `<span class="soon-tag">${t('Soon')}</span>`}</a>`;
+    const here = r.view === 'overview' ? t('Overview') : r.view === 'docs' ? t('Documents') : t((shown.tabs.find(([id]) => id === r.view) || [])[1] || '');
+    // groups keep their sequence as thin separators (the label is the tooltip)
+    const groupsOf = (ph) => (ph.groups || [['', ph.tabs.map(([id]) => id)]])
+      .map(([label, ids]) => [label, ph.tabs.filter(([id]) => ids.includes(id))]).filter(([, tabs]) => tabs.length);
+    const steps = shown ? `<div class="pnav-steps">${groupsOf(shown).map(([label, tabs]) => `<div class="pnav-group" title="${esc(t(label))}">${tabs.map(tab).join('')}</div>`).join('')}</div>` : '';
+    const menu = visible.map((ph, i) => {
+      const first = ph.tabs.find((x) => x[3]) || ph.tabs[0];
+      return `<div class="pm-phase ${ph.id === shown?.id ? 'on' : ''}">
+        <a class="pm-head" href="#p.${prod.id}.${first[0]}">${num(ph, i)}<span class="grow"><span class="pm-name">${t(ph.label)}</span><span class="pm-state">${t(stateLabel[stateOf(ph)])}</span></span></a>
+        <div class="pm-steps">${groupsOf(ph).map(([label, tabs]) => `${label ? `<span class="pm-group">${esc(t(label))}</span>` : ''}${tabs.map(tab).join('')}`).join('')}</div></div>`;
+    }).join('');
+    const si = visible.indexOf(shown);
     return `
-      <div class="prod-head">
-        <div class="ph-top">
-          ${ui.prodThumb(prod)}
-          <div class="stack tight grow" style="gap:1px">
-            <div class="row wrap"><span class="prod-title">${esc(MPH.state.lang === 'ar' && prod.title_ar ? prod.title_ar : prod.title)}</span>${ui.statusPill(prod.status)}</div>
-            <span class="small muted">${esc(prod.client_name || 'No client yet')}${prod.agency ? ' · via ' + esc(prod.agency) : ''}${prod.format ? ' · ' + esc(prod.format) : ''}${prod.code ? ` · <span class="mono">${esc(prod.code)}</span>` : ''}</span>
-          </div>
-          ${prod.shoot_start ? `<div class="row small muted nowrap">${ui.icon('calendar')}Shoot ${MPH.date(prod.shoot_start)}${prod.shoot_end && prod.shoot_end !== prod.shoot_start ? '–' + MPH.date(prod.shoot_end) : ''}</div>` : ''}
-          <a class="ph-docs ${r.view === 'docs' ? 'active' : ''}" href="#p.${prod.id}.docs">${ui.icon('folder-open')}${t('Documents')}</a>
-        </div>
-        ${stepper}${steps}
-      </div>
+      <nav class="pnav" style="--pc:${shown ? shown.color : 'var(--primary)'}" aria-label="${esc(t('Production'))}">
+        <a href="#p.${prod.id}.overview" class="pnav-ov ${r.view === 'overview' ? 'active' : ''}" ${r.view === 'overview' ? 'aria-current="page"' : ''} title="${esc(t('Overview'))}">${ui.icon('layout-dashboard')}<span>${t('Overview')}</span></a>
+        <details class="phase-pick">
+          <summary aria-label="${esc(t('Choose a phase'))}">${shown ? num(shown, si) : ''}<span class="pp-name">${shown ? t(shown.label) : ''}</span><span class="pp-here">${esc(here)}</span>${ui.icon('chevron-down')}</summary>
+          <div class="phase-menu">${menu}
+            <a class="pm-docs ${r.view === 'docs' ? 'active' : ''}" href="#p.${prod.id}.docs">${ui.icon('folder-open')}${t('Documents')}</a></div>
+        </details>
+        ${steps}
+      </nav>
       ${client ? `<div class="client-banner">${ui.icon('eye')}${access.isClient ? 'Client view' : 'Previewing the client view'}. Internal cost, margin, rates and crew detail are never sent to client accounts.</div>` : ''}`;
   }
 
@@ -775,15 +778,34 @@
       <div class="shell">
         ${rail(r)}
         <main class="main">
-          ${topbar(r, prod, access)}
-          ${prod ? prodHeader(r, prod, access) : ''}
+          <div class="chrome">
+            ${topbar(r, prod, access)}
+            ${prod ? prodHeader(r, prod, access) : ''}
+          </div>
           <div class="content" id="content"><div id="view"></div></div>
         </main>
       </div>`;
     icons();
+    fitSteps();
     await renderView(r, prod, access, seq);
   }
   MPH.render = render;
+
+  /* the step row scrolls when a phase has more steps than fit: show the current one, and fade the edge that has more */
+  function fitSteps() {
+    const row = document.querySelector('.pnav-steps');
+    if (!row) return;
+    const on = row.querySelector('a.active');
+    if (on) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const mark = () => {
+      const x = Math.abs(row.scrollLeft), room = row.scrollWidth - row.clientWidth;
+      row.classList.toggle('more-start', x > 4);
+      row.classList.toggle('more-end', room - x > 4);
+    };
+    mark();
+    row.addEventListener('scroll', mark, { passive: true });
+    window.addEventListener('resize', mark, { passive: true });
+  }
 
   let viewSeq = 0;
   /* after drawing from the cache: re-read, store, and redraw if the data changed and the screen is still untouched */

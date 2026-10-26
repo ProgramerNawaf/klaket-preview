@@ -33,12 +33,15 @@
     { id: 'goal', title: 'Goal', icon: 'target', fields: [
       { k: 'objective', label: 'Objective', type: 'area', ph: 'What should this film achieve for the brand?' },
       { k: 'key_message', label: 'Key message', type: 'area', ph: 'The one thing the audience should remember' },
+      { k: 'kpi', label: 'KPI', type: 'area', ph: 'How success is measured: test-drive bookings, views, recall', optional: true },
       { k: 'audience', label: 'Target audience', type: 'area', ph: 'Who, where, how old, what they care about' },
       { k: 'tone', label: 'Tone', type: 'text', ph: 'Warm, proud, quietly funny' },
+      { k: 'music', label: 'Music direction', type: 'area', ph: 'Oud, modern, no music, a licensed track…', optional: true },
     ] },
     { id: 'money', title: 'Money and time', icon: 'calendar-clock', fields: [
       { k: 'budget_min_sar', label: 'Budget from (SAR)', type: 'money' },
       { k: 'budget_max_sar', label: 'Budget to (SAR)', type: 'money' },
+      { k: 'budget_notes', label: 'Budget conditions', type: 'area', ph: 'For example: up to SAR 320K if we add the drone shot', optional: true },
       { k: 'go_live_date', label: 'Go-live date', type: 'date' },
       { k: 'delivery_date', label: 'Delivery date', type: 'date', hint: 'When the final files are due.' },
     ] },
@@ -59,7 +62,7 @@
   const runs = new Map(); // production id -> promise of the extraction summary (survives navigation)
   const HIGH = 0.75;      // "Accept all high-confidence"
   const ROW_LABEL = { deliverable: 'Deliverable', usage_right: 'Usage right', reference: 'Reference' };
-  const SRC = { manual: ['clipboard-paste', 'Pasted text'], email: ['mail', 'Email'], meeting: ['video', 'Meeting'] };
+  const SRC = { manual: ['clipboard-paste', 'Pasted text'], email: ['mail', 'Email'], meeting: ['video', 'Meeting'], questionnaire: ['list-checks', 'Questionnaire'], note: ['sticky-note', 'Producer note'] };
   let activeSaver = null;
   window.addEventListener('beforeunload', (e) => {
     if (activeSaver && activeSaver.dirty) { activeSaver.flush(); e.preventDefault(); e.returnValue = ''; }
@@ -137,12 +140,27 @@
     durLabel,
   };
 
-  /* Read a source with the AI. Runs outlive the screen that started them (Home links a meeting, the Brief shows the
-     result); when one finishes, the brief page redraws if it's open. Returns false if a read is already running. */
-  function startRead(ctx, pid, sourceId, title) {
+  /* Read a source with the Brief Agent. It runs as a background job (agents function); the page waits on the job.
+     Runs outlive the screen that started them (Home links a meeting, the Brief shows the result); when one finishes,
+     the brief page redraws if it's open. Returns false if a read is already running. */
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  function startRead(ctx, pid, sourceId, title, rerun = false) {
     if (runs.has(pid)) return false;
     const onBrief = () => location.hash.startsWith(`#p.${pid}.brief`);
-    const run = ctx.api.ai('brief_extract', { production_id: pid, source_id: sourceId });
+    const run = (async () => {
+      const { job } = await ctx.api.fn('agents', 'read_source', { production_id: pid, source_id: sourceId, rerun });
+      const started = Date.now();
+      while (Date.now() - started < 30 * 60e3) {
+        await wait(Date.now() - started < 60e3 ? 3000 : 6000);
+        const { data: j } = await ctx.sb.from('agent_jobs').select('status, last_error, id').eq('id', job.id).single();
+        if (!j || j.status === 'done') break;
+        if (j.status === 'failed') throw new Error(j.last_error || 'The Brief Agent failed.');
+      }
+      const { data: src } = await ctx.sb.from('brief_sources').select('extraction, status, error').eq('id', sourceId).single();
+      if (!src || src.status === 'failed') throw new Error((src && src.error) || 'The Brief Agent failed.');
+      const x = src.extraction || {}, c = x.counts || {};
+      return { applied: c.applied || 0, pending: c.pending || 0, conflicts: x.conflicts || [], missing_info: x.missing_info || [] };
+    })();
     runs.set(pid, run);
     delete S.hide[pid];
     run.then((sum) => {
@@ -153,8 +171,6 @@
     }, async (err) => {
       runs.delete(pid);
       ctx.toastError(new Error(`Couldn’t read ${title}: ${err.message || err}`));
-      // the engine marks its own failures; this covers requests refused before it started (no key, timeouts)
-      await ctx.sb.from('brief_sources').update({ status: 'failed', error: String(err.message || err).slice(0, 500) }).eq('id', sourceId).in('status', ['new', 'extracting']);
       if (onBrief()) MPH.render();
     });
     return true;
@@ -346,7 +362,11 @@
     return `<div class="callout ${(x.conflicts || []).length ? 'market' : 'info'} bf-last">${ui.icon(SRC[last.type][0])}
       <div class="grow stack tight" style="gap:4px">
         <span class="small"><span class="strong">Read ${esc(srcTitle(d, last.id))}:</span> ${plural(c.applied || 0, 'field')} filled, ${plural(c.pending || 0, 'suggestion')} to review${c.conflicts ? `, ${plural(c.conflicts, 'conflict')}` : ''}.</span>
-        <span class="small">${miss.length ? `Still missing: ${miss.map((m) => `<span class="chip bf-miss">${esc(m)}</span>`).join(' ')}` : 'Goal, audience, platform, budget and deadline are all covered.'}</span>
+        <span class="small">${miss.length ? `Still missing: ${miss.map((m) => `<span class="chip bf-miss">${esc(labelOf(m) === m ? m.replace(/_/g, ' ') : labelOf(m))}</span>`).join(' ')}` : 'Goal, audience, platform, budget, deadline and approver are all covered.'}</span>
+        ${(x.questions || []).length ? `<span class="small bf-qs">Must-ask: ${x.questions.map((q) => `<span class="bf-q ${q.status === 'answered' ? 'ok' : 'no'}">${ui.icon(q.status === 'answered' ? 'check' : 'minus')}${esc(q.key)}</span>`).join(' ')}</span>` : ''}
+        ${(x.low_confidence || []).length ? `<span class="small">Vague, confirm with the client: ${x.low_confidence.map((m) => `<span class="chip">${esc(labelOf(m))}</span>`).join(' ')}</span>` : ''}
+        ${x.insights && (x.insights.voice || x.insights.sparks) ? `<span class="small">${ui.icon('quote')} ${plural(x.insights.voice || 0, 'client quote')}, ${plural(x.insights.sparks || 0, 'concept spark')}, ${plural(x.insights.action_items || 0, 'action item')} saved for the Creative Agent.</span>` : ''}
+        ${x.stakeholders && x.stakeholders.without_email ? `<span class="small">${ui.icon('user-x')} ${plural(x.stakeholders.without_email, 'person', 'people')} named without an email: add it under People.</span>` : ''}
         ${(x.notes || []).length ? `<ul class="bf-notes small muted">${x.notes.map((n) => `<li dir="auto">${esc(n)}</li>`).join('')}</ul>` : ''}
       </div>
       <button class="btn btn-ghost btn-xs btn-icon" data-bf-hide="${esc(last.id)}" aria-label="Dismiss">${ui.icon('x')}</button></div>`;
@@ -355,16 +375,21 @@
   function sugRow(ctx, d, sg, editable) {
     const { ui } = ctx;
     const c = sg.conflict;
+    const said = [sg.speaker, sg.said_at].filter(Boolean).map(esc).join(' · ');
     const other = !c ? '' : c.with === 'brief'
       ? `${c.by === 'human' ? 'You set' : 'The brief has'} ${fmtVal(sg.field, c.value)}${c.source_id ? ` (from ${esc(srcTitle(d, c.source_id))})` : ''}`
-      : `${esc(srcTitle(d, c.source_id))} says ${fmtVal(sg.field, c.value)}`;
+      : c.with === 'source'
+        ? ((c.values || []).length
+          ? `the source says different things. ${c.values.map((v) => `<span class="bf-conf-v" dir="auto">${esc(v.value)}</span> <span class="tiny muted" dir="auto">“${esc(v.quote)}”${v.speaker ? ` (${esc(v.speaker)}${v.timestamp ? `, ${esc(v.timestamp)}` : ''})` : ''}</span>`).join(' · ')}${c.note ? `<br><span class="tiny muted" dir="auto">${esc(c.note)}</span>` : ''}`
+          : `${esc(c.note || 'Vague in the source: confirm with the client.')}`)
+        : `${esc(srcTitle(d, c.source_id))} says ${fmtVal(sg.field, c.value)}`;
     return `
       <li class="bf-sug ${c ? 'is-conflict' : ''}" data-sug="${esc(sg.id)}">
         <div class="bf-sug-main">
           <div class="row wrap tight"><span class="bf-sug-f">${esc(labelOf(sg.field))}</span><span class="bf-sug-v" dir="auto">${fmtVal(sg.field, sg.value)}</span></div>
-          ${sg.source_quote ? `<span class="bf-sug-q" dir="auto">“${esc(sg.source_quote)}”</span>` : ''}
+          ${sg.source_quote ? `<span class="bf-sug-q" dir="auto">“${esc(sg.source_quote)}”${said ? ` <span class="bf-said mono">${said}</span>` : ''}</span>` : ''}
           <span class="tiny muted bf-sug-meta">${pctPill(ui, sg.confidence)} from <button type="button" class="bf-link" data-bf-src="${esc(sg.source_id || '')}">${esc(srcTitle(d, sg.source_id))}</button>${sg.reason ? ` · <span dir="auto">${esc(sg.reason)}</span>` : ''}</span>
-          ${c ? `<span class="small bf-conf">${ui.icon('git-compare')}Conflict: ${other}</span>` : ''}
+          ${c ? `<span class="small bf-conf">${ui.icon(c.with === 'source' && !(c.values || []).length ? 'circle-help' : 'git-compare')}${c.with === 'source' && !(c.values || []).length ? 'Check: ' : 'Conflict: '}${other}</span>` : ''}
         </div>
         <div class="bf-sug-act">
           ${editable ? `<button class="btn btn-xs btn-primary" data-bf-sug="accept">${ui.icon('check')}Accept</button><button class="btn btn-xs btn-outline" data-bf-sug="correct">${ui.icon('pencil')}Correct</button>` : ''}
@@ -380,7 +405,7 @@
     const latest = latestOf(d);
     const editable = !!latest && latest.status === 'draft';
     let html = runs.has(pid)
-      ? `<div class="callout info bf-run" role="status"><span class="spin"></span><span class="small"><span class="strong">Reading the source…</span> This takes about a minute. You can keep working or leave this page; the suggestions will be here when it’s done.</span></div>`
+      ? `<div class="callout info bf-run" role="status"><span class="spin"></span><span class="small"><span class="strong">The Brief Agent is reading the source…</span> This takes a minute or two. You can keep working or leave this page; the suggestions will be here when it’s done.</span></div>`
       : lastHtml(ctx, d);
     const order = (x) => { const i = ALL_FIELDS.findIndex((f) => f.k === x.field); return i < 0 ? 100 + Object.keys(ROW_LABEL).indexOf(x.field) : i; };
     const pend = (d.suggestions || []).filter((x) => x.status === 'pending').sort((a, b) => (!!b.conflict - !!a.conflict) || order(a) - order(b));
@@ -395,6 +420,53 @@
         <ul class="bf-sugs">${pend.map((x) => sugRow(ctx, d, x, editable)).join('')}</ul>
       </section>`;
     return html;
+  }
+
+  /* What the Brief Agent heard that isn't a field: the client's words, concept sparks, references, action items.
+     Internal; the Creative Agent writes from it. */
+  const THEME = { tone: 'Tone', like: 'Likes', dislike: 'Dislikes', reference: 'Reference', emotion: 'Feeling' };
+  function insightsHtml(ctx, d) {
+    if (!canWrite(ctx)) return '';
+    const { ui } = ctx;
+    const ar = MPH.state.lang === 'ar';
+    const list = (d.insights || []).filter((x) => x.status === 'active');
+    if (!list.length) return '';
+    const by = (k) => list.filter((x) => x.kind === k);
+    const who = (x) => [x.data.speaker, x.data.timestamp].filter(Boolean).map(esc).join(' · ');
+    const del = (x) => `<button class="btn btn-ghost btn-xs btn-icon" data-bf-ins="${esc(x.id)}" aria-label="Dismiss" title="Dismiss: the Creative Agent won't use it">${ui.icon('x')}</button>`;
+    const block = (title, icon, rows) => rows.length ? `<div class="bf-ins-block"><p class="eyebrow">${ui.icon(icon)} ${esc(title)}</p><ul class="bf-ins">${rows.join('')}</ul></div>` : '';
+    return `
+      <section class="bf-group" id="bf-g-insights">
+        <header class="bf-group-head">${ui.icon('quote')}<h3 class="h3">What the client said</h3><span class="count">${list.length}</span><span class="spacer"></span>${ui.lockNote('Internal: for the Creative Agent')}</header>
+        ${block('Concept sparks', 'lightbulb', by('spark').map((x) => `<li><span class="grow"><span class="strong" dir="auto">${esc(ar ? x.data.idea_ar || x.data.idea_en : x.data.idea_en)}</span><br><span class="small muted" dir="auto">“${esc(x.data.quote)}”</span> <span class="bf-said mono">${who(x)}</span></span>${del(x)}</li>`))}
+        ${block('In their words', 'message-square-quote', by('voice').map((x) => `<li><span class="grow"><span class="chip">${esc(THEME[x.data.theme] || x.data.theme)}</span> <span dir="auto">“${esc(x.data.quote)}”</span> <span class="bf-said mono">${who(x)}</span></span>${del(x)}</li>`))}
+        ${block('References', 'film', by('reference').map((x) => `<li><span class="grow" dir="auto">${esc(x.data.description)} ${x.data.link_if_given && safeUrl(x.data.link_if_given) ? `<a class="bf-link" href="${esc(safeUrl(x.data.link_if_given))}" target="_blank" rel="noopener noreferrer">${ui.icon('external-link')}link</a>` : '<span class="tiny muted">no link given: ask for it</span>'} <span class="bf-said mono">${who(x)}</span></span>${del(x)}</li>`))}
+        ${block('Action items', 'list-todo', by('action_item').map((x) => `<li><span class="grow"><span class="strong" dir="auto">${esc(x.data.owner || '—')}</span>: <span dir="auto">${esc(ar ? x.data.task_ar || x.data.task_en : x.data.task_en)}</span>${x.data.due ? ` <span class="tiny muted">by ${esc(MPH.date(x.data.due))}</span>` : ''}</span>${del(x)}</li>`))}
+      </section>`;
+  }
+
+  /* "Mark brief reviewed": the producer's gate before the Creative Agent. A locked internal copy; separate from
+     sending the brief to the client, which can happen in parallel. */
+  function reviewedHtml(ctx, d) {
+    if (!canWrite(ctx)) return '';
+    const { ui } = ctx;
+    const latest = latestOf(d);
+    if (!latest) return '';
+    const pend = (d.suggestions || []).filter((x) => x.status === 'pending');
+    const conflicts = pend.filter((x) => x.conflict && !(x.conflict.with === 'source' && !(x.conflict.values || []).length)).length;
+    const rv = (d.reviews || [])[0];
+    const job = (d.creativeJobs || [])[0];
+    const changed = rv && JSON.stringify(rv.snapshot && rv.snapshot.fields || {}) !== JSON.stringify(latest.fields || {});
+    const why = conflicts ? `Resolve ${plural(conflicts, 'conflict')} first.` : pend.length ? `Accept or remove ${plural(pend.length, 'suggestion')} first.` : '';
+    const writing = job && ['queued', 'waiting', 'running'].includes(job.status);
+    const state = writing
+      ? `<span class="spin"></span><span class="small grow"><span class="strong">The Creative Agent is writing 3 ideas</span> from reviewed brief v${esc(rv ? rv.version : '')}. They’ll be on the Concepts screen, internal until the client approves the brief.</span>`
+      : rv
+        ? `${ui.icon(changed ? 'triangle-alert' : 'badge-check')}<span class="small grow"><span class="strong">Reviewed${rv.version > 1 ? ` (v${esc(rv.version)})` : ''}</span> on ${esc(MPH.date(rv.created_at, 'long'))}${changed ? '. The brief changed since then: mark it reviewed again to write ideas from the new version.' : '.'}${job && job.status === 'failed' ? ` <span class="strong">The ideas couldn’t be written:</span> ${esc(job.last_error || '')}` : ''}</span>`
+        : `${ui.icon('clipboard-check')}<span class="small grow"><span class="strong">When the brief is right, mark it reviewed.</span> That locks an internal copy and the Creative Agent writes three ideas from it.${why ? ` <span class="muted">${esc(why)}</span>` : ''}</span>`;
+    return `<div class="callout ${writing ? 'info' : changed ? 'market' : ''} bf-guard" id="bf-reviewed">${state}
+      ${rv ? `<a class="btn btn-sm btn-ghost" href="#p.${esc(ctx.production.id)}.concepts">${ui.icon('lightbulb')}Concepts</a>` : ''}
+      ${!rv || changed ? `<button class="btn btn-sm btn-primary" data-bf="mark-reviewed" ${why || writing ? `disabled title="${esc(why || 'Ideas are being written')}"` : ''}>${ui.icon('badge-check')}Mark brief reviewed</button>` : ''}</div>`;
   }
 
   /* People: stakeholders from meetings, emails and by hand; the default recipients of approvals (team only) */
@@ -558,11 +630,11 @@
       eyebrow: 'Step 0 · Client-visible',
       title: ctx.t('Brief'),
       sub: cur ? `${esc(cur.fields?.brand || cur.fields?.client_company || ctx.production.title)} · ${plural(d.versions.length, 'version')}` : 'What the client asked for, in a form every later step can read. The client approves it before anything else starts.',
-      actions: canWrite(ctx) ? `<button class="btn btn-sm btn-ghost" data-bf="kickoff">${ui.icon('calendar-plus')}Book kickoff meeting</button>${cur ? `<button class="btn btn-sm btn-outline" data-bf="add-source" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('sparkles')}Fill from a source</button>` : ''}` : '',
+      actions: canWrite(ctx) ? `<button class="btn btn-sm btn-ghost" data-bf="ai-runs">${ui.icon('activity')}AI runs</button><button class="btn btn-sm btn-ghost" data-bf="kickoff">${ui.icon('calendar-plus')}Book kickoff meeting</button>${cur ? `<button class="btn btn-sm btn-outline" data-bf="add-source" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('sparkles')}Fill from a source</button>` : ''}` : '',
     });
     if (!cur) return `<div class="page bf-page">${head}${kickoffHtml(ctx, d)}${reviewHtml(ctx, d)}${startHtml(ctx)}${peopleHtml(ctx, d)}${sourcesHtml(ctx, d)}</div>`;
     const editable = isEditable(ctx, d, cur);
-    return `<div class="page bf-page">${head}${barHtml(ctx, d, cur)}${approvalHtml(ctx, d, cur)}${kickoffHtml(ctx, d)}${reviewHtml(ctx, d)}${summaryHtml(ctx, d, cur)}${docHtml(ctx, d, cur, editable)}${sourcesHtml(ctx, d)}</div>`;
+    return `<div class="page bf-page">${head}${barHtml(ctx, d, cur)}${approvalHtml(ctx, d, cur)}${kickoffHtml(ctx, d)}${reviewHtml(ctx, d)}${reviewedHtml(ctx, d)}${summaryHtml(ctx, d, cur)}${docHtml(ctx, d, cur, editable)}${insightsHtml(ctx, d)}${sourcesHtml(ctx, d)}</div>`;
   }
 
   function clientPage(ctx, d) {
@@ -653,7 +725,7 @@
       if (ctx.isClient) q = q.neq('status', 'draft');
       const none = Promise.resolve({ data: [], error: null });
       // rows of every version, embedded by production id so it's one round trip; sources and suggestions are internal
-      const [vr, dl, ur, src, sug, ko, sh, ap] = await Promise.all([
+      const [vr, dl, ur, src, sug, ko, sh, ap, ins, rv, cj] = await Promise.all([
         q,
         ctx.sb.from('brief_deliverables').select('*').eq('production_id', pid),
         ctx.sb.from('brief_usage_rights').select('*').eq('production_id', pid),
@@ -662,6 +734,9 @@
         canWrite(ctx) ? ctx.sb.from('events').select('id, title, starts_at, ends_at, meet_link, invitees, notetaker_status, notetaker_error').eq('production_id', pid).eq('kind', 'kickoff').order('starts_at') : none,
         canWrite(ctx) ? ctx.sb.from('production_stakeholders').select('*').eq('production_id', pid) : none,
         canWrite(ctx) ? ctx.sb.from('approval_requests').select('*, approval_recipients(*), approval_responses(*)').eq('production_id', pid).eq('target_type', 'brief').order('created_at', { ascending: false }) : none,
+        canWrite(ctx) ? ctx.sb.from('brief_insights').select('*').eq('production_id', pid).order('created_at') : none,
+        canWrite(ctx) ? ctx.sb.from('brief_reviews').select('id, version, brief_version, snapshot, created_at').eq('production_id', pid).order('version', { ascending: false }).limit(1) : none,
+        canWrite(ctx) ? ctx.sb.from('agent_jobs').select('id, status, last_error, created_at').eq('production_id', pid).eq('agent', 'creative').order('created_at', { ascending: false }).limit(1) : none,
       ]);
       const versions = must(vr);
       const ids = new Set(versions.map((v) => v.id));
@@ -669,6 +744,7 @@
       return {
         versions, deliverables: must(dl).filter((r) => ids.has(r.brief_id)), usage: must(ur).filter((r) => ids.has(r.brief_id)),
         sources: must(src), suggestions: must(sug), kickoffs: must(ko), stakeholders: must(sh), approvals: must(ap),
+        insights: must(ins), reviews: must(rv), creativeJobs: must(cj),
       };
     },
 
@@ -682,6 +758,10 @@
       const editDoc = () => { const cur = currentOf(ctx, d); return isEditable(ctx, d, cur) ? cur : null; };
       const repaint = () => { saver.bind(editDoc()); root.innerHTML = renderPage(ctx, d); MPH.icons(); };
       saver.bind(editDoc());
+      const cj = (d.creativeJobs || [])[0];
+      if (cj && ['queued', 'waiting', 'running'].includes(cj.status)) {
+        setTimeout(() => { if (location.hash.startsWith(`#p.${pid}.brief`) && document.body.contains(root)) ctx.reload(); }, 8000);
+      }
 
       /* ---------- scalar fields: every human edit is recorded so later AI suggestions never overwrite it */
       const setField = (key, value) => {
@@ -924,7 +1004,7 @@
       };
 
       /* ---------- sources: paste or upload, then the AI reads them into suggestions */
-      const runExtract = (sourceId, title) => { if (startRead(ctx, pid, sourceId, title)) ctx.reload(); };
+      const runExtract = (sourceId, title, rerun = false) => { if (startRead(ctx, pid, sourceId, title, rerun)) ctx.reload(); };
 
       const openAddSource = () => {
         const el = ctx.modal(ctx.frame({
@@ -936,7 +1016,8 @@
             <div class="field"><label for="bf-src-files">Or attach files <span class="faint">(PDF, Word, text or images, up to 20 MB each)</span></label>
               <input id="bf-src-files" type="file" class="input" multiple accept=".pdf,.docx,.txt,image/*"></div>
             <div class="field"><label for="bf-src-type">What is it?</label><select id="bf-src-type" class="select">
-              <option value="manual">The client’s email, notes or brief</option><option value="meeting">A meeting transcript (for example from Fireflies)</option></select></div>
+              <option value="manual">The client’s email, notes or brief</option><option value="meeting">A meeting transcript (for example from Fireflies)</option>
+              <option value="questionnaire">The client’s questionnaire answers</option><option value="note">My own notes (producer)</option></select></div>
             <div class="field"><label for="bf-src-title">Name this source <span class="faint">(optional)</span></label>
               <input id="bf-src-title" class="input" dir="auto" maxlength="200" placeholder="For example: Email from Yousef, 20 Oct"></div>
             <p class="tiny muted">${ui.icon('lock')} Sources stay internal: owners and producers can read them, clients never can. Fields a person has edited are never overwritten; new values come in as suggestions.</p>
@@ -1006,7 +1087,7 @@
         el.addEventListener('click', (e) => {
           if (!e.target.closest('[data-bf-rerun]')) return;
           ctx.closeOverlay();
-          runExtract(id, x.title || SRC[x.type][1]);
+          runExtract(id, x.title || SRC[x.type][1], true);
         });
       };
 
@@ -1237,8 +1318,17 @@
         }
         const src = e.target.closest('[data-bf-src]');
         if (src && src.dataset.bfSrc) { e.preventDefault(); return openSource(src.dataset.bfSrc); }
+        const ins = e.target.closest('[data-bf-ins]');
+        if (ins) {
+          const id = ins.dataset.bfIns;
+          return ctx.sb.from('brief_insights').update({ status: 'dismissed' }).eq('id', id).then(({ error }) => {
+            if (error) return ctx.toastError(new Error(error.message));
+            const x = (d.insights || []).find((i) => i.id === id); if (x) x.status = 'dismissed';
+            repaint();
+          });
+        }
         const rr = e.target.closest('[data-bf-rerun]');
-        if (rr) return runExtract(rr.dataset.bfRerun, srcTitle(d, rr.dataset.bfRerun));
+        if (rr) return runExtract(rr.dataset.bfRerun, srcTitle(d, rr.dataset.bfRerun), true);
         const hd = e.target.closest('[data-bf-hide]');
         if (hd) { S.hide[pid] = hd.dataset.bfHide; return repaint(); }
         const ver = e.target.closest('[data-bf-ver]');
@@ -1278,6 +1368,14 @@
             if (error) return ctx.toastError(new Error(error.message));
             d.stakeholders.forEach((x) => { x.reviewed = true; }); repaint();
           });
+        }
+        else if (act === 'ai-runs') MPH.agentRuns && MPH.agentRuns.open(ctx);
+        else if (act === 'mark-reviewed') {
+          b.disabled = true;
+          ctx.api.fn('agents', 'mark_reviewed', { production_id: pid }).then((r) => {
+            ctx.toast(`Brief marked reviewed (v${r.version}). The Creative Agent is writing 3 ideas.`, 'badge-check');
+            ctx.reload();
+          }, (err) => { b.disabled = false; ctx.toastError(err); });
         }
         else if (act === 'accept-high') acceptHigh(b);
       });

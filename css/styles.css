@@ -63,7 +63,7 @@ html[data-style="customerio"] {
 }
 html[data-style="customerio"] .page { padding: 32px; gap: 24px; }
 html[data-style="customerio"] .panel-body, html[data-style="customerio"] .card { padding: 24px; }
-html[data-style="customerio"] .prod-head { background: var(--teal-deep); border-color: transparent; color: var(--paper);
+html[data-style="customerio"] .chrome .pnav, html[data-style="customerio"] .topbar.in-prod { background: var(--teal-deep); border-color: transparent; color: var(--paper);
   --text: #F6EBD9; --text-2: #E6DCCB; --muted: #BDB4A5; --faint: #B2A999; --accent: #7CC2BA; --line: rgba(246, 235, 217, .14); --line-2: rgba(246, 235, 217, .26);
   --raised: #0F5C57; --raised-2: #16706A; --fill-2: rgba(246, 235, 217, .08); --primary: #F6EBD9; --primary-2: #EADBC2; --on-primary: #0A3F3C; }
 html[data-style="customerio"] .btn:focus-visible, html[data-style="customerio"] .input:focus, html[data-style="customerio"] .select:focus { outline: none; box-shadow: var(--focus); }

@@ -59,7 +59,7 @@
     'Pre-production': 'ما قبل الإنتاج', 'Production': 'الإنتاج', 'Post-production': 'ما بعد الإنتاج',
     'Dailies & Media': 'اللقطات اليومية والوسائط', 'Edit & Versions': 'المونتاج والنسخ', 'Finishing': 'التشطيب',
     'Deliverables': 'التسليمات', 'Wrap Report': 'تقرير الختام', 'Shoot Day': 'يوم التصوير',
-    'Treatment & Lookbook': 'المعالجة ولوحة المزاج', 'Brief': 'الموجز', 'Documents': 'المستندات',
+    'Treatment & Lookbook': 'المعالجة ولوحة المزاج', 'Brief': 'الموجز', 'Concepts': 'الأفكار', 'Choose a phase': 'اختر مرحلة', 'Time': 'الوقت', 'Visual': 'الصورة', 'Audio': 'الصوت', 'AV': 'صوت وصورة', 'Screenplay': 'السيناريو', 'Shots': 'اللقطات', 'Visual blueprint': 'المخطط البصري', 'Checks': 'الفحوص', 'Complete': 'مكتملة', 'In progress': 'جارية', 'Up next': 'التالية', 'Documents': 'المستندات',
     'Search': 'بحث', 'Preview client view': 'معاينة عرض العميل', 'Back to producer view': 'العودة لعرض المنتج',
     'New production': 'إنتاج جديد', 'Sign out': 'تسجيل الخروج', 'Soon': 'قريبًا', 'Coming soon': 'قريبًا',
     'Story': 'القصة', 'Breakdown': 'التفريغ', 'Visualize': 'التصوّر', 'Schedule': 'الجدولة', 'Budget': 'الميزانية',
