@@ -93,7 +93,8 @@
       sub: set ? `Set v${esc(set.version)} · ${plural(d.concepts.filter((c) => c.set_id === set.id && c.status === 'active').length, 'idea')}` : 'Three creative routes, written from the reviewed brief and the client’s own words.',
       actions: `${set ? `<button class="btn btn-sm btn-ghost" data-cc="add" ${set.status === 'draft' ? '' : 'disabled title="Only a draft set can change"'}>${ui.icon('plus')}Add an idea</button>` : ''}
         <button class="btn btn-sm ${set ? 'btn-outline' : 'btn-primary'}" data-cc="generate" ${why ? `disabled title="${esc(why)}"` : ''}>${ui.icon('sparkles')}${set ? 'Regenerate all' : 'Generate ideas'}</button>
-        ${set && set.status === 'draft' ? `<button class="btn btn-sm btn-primary" data-cc="send" ${approved ? '' : 'disabled title="The client approves the brief first; then the ideas can be sent."'}>${ui.icon('send')}Send to the client</button>` : ''}`,
+        ${set && set.status === 'draft' ? `<button class="btn btn-sm btn-primary" data-cc="send" ${approved ? '' : 'disabled title="The client approves the brief first; then the ideas can be sent."'}>${ui.icon('send')}Send to the client</button>` : ''}
+        ${set && ['draft', 'sent'].includes(set.status) ? `<button class="btn btn-sm btn-outline" data-cc="behalf" ${approved ? '' : 'disabled title="The client approves the brief first; then they can choose an idea."'}>${ui.icon('badge-check')}Record the client’s choice</button>` : ''}`,
     });
     let top = '';
     if (busy) top += `<div class="callout info" role="status"><span class="spin"></span><span class="small"><span class="strong">The Creative Agent is writing${job.input && job.input.mode === 'one' ? ' one idea' : ' 3 ideas'}…</span> Two or three minutes. You can leave this page.${job.status === 'waiting' ? ` Waiting to retry: ${esc(job.last_error || '')}` : ''}</span></div>`;
@@ -106,7 +107,7 @@
     }
     if (set && set.status === 'selected') {
       const pick = d.concepts.find((c) => c.id === set.selected_concept_id);
-      top += `<div class="callout ok">${ui.icon('badge-check')}<span class="small grow"><span class="strong">${esc(set.selected_by_name || 'The client')} chose “${esc(pick ? pick.data.title_en : '')}”</span> on ${esc(MPH.date(set.selected_at, 'long'))}${set.client_comment ? `: <span dir="auto">“${esc(set.client_comment)}”</span>` : '.'} Script is unlocked.</span><a class="btn btn-sm btn-primary" href="#p.${esc(pid)}.script">${ui.icon('file-text')}Open Script</a></div>`;
+      top += `<div class="callout ok">${ui.icon('badge-check')}<span class="small grow"><span class="strong">${esc(set.selected_by_name || 'The client')} chose “${esc(pick ? pick.data.title_en : '')}”</span>${set.chosen_via === 'on_behalf' ? ' (recorded on their behalf)' : ''} on ${esc(MPH.date(set.selected_at, 'long'))}${set.client_comment ? `: <span dir="auto">“${esc(set.client_comment)}”</span>` : '.'} Script is unlocked.</span><a class="btn btn-sm btn-primary" href="#p.${esc(pid)}.script">${ui.icon('file-text')}Open Script</a></div>`;
     }
     if (!set) return `<div class="page cc-page">${head}${top}${d.review && !busy ? ui.empty('lightbulb', 'No ideas yet', 'Generate three ideas from the reviewed brief.', `<button class="btn btn-primary" data-cc="generate">${ui.icon('sparkles')}Generate ideas</button>`) : ''}</div>`;
     const ideas = d.concepts.filter((c) => c.set_id === set.id && c.status === 'active').sort((a, b) => a.position - b.position);
@@ -245,6 +246,8 @@
           (instruction) => ctx.api.fn('agents', 'generate_ideas', { production_id: pid, instruction }));
         if (act === 'add') return editModal(null, set);
         if (act === 'send') return sendModal(set);
+        if (act === 'behalf') return MPH.approve.onBehalf(ctx, { type: 'concepts', id: set.id, title: `Concept set v${set.version}`,
+          ideas: d.concepts.filter((c) => c.set_id === set.id && c.status === 'active').map((c) => ({ id: c.id, title: `${c.tier ? c.tier[0].toUpperCase() + c.tier.slice(1) + ': ' : ''}${(c.data && c.data.title_en) || ''}${c.data && c.data.title_ar ? ' · ' + c.data.title_ar : ''}` })) });
         const c = ideaOf(b);
         if (act === 'edit') return editModal(c, set);
         if (act === 'regen') return instructionModal(`Regenerate the ${(TIER[c.tier] || TIER.custom)[0].toLowerCase()} idea`, 'A new version of this idea; the current one is kept under “earlier versions”.',

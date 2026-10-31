@@ -1,5 +1,8 @@
-/* Script: the production's script versions (pasted text, PDF or Word), a scene-by-scene reading view once the
-   AI breakdown has run, and the way into the breakdown. Clients get a read-only view of the latest version.
+/* Script: the production's script versions (pasted text, PDF or Word, or written by the Script Agent from the idea the
+   client chose), a scene-by-scene reading view once the AI breakdown has run, and the way into the breakdown.
+   Each version is approved by the client (by email, or recorded on their behalf by an owner or producer through
+   MPH.approve); an approved version is locked and the Treatment Agent writes the treatment deck from it.
+   Clients get a read-only view of the latest version shared with them.
    Also defines MPH.scriptKit (text helpers shared with the breakdown view, which loads after this file). */
 (function () {
   const { esc } = MPH;
@@ -463,6 +466,42 @@
   }
 
   /* ------------------------------------------------------------ view */
+  /* the Script Agent (team): its latest job, and the idea the client chose */
+  const agentBusy = (d) => !!(d.scriptJob && ['queued', 'waiting', 'running'].includes(d.scriptJob.status));
+  async function agentState(ctx) {
+    if (ctx.isClient || !ctx.canSeeInternal) return {};
+    const pid = ctx.production.id;
+    const [job, set] = await Promise.all([
+      ctx.sb.from('agent_jobs').select('id, status, last_error, created_at').eq('production_id', pid).eq('agent', 'script').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      ctx.sb.from('concept_sets').select('selected_concept_id').eq('production_id', pid).eq('status', 'selected').order('version', { ascending: false }).limit(1).maybeSingle(),
+    ]);
+    const cid = set.data && set.data.selected_concept_id;
+    const c = cid ? (await ctx.sb.from('concepts').select('data').eq('id', cid).maybeSingle()).data : null;
+    return { scriptJob: job.data, chosen: c ? (c.data || {}).title_en : null, selected: !!cid };
+  }
+  function agentNote(ctx, d) {
+    const { ui } = ctx;
+    if (!canWrite(ctx) || !d.selected) return '';
+    if (agentBusy(d)) return `<div class="callout info">${ui.spinner()}<span class="small grow"><span class="strong">The Script Agent is writing the script</span> from “${esc(d.chosen || 'the chosen idea')}”. It arrives here as a new version in a few minutes.</span></div>`;
+    if (d.scriptJob && d.scriptJob.status === 'failed') return `<div class="callout danger">${ui.icon('triangle-alert')}<span class="small grow">The Script Agent failed: ${esc(d.scriptJob.last_error || '')}</span><button class="btn btn-sm btn-outline" data-ap-act="write">${ui.icon('rotate-ccw')}Try again</button></div>`;
+    if (!d.list.length) return `<div class="callout">${ui.icon('sparkles')}<span class="small grow">The client chose “${esc(d.chosen || '')}”. The Script Agent can write the script from it, or add your own below.</span><button class="btn btn-sm btn-primary" data-ap-act="write">${ui.icon('sparkles')}Write with the Script Agent</button></div>`;
+    return '';
+  }
+  /* the client's decision on the version shown: status, who decided, and (team, latest version) approve on behalf or email */
+  const DECISION = { draft: ['Not sent to the client', '', 'pencil'], sent: ['Waiting for the client', 'warn', 'send'], approved: ['Approved by the client', 'ok', 'badge-check'], changes_requested: ['Changes requested', 'danger', 'message-square-warning'] };
+  function approvalBar(ctx, d) {
+    const { ui } = ctx;
+    const s = d.script;
+    const st = DECISION[s.status] || DECISION.draft;
+    const open = ['draft', 'sent'].includes(s.status) && s.id === d.latest.id && canWrite(ctx) && ctx.canSeeInternal;
+    const who = MPH.approve.decidedLine(s);
+    return `<div class="sc-approval row wrap" style="gap:10px;align-items:center;margin:2px 0 10px">
+      ${ui.pill(st[0], st[1], st[2])}${who ? `<span class="small muted">${who}</span>` : ''}${s.client_note ? `<span class="small" dir="auto">“${esc(s.client_note)}”</span>` : ''}
+      <span class="spacer"></span>
+      ${open ? `<button class="btn btn-sm btn-ghost" data-ap-act="email">${ui.icon('mail')}Email for approval</button><button class="btn btn-sm btn-primary" data-ap-act="behalf">${ui.icon('badge-check')}Approve on behalf of the client</button>` : ''}
+    </div>`;
+  }
+
   const SCRIPT_OPEN = new Set(); // producers who chose to start before the client's pick
   MPH.view('script', {
     async load(ctx) {
@@ -484,26 +523,23 @@
       // with creative ideas in play, Script waits for the client's pick (productions without concepts are unaffected)
       const sets = setsRes.error ? [] : setsRes.data;
       const gate = sets.length && !sets.some((x) => x.status === 'selected') ? 'waiting' : null;
-      if (!list.length) return MPH.scriptAI.load(ctx, { list, script: null, scenes: [], gate });
+      const extra = await agentState(ctx);
+      if (!list.length) return { list, script: null, scenes: [], gate, ...extra };
       const latest = list[list.length - 1];
       let script = api.must(pickRes)[0];
       if (!script) script = api.must(await pickQuery(null))[0]; // the remembered version was deleted
       const scenes = (script.scenes || []).sort((a, b) => (a.sort || 0) - (b.sort || 0));
       delete script.scenes;
-      return MPH.scriptAI.load(ctx, { list, latest, script, scenes, hasFile: !ctx.isClient && !!script.file_path, gate });
+      return { list, latest, script, scenes, hasFile: !ctx.isClient && !!script.file_path, gate, ...extra };
     },
 
     render(ctx, d) {
       const { ui, production: p } = ctx;
-      const h = { setVersion: (v) => { uiState(ctx).ver = v; } };
-      if (d.script && d.script.source === 'ai') return MPH.scriptAI.render(ctx, d, h);
-      // the client chose an idea and there's no script yet: the Script Agent writes it (or is writing it)
-      if (!d.script && d.selected && !ctx.isClient) return MPH.scriptAI.generatePanel(ctx, d);
       if (!d.script && d.gate && !SCRIPT_OPEN.has(p.id)) {
         return `<div class="page">${ui.empty('lock', 'Script unlocks when the client picks an idea', 'Send the concept set from the Concepts screen; the client’s choice opens the script.',
           `<a class="btn btn-primary" href="#p.${esc(p.id)}.concepts">${ui.icon('lightbulb')}Open Concepts</a>${canWrite(ctx) ? ` <button class="btn btn-ghost" data-sc-open>Start the script anyway</button>` : ''}`)}</div>`;
       }
-      if (!d.script) return emptyPage(ctx);
+      if (!d.script) return `${agentNote(ctx, d)}${emptyPage(ctx)}`;
       const st = uiState(ctx);
       const edit = canWrite(ctx);
       const s = d.script;
@@ -553,14 +589,30 @@
             sub,
             actions: `${cta}${edit ? `<button class="btn btn-outline" data-a="new">${ui.icon('plus')}New version</button>` : ''}`,
           })}
+          ${agentNote(ctx, d)}
           ${toolbar}
+          ${approvalBar(ctx, d)}
           ${older}
           ${body}
         </div>`;
     },
 
     mount(root, ctx, d) {
-      if ((d.script && d.script.source === 'ai') || (!d.script && d.selected && !ctx.isClient)) return MPH.scriptAI.mount(root, ctx, d, { setVersion: (v) => { uiState(ctx).ver = v; } });
+      // the Script Agent is writing: look again in a few seconds
+      if (agentBusy(d)) setTimeout(() => { if (location.hash.startsWith(`#p.${ctx.production.id}.script`) && document.body.contains(root)) ctx.reload(); }, 7000);
+      root.addEventListener('click', async (e) => {
+        const b = e.target.closest('[data-ap-act]');
+        if (!b || b.disabled) return;
+        const act = b.dataset.apAct, s0 = d.script;
+        if (act === 'write') {
+          b.disabled = true;
+          try { await ctx.api.fn('agents', 'generate_script', { production_id: ctx.production.id }); ctx.toast('The Script Agent is writing the script', 'sparkles'); ctx.reload(); }
+          catch (ex) { b.disabled = false; ctx.toastError(ex); }
+          return;
+        }
+        if (act === 'behalf') return MPH.approve.onBehalf(ctx, { type: 'script', id: s0.id, title: `Script v${s0.version}` });
+        if (act === 'email') return MPH.approve.email(ctx, { type: 'script', id: s0.id, title: `Script v${s0.version}` });
+      });
       const open = root.querySelector('[data-sc-open]');
       if (open) open.addEventListener('click', () => { SCRIPT_OPEN.add(ctx.production.id); MPH.render(); });
       if (!d.script) {

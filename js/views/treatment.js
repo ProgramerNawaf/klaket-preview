@@ -294,7 +294,7 @@
     const detail = {
       draft: 'Only your team can see drafts.',
       sent: `Sent to the client${cur.sent_at ? ' ' + esc(MPH.date(cur.sent_at, 'long')) : ''}. Waiting for their decision.`,
-      approved: `Approved by the client${cur.decided_at ? ' ' + esc(MPH.date(cur.decided_at, 'long')) : ''}.`,
+      approved: `Approved by ${cur.decided_by_name ? esc(cur.decided_by_name) : 'the client'}${cur.approved_via === 'on_behalf' ? ' (recorded on their behalf)' : ''}${cur.decided_at ? ' ' + esc(MPH.date(cur.decided_at, 'long')) : ''}.`,
       changes_requested: `The client asked for changes${cur.decided_at ? ' ' + esc(MPH.date(cur.decided_at, 'long')) : ''}.`,
     }[cur.status] || '';
     const vers = d.versions.length > 1
@@ -306,6 +306,7 @@
     else if (editor) {
       actions = `<button class="btn btn-sm btn-ghost" data-tr="import" title="Import a treatment deck as a new version">${ui.icon('file-up')}Import</button>`;
       if (cur.status === 'draft') actions += `<button class="btn btn-sm btn-ghost" data-tr="new-version" title="Copy v${esc(cur.version)} into a new draft">${ui.icon('copy-plus')}New version</button><button class="btn btn-sm btn-primary" data-tr="send">${ui.icon('send')}Send to client</button>`;
+      if (['draft', 'sent'].includes(cur.status) && ctx.canSeeInternal) actions += `<button class="btn btn-sm btn-outline" data-tr="behalf">${ui.icon('badge-check')}Approve on behalf of the client</button>`;
       else if (cur.status === 'changes_requested') actions += `<button class="btn btn-sm btn-primary" data-tr="new-version">${ui.icon('file-pen-line')}Start v${esc(cur.version + 1)} from these notes</button>`;
       else actions += `<button class="btn btn-sm btn-outline" data-tr="new-version">${ui.icon('copy-plus')}New version</button>`;
     }
@@ -678,7 +679,7 @@
         const [f, j, sc] = await Promise.all([
           ai.length ? ctx.sb.from('treatment_frames').select('id, treatment_id, key, status, error, prompt').in('treatment_id', ai) : { data: [] },
           ctx.sb.from('agent_jobs').select('id, status, last_error, input, created_at').eq('production_id', pid).eq('agent', 'treatment').in('status', ['queued', 'running', 'waiting']).order('created_at', { ascending: false }).limit(1),
-          ctx.sb.from('scripts').select('id, version').eq('production_id', pid).eq('source', 'ai').eq('status', 'approved').order('version', { ascending: false }).limit(1),
+          ctx.sb.from('scripts').select('id, version').eq('production_id', pid).eq('status', 'approved').order('version', { ascending: false }).limit(1),
         ]);
         frames = f.data || []; job = (j.data || [])[0] || null; script = (sc.data || [])[0] || null;
       }
@@ -1002,6 +1003,7 @@
           return createVersion(b, { title: latest.title, sections: latest.sections.map((s) => ({ id: s.id, title: s.title, body: s.body })), ...deck }, (r) => `v${r.version} started from v${latest.version}`, latest);
         }
         if (act === 'send') { const cur = editDoc(); if (cur) openSend(cur); return; }
+        if (act === 'behalf') { await saver.flush(); const cur = latestOf(d); return MPH.approve.onBehalf(ctx, { type: 'treatment', id: cur.id, title: `Treatment v${cur.version}` }); }
         if (act === 'sec-add') {
           const doc = editDoc(); if (!doc) return;
           const s = { id: newId(), title: '', body: '' };

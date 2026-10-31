@@ -545,7 +545,7 @@
     const latest = latestOf(d);
     const editor = canWrite(ctx);
     const isLatest = cur === latest;
-    const via = cur.approved_via === 'email' ? ' by email' : '';
+    const via = cur.approved_via === 'email' ? ' by email' : cur.approved_via === 'on_behalf' ? ' (recorded on their behalf)' : '';
     const detail = {
       draft: 'Only your team can see drafts.',
       sent: `Sent to the client${cur.sent_at ? ' ' + esc(MPH.date(cur.sent_at, 'long')) : ''}. Waiting for their decision.`,
@@ -563,6 +563,8 @@
       else if (cur.status === 'changes_requested') actions = `<button class="btn btn-sm btn-primary" data-bf="new-version">${ui.icon('file-pen-line')}Start v${esc(cur.version + 1)} from these notes</button>`;
       else actions = `<button class="btn btn-sm btn-outline" data-bf="new-version">${ui.icon('copy-plus')}New version</button>`;
       if (cur.status === 'sent') actions += `<button class="btn btn-sm btn-primary" data-bf="email-approval">${ui.icon('mail-check')}Email for approval</button>`;
+      // the client agreed outside the app: an owner or producer records it
+      if (['draft', 'sent'].includes(cur.status) && ctx.canSeeInternal) actions += `<button class="btn btn-sm btn-outline" data-bf="behalf">${ui.icon('badge-check')}Approve on behalf of the client</button>`;
     }
     return `
       <section class="tr-bar k-${esc(cur.status)}">
@@ -1444,6 +1446,7 @@
         else if (act === 'row-del') delRow(b.closest('[data-bf-row]'));
         else if (act === 'add-source') openAddSource();
         else if (act === 'voice') openVoiceMemo();
+        else if (act === 'behalf' && cur) MPH.approve.onBehalf(ctx, { type: 'brief', id: cur.id, title: `Brief v${cur.version}` });
         else if (act === 'kickoff') openKickoff();
         else if (act === 'notetaker-add') {
           b.disabled = true;
