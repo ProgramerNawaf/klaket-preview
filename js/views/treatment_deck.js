@@ -11,6 +11,8 @@
   };
   const safeHex = (c) => (/^#[0-9a-f]{6}$/i.test(String(c || '')) ? c : '#808080');
   const pick = (o, k, lang) => (o ? o[`${k}_${lang}`] || o[`${k}_${lang === 'ar' ? 'en' : 'ar'}`] || '' : '');
+  // the agent sometimes writes the "Scene 1 -" prefix into the title too; the page adds its own
+  const sceneTitle = (s, lang) => pick(s, 'title', lang).replace(/^\s*(مشهد|scene)\s*[\d٠-٩]+\s*[-–—:·]\s*/i, '');
   const num = (n, lang) => (lang === 'ar' ? String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]) : String(n));
 
   /* one frame: the picture, or its state (painting, failed, waiting) */
@@ -49,7 +51,7 @@
     out.push(slide('dk-full', `${frame(si.frame || 'scenes', o)}<div class="dk-shade side"></div><div class="dk-side-t"><h2>${esc(t.scenes)}</h2><p>${esc(pick(si, 'body', o.lang))}</p></div>`, o));
     for (const s of deck.scenes || []) {
       const vo = pick(s, 'vo', o.lang);
-      out.push(slide('dk-light dk-scene', `${frame(s.frame, o)}<div class="dk-scene-t"><h2>${esc(t.scene)} ${num(s.number, o.lang)} - ${esc(pick(s, 'title', o.lang))}</h2>
+      out.push(slide('dk-light dk-scene', `${frame(s.frame, o)}<div class="dk-scene-t"><h2>${esc(t.scene)} ${num(s.number, o.lang)} - ${esc(sceneTitle(s, o.lang))}</h2>
         <p>${esc(pick(s, 'body', o.lang))}</p>${vo ? `<p class="dk-vo"><b>${esc(t.vo)}</b> ${esc(vo)}</p>` : ''}</div>`, o));
       for (const x of s.shots || []) {
         const line = pick(x, 'line', o.lang);
