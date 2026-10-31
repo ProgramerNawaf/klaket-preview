@@ -37,9 +37,4 @@
 .cc-actions { display: flex; gap: 6px; align-items: center; border-top: 1px solid var(--line); padding-top: 10px; margin-top: auto; }
 .cc-older summary { cursor: pointer; }
 .cc-assume ul { margin: 6px 0 0; padding-inline-start: 18px; }
-.cc-runs td { vertical-align: top; }
 @media (max-width: 760px) { .cc-grid { grid-template-columns: minmax(0, 1fr); } .cc-score-row { grid-template-columns: 70px auto minmax(0, 1fr); } }
-/* the AI runs table needs room for its numbers */
-.drawer:has(.cc-runs) { width: min(980px, 100%); }
-.cc-runs th, .cc-runs td { white-space: nowrap; }
-.cc-runs td:nth-child(3) { white-space: normal; min-width: 140px; }

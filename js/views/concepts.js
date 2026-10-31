@@ -2,7 +2,7 @@
    client's own words, each with a scorecard (brief fit, budget, schedule, risk, mandatories).
    Team (owners and producers): versions of the set, edit / regenerate / add / delete ideas (earlier versions are
    kept), "Brief changed: review" flags when the brief moves on, send the set once the client has approved the
-   brief, and the AI runs behind it (with Re-run).
+   brief.
    Client: only a sent set, without scorecards; they pick one idea with a comment, and Script unlocks. */
 (function () {
   const { esc } = MPH;
@@ -91,8 +91,7 @@
       eyebrow: 'Step 1 · Internal until the brief is approved',
       title: ctx.t('Concepts'),
       sub: set ? `Set v${esc(set.version)} · ${plural(d.concepts.filter((c) => c.set_id === set.id && c.status === 'active').length, 'idea')}` : 'Three creative routes, written from the reviewed brief and the client’s own words.',
-      actions: `<button class="btn btn-sm btn-ghost" data-cc="runs">${ui.icon('activity')}AI runs</button>
-        ${set ? `<button class="btn btn-sm btn-ghost" data-cc="add" ${set.status === 'draft' ? '' : 'disabled title="Only a draft set can change"'}>${ui.icon('plus')}Add an idea</button>` : ''}
+      actions: `${set ? `<button class="btn btn-sm btn-ghost" data-cc="add" ${set.status === 'draft' ? '' : 'disabled title="Only a draft set can change"'}>${ui.icon('plus')}Add an idea</button>` : ''}
         <button class="btn btn-sm ${set ? 'btn-outline' : 'btn-primary'}" data-cc="generate" ${why ? `disabled title="${esc(why)}"` : ''}>${ui.icon('sparkles')}${set ? 'Regenerate all' : 'Generate ideas'}</button>
         ${set && set.status === 'draft' ? `<button class="btn btn-sm btn-primary" data-cc="send" ${approved ? '' : 'disabled title="The client approves the brief first; then the ideas can be sent."'}>${ui.icon('send')}Send to the client</button>` : ''}`,
     });
@@ -132,39 +131,6 @@
       ${set.status === 'selected' ? `<div class="callout ok">${ui.icon('badge-check')}<span class="small">You chose “${esc((ideas.find((c) => c.id === set.selected_concept_id) || { data: {} }).data.title_en || '')}”. The team starts on the script.</span></div>` : ''}
       <div class="cc-grid">${ideas.map((c) => ideaHtml(ctx, d, c, set, { team: false, canChoose })).join('')}</div></div>`;
   }
-
-  /* ------------------------------------------------------------ AI runs (owners and producers) */
-  async function openRuns(ctx) {
-    const { ui } = ctx;
-    const pid = ctx.production.id;
-    const { data: runs, error } = await ctx.sb.from('agent_runs').select('id, agent, status, stop_reason, prompt_version, model, effort, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost_usd, latency_ms, request_id, error, served_by, attempts, created_at').eq('production_id', pid).order('created_at', { ascending: false }).limit(50);
-    if (error) return ctx.toastError(new Error(error.message));
-    const total = (runs || []).reduce((t, r) => t + Number(r.cost_usd || 0), 0);
-    const st = { succeeded: 'ok', failed: 'danger', refused: 'danger', running: 'info', queued: '' };
-    const el = ctx.drawer(ctx.frame({
-      title: 'AI runs',
-      sub: `${plural((runs || []).length, 'run')} on this production · $${total.toFixed(2)} in total · internal`,
-      body: (runs || []).length ? `<div class="bf-table-wrap"><table class="table cc-runs"><thead><tr><th>When</th><th>Agent</th><th>Status</th><th class="r">Tokens in / out</th><th class="r">Cache read</th><th class="r">Cost</th><th class="r">Time</th><th></th></tr></thead><tbody>
-        ${runs.map((r) => `<tr><td class="small">${esc(MPH.date(r.created_at, 'time'))}<br><span class="tiny muted">${esc(MPH.date(r.created_at))}</span></td>
-          <td class="small"><span class="strong">${({ brief: 'Brief Agent', creative: 'Creative Agent', script: 'Script Agent', treatment: 'Treatment Agent' })[r.agent] || esc(r.agent)}</span><br><span class="tiny muted mono">${esc(r.prompt_version)} · ${esc(r.effort)}${r.served_by ? ` · served by ${esc(r.served_by)}` : ''}</span></td>
-          <td>${ui.pill(r.status, st[r.status] || '')}${r.stop_reason ? `<br><span class="tiny muted mono">${esc(r.stop_reason)}</span>` : ''}${r.error ? `<br><span class="tiny" dir="auto">${esc(r.error.slice(0, 160))}</span>` : ''}</td>
-          <td class="r mono small">${(r.input_tokens || 0).toLocaleString()} / ${(r.output_tokens || 0).toLocaleString()}</td>
-          <td class="r mono small">${(r.cache_read_tokens || 0).toLocaleString()}</td>
-          <td class="r mono small">$${Number(r.cost_usd || 0).toFixed(3)}</td>
-          <td class="r mono small">${r.latency_ms ? `${Math.round(r.latency_ms / 1000)}s` : '—'}</td>
-          <td><button class="btn btn-xs btn-outline" data-rerun="${esc(r.id)}" ${r.status === 'running' ? 'disabled' : ''} title="A new run on the same input; reviewed data is never overwritten">${ui.icon('rotate-ccw')}Re-run</button><br><span class="tiny faint mono" title="Anthropic request id">${esc((r.request_id || '').slice(0, 14))}</span></td></tr>`).join('')}
-        </tbody></table></div>` : ui.empty('activity', 'No AI runs yet', 'Runs appear here when the Brief Agent reads a source, the Creative Agent writes ideas or the Script Agent writes a script.'),
-      foot: '<button class="btn btn-ghost" data-close>Close</button>',
-    }), { wide: true });
-    el.addEventListener('click', async (e) => {
-      const b = e.target.closest('[data-rerun]');
-      if (!b) return;
-      b.disabled = true;
-      try { await ctx.api.fn('agents', 'rerun', { run_id: b.dataset.rerun }); ctx.toast('Queued a new run. Results arrive as suggestions; nothing reviewed is overwritten.', 'rotate-ccw'); }
-      catch (err) { b.disabled = false; ctx.toastError(err); }
-    });
-  }
-  MPH.agentRuns = { open: openRuns };
 
   MPH.view('concepts', {
     async load(ctx) {
@@ -275,7 +241,6 @@
         if (!b) return;
         const act = b.dataset.cc;
         const set = d.sets.find((x) => x.id === S.set[pid]) || d.sets.find((x) => x.status !== 'archived') || d.sets[0];
-        if (act === 'runs') return openRuns(ctx);
         if (act === 'generate') return instructionModal(set ? 'Regenerate all three ideas' : 'Generate ideas', set ? 'A new set (v' + (set.version + 1) + ') from the reviewed brief. This set is kept.' : 'Three ideas from the reviewed brief and the client’s own words.',
           (instruction) => ctx.api.fn('agents', 'generate_ideas', { production_id: pid, instruction }));
         if (act === 'add') return editModal(null, set);

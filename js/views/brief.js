@@ -634,7 +634,7 @@
       eyebrow: 'Step 0 · Client-visible',
       title: ctx.t('Brief'),
       sub: cur ? `${esc(cur.fields?.brand || cur.fields?.client_company || ctx.production.title)} · ${plural(d.versions.length, 'version')}` : 'What the client asked for, in a form every later step can read. The client approves it before anything else starts.',
-      actions: canWrite(ctx) ? `<button class="btn btn-sm btn-ghost" data-bf="ai-runs">${ui.icon('activity')}AI runs</button><button class="btn btn-sm btn-ghost" data-bf="kickoff">${ui.icon('calendar-plus')}Book kickoff meeting</button><button class="btn btn-sm btn-ghost" data-bf="voice" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('mic')}Record a voice memo</button>${cur ? `<button class="btn btn-sm btn-outline" data-bf="add-source" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('sparkles')}Fill from a source</button>` : ''}` : '',
+      actions: canWrite(ctx) ? `<button class="btn btn-sm btn-ghost" data-bf="kickoff">${ui.icon('calendar-plus')}Book kickoff meeting</button><button class="btn btn-sm btn-ghost" data-bf="voice" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('mic')}Record a voice memo</button>${cur ? `<button class="btn btn-sm btn-outline" data-bf="add-source" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('sparkles')}Fill from a source</button>` : ''}` : '',
     });
     if (!cur) return `<div class="page bf-page">${head}${kickoffHtml(ctx, d)}${reviewHtml(ctx, d)}${startHtml(ctx)}${peopleHtml(ctx, d)}${sourcesHtml(ctx, d)}</div>`;
     const editable = isEditable(ctx, d, cur);
@@ -1467,7 +1467,6 @@
             d.stakeholders.forEach((x) => { x.reviewed = true; }); repaint();
           });
         }
-        else if (act === 'ai-runs') MPH.agentRuns && MPH.agentRuns.open(ctx);
         else if (act === 'mark-reviewed') {
           b.disabled = true;
           ctx.api.fn('agents', 'mark_reviewed', { production_id: pid }).then((r) => {

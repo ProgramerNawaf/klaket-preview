@@ -155,7 +155,6 @@
     if (ctx.isClient && s.status === 'sent' && ctx.realClient) top += `<div class="callout info">${ui.icon('clipboard-check')}<span class="small grow"><span class="strong">This script is waiting for your decision.</span> Approving tells the team to go ahead with it.</span><button class="btn btn-sm btn-primary" data-sa="approve">${ui.icon('check')}Approve script</button><button class="btn btn-sm btn-outline" data-sa="changes">${ui.icon('message-square')}Request changes</button></div>`;
     const versions = team ? `<div class="seg sc-vers" role="tablist" aria-label="Script version">${d.list.map((v) => `<button class="${v.id === s.id ? 'on' : ''}" data-sa-ver="${v.version}" title="${esc(v.title || `Version ${v.version}`)}">${v.locked ? ui.icon('lock') : ''}v${v.version}</button>`).join('')}</div>` : '';
     const actions = !team || !ctx.canEdit ? '' : `
-      <button class="btn btn-sm btn-ghost" data-sa="runs">${ui.icon('activity')}AI runs</button>
       <button class="btn btn-sm btn-outline" data-sa="regen-all" ${busy ? 'disabled title="The agent is already writing"' : ''}>${ui.icon('sparkles')}Regenerate</button>
       ${s.status === 'draft' && isLatest ? `<button class="btn btn-sm btn-primary" data-sa="send">${ui.icon('send')}Send for approval</button>` : ''}`;
     return `
@@ -229,7 +228,6 @@
       const b = e.target.closest('[data-sa]');
       if (!b) return;
       const act = b.dataset.sa;
-      if (act === 'runs') return MPH.agentRuns && MPH.agentRuns.open(ctx);
       if (act === 'regen-all') return regenAllModal(b.dataset.ins || '');
       if (act === 'regen') {
         const sc = sceneOf(b.dataset.n);
