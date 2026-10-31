@@ -1,12 +1,16 @@
 /* Production overview: an illustrated film-set hero, key numbers, then each phase as a coloured band of
    horizontal step cards with big pitch-style illustrations, live status and progress. */
 
+/* steps shown as an emoji instead of an illustration */
+const OV_EMOJI = { brief: '📋', concepts: '💡' };
+
 /* one step card: big illustration, name, status line, progress. "Soon" steps are softer and open the demo page. */
 function ovCard({ id, label, line, kind = '', ratio = 0, live, href }) {
   const { esc, ui } = MPH;
+  const art = OV_EMOJI[id] ? `<span class="ov-step-emoji" aria-hidden="true">${OV_EMOJI[id]}</span>` : MPH.art.step(id);
   return `
     <a class="ov-step ${live ? '' : 'soon'} ${kind ? 'k-' + kind : ''}" href="${href}" role="listitem">
-      <span class="ov-step-art">${MPH.art.step(id)}</span>
+      <span class="ov-step-art">${art}</span>
       <span class="ov-step-body">
         <span class="ov-step-name">${esc(label)}${live ? '' : `<span class="soon-tag">${MPH.t('Soon')}</span>`}</span>
         <span class="ov-step-line">${esc(line)}</span>
@@ -28,7 +32,12 @@ MPH.view('overview', {
       return { scripts: scripts.data || [], bids: bids.data || [] };
     }
     // one round trip: every count the cards need, in parallel
-    const [treat, frames, events, locs, scripts, scenes, elements, shots, days, people, sheets, lines, bids] = await Promise.all([
+    const [briefs, pending, reviews, sets, ideas, treat, frames, events, locs, scripts, scenes, elements, shots, days, people, sheets, lines, bids] = await Promise.all([
+      q('briefs', 'version, status'),
+      ctx.sb.from('brief_field_suggestions').select('id', { count: 'exact', head: true }).eq('production_id', pid).eq('status', 'pending'),
+      q('brief_reviews', 'brief_version'),
+      q('concept_sets', 'id, version, status, selected_concept_id'),
+      q('concepts', 'id, set_id, status, title:data->>title_en'),
       q('treatments', 'version, status'),
       q('storyboard_frames', 'id'),
       ctx.sb.from('events').select('id, starts_at').eq('production_id', pid).gte('starts_at', new Date().toISOString()),
@@ -43,7 +52,7 @@ MPH.view('overview', {
       ctx.canSeeInternal ? q('budget_lines', 'qty, unit_cost, markup_pct') : Promise.resolve({ data: null }),
       q('client_bids', 'id, version, status, total'),
     ]);
-    const extra = { treatments: treat.data || [], frames: frames.data || [], events: events.data || [], locations: locs.data || [] };
+    const extra = { briefs: briefs.data || [], pending: pending.count || 0, reviews: reviews.data || [], sets: sets.data || [], ideas: ideas.data || [], treatments: treat.data || [], frames: frames.data || [], events: events.data || [], locations: locs.data || [] };
     return {
       scripts: scripts.data || [], scenes: scenes.data || [], elements: elements.data || [], shots: shots.data || [],
       days: days.data || [], people: people.data || [], sheets: sheets.data || [], lines: lines.data,
@@ -120,6 +129,22 @@ MPH.view('overview', {
       crew: d.people.length ? [`${d.people.length} people · ${confirmed} confirmed`, confirmed === d.people.length ? 'ok' : '', confirmed / d.people.length] : ['Add your crew', '', 0],
       callsheets: published.length ? [`${daysWithSheet} of ${d.days.length || daysWithSheet} days sent`, 'ok', d.days.length ? daysWithSheet / d.days.length : 1] : [d.days.length ? 'Create the first call sheet' : 'Needs shoot days', '', 0],
     };
+    const bLatest = [...(d.briefs || [])].sort((a, b) => b.version - a.version)[0];
+    const reviewed = bLatest && (d.reviews || []).some((r) => r.brief_version === bLatest.version);
+    status.brief = !bLatest ? ['Start it, or book the kickoff', '', 0]
+      : bLatest.status === 'approved' ? [`v${bLatest.version} approved by the client`, 'ok', 1]
+      : bLatest.status === 'sent' ? [`v${bLatest.version} waiting on the client`, 'warn', .8]
+      : bLatest.status === 'changes_requested' ? [`v${bLatest.version}: changes requested`, 'warn', .5]
+      : d.pending ? [`v${bLatest.version} draft · ${d.pending} suggestion${d.pending === 1 ? '' : 's'} to review`, 'warn', .3]
+      : reviewed ? [`v${bLatest.version} reviewed · ready to send`, '', .6]
+      : [`v${bLatest.version} draft`, '', .2];
+    const cSet = [...(d.sets || [])].filter((x) => x.status !== 'archived').sort((a, b) => b.version - a.version)[0];
+    const cIdeas = cSet ? (d.ideas || []).filter((c) => c.set_id === cSet.id && c.status === 'active') : [];
+    const chosen = cSet && (d.ideas || []).find((c) => c.id === cSet.selected_concept_id);
+    status.concepts = !cSet ? [(d.reviews || []).length ? 'The ideas are being written' : 'Opens when the brief is reviewed', '', 0]
+      : cSet.status === 'selected' ? [`Client chose “${chosen && chosen.title ? chosen.title : 'an idea'}”`, 'ok', 1]
+      : cSet.status === 'sent' ? [`${cIdeas.length} ideas · waiting on the client`, 'warn', .8]
+      : [`${cIdeas.length} ideas · draft, internal`, '', .5];
     const tLatest = [...(d.treatments || [])].sort((a, b) => b.version - a.version)[0];
     status.treatment = !tLatest ? ['Write it, or draft it with AI', '', 0]
       : tLatest.status === 'approved' ? [`v${tLatest.version} approved by the client`, 'ok', 1]

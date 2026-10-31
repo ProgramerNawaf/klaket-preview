@@ -1,0 +1,106 @@
+/* The treatment deck (MPH.trDeck): 16:9 slides in the house layout. Sizes are in container units (cqw: 1% of the
+   slide's width), so a slide reads the same in the page, in Present and on a 1600×900 PDF page. The deck keeps its own
+   film colours in both themes: it's the document the client receives. */
+/* slides size themselves from their width (no intrinsic width), so the deck takes the full line */
+.dk-deck { display: grid; gap: 18px; width: 100%; max-width: 1100px; margin: 0 auto; }
+.dk-slide { --dk-ink: #f4f1ea; --dk-mute: rgba(244, 241, 234, .72); --dk-bg: #0e0e0e; --dk-accent: #ff6b1a;
+  position: relative; aspect-ratio: 16 / 9; width: 100%; container-type: inline-size; overflow: hidden; border-radius: 10px;
+  background: var(--dk-bg); color: var(--dk-ink); box-shadow: 0 8px 28px rgba(0, 0, 0, .28);
+  font-family: "IBM Plex Sans Arabic", "IBM Plex Sans", system-ui, sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.dk-slide[lang="en"] { font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", system-ui, sans-serif; }
+.dk-slide h1, .dk-slide h2, .dk-slide h3 { font-family: "Cairo", "IBM Plex Sans Arabic", system-ui, sans-serif; font-weight: 900; margin: 0; letter-spacing: 0; text-wrap: balance; }
+.dk-slide p { margin: 0; text-wrap: pretty; }
+.dk-in { position: absolute; inset: 0; }
+.dk-n { position: absolute; bottom: 1.6cqw; inset-inline-start: 2cqw; font-size: .9cqw; color: var(--dk-accent); font-weight: 600; z-index: 3; }
+.dk-light { --dk-bg: #f1efea; --dk-ink: #151515; --dk-mute: rgba(21, 21, 21, .7); }
+
+/* frames */
+.dk-frame { position: relative; overflow: hidden; background: #1c1c1c; }
+.dk-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.dk-frame.is-empty { display: grid; place-items: center; background: repeating-linear-gradient(135deg, #1b1b1b 0 14px, #202020 14px 28px); }
+.dk-light .dk-frame.is-empty { background: repeating-linear-gradient(135deg, #dcd8d0 0 14px, #e3dfd8 14px 28px); }
+.dk-ph { display: flex; flex-direction: column; align-items: center; gap: .6cqw; font-size: 1.1cqw; color: var(--dk-mute); text-align: center; padding: 1cqw; max-width: 80%; }
+.dk-ph svg.lucide { width: 2.4cqw; height: 2.4cqw; }
+.dk-frame.k-failed .dk-ph { color: #ff8f73; }
+.dk-spin { width: 2.2cqw; height: 2.2cqw; border-radius: 50%; border: .25cqw solid currentColor; border-top-color: transparent; animation: dk-spin 1s linear infinite; }
+@keyframes dk-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .dk-spin { animation: none; } }
+.dk-tools { position: absolute; top: .8cqw; inset-inline-end: .8cqw; display: flex; gap: .5cqw; opacity: 0; transition: opacity .15s; z-index: 4; }
+.dk-frame:hover .dk-tools, .dk-frame:focus-within .dk-tools, .dk-frame.is-empty .dk-tools { opacity: 1; }
+.dk-tool { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 8px; border: 0; background: rgba(0, 0, 0, .66); color: #fff; cursor: pointer; }
+.dk-tool:hover { background: rgba(0, 0, 0, .85); }
+.dk-tool svg.lucide { width: 16px; height: 16px; }
+
+/* cover */
+.dk-cover .dk-frame { position: absolute; inset: 0; }
+.dk-shade { position: absolute; inset: 0; background: rgba(0, 0, 0, .45); pointer-events: none; }
+.dk-shade.side { background: linear-gradient(to left, rgba(0, 0, 0, .78), rgba(0, 0, 0, .15) 70%); }
+.dk-slide[dir="ltr"] .dk-shade.side { background: linear-gradient(to right, rgba(0, 0, 0, .78), rgba(0, 0, 0, .15) 70%); }
+.dk-cover-t { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 1.2cqw; padding: 0 8cqw; z-index: 2; }
+.dk-eyebrow { font-size: 1.4cqw; color: var(--dk-mute); }
+.dk-cover h1 { font-size: 5.2cqw; line-height: 1.15; }
+.dk-cover p { font-size: 2cqw; color: var(--dk-mute); }
+.dk-by { position: absolute; bottom: 2cqw; inset-inline-end: 3cqw; font-size: 1.1cqw; color: var(--dk-mute); z-index: 2; }
+
+/* about: title and text over two frames */
+.dk-about header { position: absolute; top: 4cqw; inset-inline: 4cqw; display: grid; grid-template-columns: auto 1fr; gap: 4cqw; align-items: start; }
+.dk-about h2 { font-size: 3.6cqw; }
+.dk-about header p { font-size: 1.35cqw; line-height: 1.7; color: var(--dk-mute); }
+.dk-pair { position: absolute; bottom: 4cqw; inset-inline: 4cqw; height: 28cqw; display: grid; grid-template-columns: 1fr 2fr; gap: 1.2cqw; }
+
+/* deliverables */
+.dk-deliv .dk-in { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3cqw; }
+.dk-deliv h2 { font-size: 4.2cqw; color: #8c8c8c; }
+.dk-boxes { display: grid; gap: 1.4cqw; width: 54cqw; }
+.dk-box { display: flex; flex-direction: column; gap: .3cqw; border: .12cqw solid #8f8f8f; padding: 1.2cqw 1.6cqw; }
+.dk-box strong { font-size: 1.5cqw; }
+.dk-box span { font-size: 1.1cqw; color: var(--dk-mute); }
+/* more than three: two columns, tighter */
+.dk-deliv .dk-in:has(.dk-boxes.many) { gap: 2cqw; }
+.dk-boxes.many { grid-template-columns: 1fr 1fr; width: 80cqw; gap: 1cqw; }
+.dk-boxes.many .dk-box { padding: .9cqw 1.3cqw; }
+.dk-boxes.many .dk-box strong { font-size: 1.3cqw; }
+
+/* full-bleed frame with a side title (the scenes, look & mood) */
+.dk-full .dk-frame { position: absolute; inset: 0; }
+.dk-side-t { position: absolute; top: 0; bottom: 0; inset-inline-start: 0; width: 48%; display: flex; flex-direction: column; justify-content: center; gap: 1.6cqw; padding-inline: 4.5cqw; z-index: 2; }
+.dk-side-t h2 { font-size: 4.4cqw; }
+.dk-side-t p { font-size: 1.4cqw; line-height: 1.75; color: var(--dk-mute); }
+
+/* scene card: frame on one side, title, description and VO on the other */
+.dk-scene .dk-in { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5cqw; align-items: center; padding: 4cqw; }
+.dk-scene .dk-frame { aspect-ratio: 4 / 3; order: 2; }
+.dk-scene-t { display: flex; flex-direction: column; gap: 1.6cqw; }
+.dk-scene h2 { font-size: 3.2cqw; line-height: 1.3; }
+.dk-scene p { font-size: 1.35cqw; line-height: 1.75; color: var(--dk-mute); }
+.dk-scene .dk-vo { color: var(--dk-ink); font-weight: 600; }
+.dk-vo b { color: var(--dk-accent); }
+
+/* shot: the line on top, the frame below */
+.dk-shot .dk-in { display: flex; flex-direction: column; padding: 2.4cqw 6cqw 3.4cqw; gap: 1.6cqw; }
+.dk-cap { font-size: 1.3cqw; line-height: 1.6; text-align: center; color: var(--dk-ink); }
+.dk-line { color: var(--dk-accent); font-weight: 600; }
+.dk-shot .dk-frame { flex: 1; border-radius: .4cqw; }
+
+/* moods and palette */
+.dk-moods .dk-in { padding: 2.6cqw 6cqw 2.6cqw; display: flex; flex-direction: column; gap: 1.4cqw; }
+.dk-moods h3 { font-size: 1.6cqw; }
+.dk-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1cqw; min-height: 0; }
+.dk-sw { display: flex; gap: 1.4cqw; justify-content: center; }
+.dk-sw span { display: flex; align-items: center; gap: .6cqw; font-size: 1cqw; color: var(--dk-mute); }
+.dk-sw i { width: 2.4cqw; height: 2.4cqw; border-radius: 50%; background: var(--sw); box-shadow: 0 0 0 .1cqw rgba(255, 255, 255, .25); }
+.dk-sw em { font-style: normal; }
+
+/* thank you */
+.dk-end { background: radial-gradient(120% 90% at 50% 110%, #3a1606, #0e0e0e 60%); }
+.dk-end .dk-in { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2cqw; }
+.dk-end h1 { font-size: 8cqw; color: var(--dk-accent); text-transform: uppercase; }
+.dk-end span { font-size: 1.6cqw; color: var(--dk-mute); }
+
+/* in Present (MPH.trShow) the slide fills the stage */
+.tr-show-slide > .dk-slide { width: min(100%, calc((100vh - 140px) * 16 / 9)); margin: auto; border-radius: 0; }
+
+/* the deck toolbar on the Treatment screen */
+.dk-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; width: 100%; max-width: 1100px; margin: 0 auto 4px; }
+.dk-prog { display: inline-flex; align-items: center; gap: 8px; }
+@media (max-width: 640px) { .dk-deck { gap: 10px; } .dk-slide { border-radius: 6px; } .dk-tool { width: 28px; height: 28px; } }

@@ -146,7 +146,7 @@
       sub: `${plural((runs || []).length, 'run')} on this production · $${total.toFixed(2)} in total · internal`,
       body: (runs || []).length ? `<div class="bf-table-wrap"><table class="table cc-runs"><thead><tr><th>When</th><th>Agent</th><th>Status</th><th class="r">Tokens in / out</th><th class="r">Cache read</th><th class="r">Cost</th><th class="r">Time</th><th></th></tr></thead><tbody>
         ${runs.map((r) => `<tr><td class="small">${esc(MPH.date(r.created_at, 'time'))}<br><span class="tiny muted">${esc(MPH.date(r.created_at))}</span></td>
-          <td class="small"><span class="strong">${({ brief: 'Brief Agent', creative: 'Creative Agent', script: 'Script Agent' })[r.agent] || esc(r.agent)}</span><br><span class="tiny muted mono">${esc(r.prompt_version)} · ${esc(r.effort)}${r.served_by ? ` · served by ${esc(r.served_by)}` : ''}</span></td>
+          <td class="small"><span class="strong">${({ brief: 'Brief Agent', creative: 'Creative Agent', script: 'Script Agent', treatment: 'Treatment Agent' })[r.agent] || esc(r.agent)}</span><br><span class="tiny muted mono">${esc(r.prompt_version)} · ${esc(r.effort)}${r.served_by ? ` · served by ${esc(r.served_by)}` : ''}</span></td>
           <td>${ui.pill(r.status, st[r.status] || '')}${r.stop_reason ? `<br><span class="tiny muted mono">${esc(r.stop_reason)}</span>` : ''}${r.error ? `<br><span class="tiny" dir="auto">${esc(r.error.slice(0, 160))}</span>` : ''}</td>
           <td class="r mono small">${(r.input_tokens || 0).toLocaleString()} / ${(r.output_tokens || 0).toLocaleString()}</td>
           <td class="r mono small">${(r.cache_read_tokens || 0).toLocaleString()}</td>

@@ -4,7 +4,8 @@
    draft → sent → approved / changes_requested. Sent versions are locked in the database, not just here.
    Owners and producers write; HoDs and crew read; clients only ever load versions that were sent to them.
    Later screens read the active brief (latest approved, else latest) through MPH.briefs.active().
-   Sources (pasted text and files now; emails and meetings later) are read by the brief_extract AI action into
+   Sources (pasted text and files, emails, meetings, and voice memos the producer records when the client won't meet)
+   are read by the Brief Agent into
    suggestions, reviewed here the way the AI Breakdown reviews elements. Sources and suggestions are internal:
    owners and producers only, enforced by RLS. A person's edits always win over later suggestions. */
 (function () {
@@ -59,10 +60,13 @@
 
   /* per-production UI state that outlives re-renders */
   const S = { ver: {}, hide: {} };
+  const AUDIO_RE = /\.(webm|m4a|mp4|mp3|mpeg|wav|ogg|oga|opus|flac|aac)$/i;
+  const AUDIO_ACCEPT = 'audio/*,.opus,.m4a,.ogg';
+  const VOICE_MAX_MIN = 20;
   const runs = new Map(); // production id -> promise of the extraction summary (survives navigation)
   const HIGH = 0.75;      // "Accept all high-confidence"
   const ROW_LABEL = { deliverable: 'Deliverable', usage_right: 'Usage right', reference: 'Reference' };
-  const SRC = { manual: ['clipboard-paste', 'Pasted text'], email: ['mail', 'Email'], meeting: ['video', 'Meeting'], questionnaire: ['list-checks', 'Questionnaire'], note: ['sticky-note', 'Producer note'] };
+  const SRC = { manual: ['clipboard-paste', 'Pasted text'], email: ['mail', 'Email'], meeting: ['video', 'Meeting'], questionnaire: ['list-checks', 'Questionnaire'], note: ['sticky-note', 'Producer note'], voice: ['mic', 'Voice memo'] };
   let activeSaver = null;
   window.addEventListener('beforeunload', (e) => {
     if (activeSaver && activeSaver.dirty) { activeSaver.flush(); e.preventDefault(); e.returnValue = ''; }
@@ -618,7 +622,7 @@
           <span class="h3">Start with the client’s brief</span>
           <span class="small muted">Write down what the client asked for: the goal, every deliverable with its length, ratio and platform, usage rights, the budget range and the dates. Then send it to the client to approve. The storyboard, calendar, budget and treatment all follow the approved brief.</span>
         </div>
-        <div class="row wrap"><button class="btn btn-outline" data-bf="add-source">${ui.icon('sparkles')}Fill from an email or document</button><button class="btn btn-primary" data-bf="start">${ui.icon('plus')}Start the brief</button></div>
+        <div class="row wrap"><button class="btn btn-outline" data-bf="voice">${ui.icon('mic')}Record the brief as a voice memo</button><button class="btn btn-outline" data-bf="add-source">${ui.icon('sparkles')}Fill from an email or document</button><button class="btn btn-primary" data-bf="start">${ui.icon('plus')}Start the brief</button></div>
       </div>` });
   }
 
@@ -630,7 +634,7 @@
       eyebrow: 'Step 0 · Client-visible',
       title: ctx.t('Brief'),
       sub: cur ? `${esc(cur.fields?.brand || cur.fields?.client_company || ctx.production.title)} · ${plural(d.versions.length, 'version')}` : 'What the client asked for, in a form every later step can read. The client approves it before anything else starts.',
-      actions: canWrite(ctx) ? `<button class="btn btn-sm btn-ghost" data-bf="ai-runs">${ui.icon('activity')}AI runs</button><button class="btn btn-sm btn-ghost" data-bf="kickoff">${ui.icon('calendar-plus')}Book kickoff meeting</button>${cur ? `<button class="btn btn-sm btn-outline" data-bf="add-source" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('sparkles')}Fill from a source</button>` : ''}` : '',
+      actions: canWrite(ctx) ? `<button class="btn btn-sm btn-ghost" data-bf="ai-runs">${ui.icon('activity')}AI runs</button><button class="btn btn-sm btn-ghost" data-bf="kickoff">${ui.icon('calendar-plus')}Book kickoff meeting</button><button class="btn btn-sm btn-ghost" data-bf="voice" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('mic')}Record a voice memo</button>${cur ? `<button class="btn btn-sm btn-outline" data-bf="add-source" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('sparkles')}Fill from a source</button>` : ''}` : '',
     });
     if (!cur) return `<div class="page bf-page">${head}${kickoffHtml(ctx, d)}${reviewHtml(ctx, d)}${startHtml(ctx)}${peopleHtml(ctx, d)}${sourcesHtml(ctx, d)}</div>`;
     const editable = isEditable(ctx, d, cur);
@@ -1013,8 +1017,8 @@
           body: `
             <div class="field"><label for="bf-src-text">Paste the client’s email, notes or brief</label>
               <textarea id="bf-src-text" class="textarea" rows="9" dir="auto" maxlength="100000" placeholder="Arabic, English or both. Paste the whole email thread if you have it."></textarea></div>
-            <div class="field"><label for="bf-src-files">Or attach files <span class="faint">(PDF, Word, text or images, up to 20 MB each)</span></label>
-              <input id="bf-src-files" type="file" class="input" multiple accept=".pdf,.docx,.txt,image/*"></div>
+            <div class="field"><label for="bf-src-files">Or attach files <span class="faint">(PDF, Word, text, images or a voice note, up to 20 MB each)</span></label>
+              <input id="bf-src-files" type="file" class="input" multiple accept=".pdf,.docx,.txt,image/*,${AUDIO_ACCEPT}"></div>
             <div class="field"><label for="bf-src-type">What is it?</label><select id="bf-src-type" class="select">
               <option value="manual">The client’s email, notes or brief</option><option value="meeting">A meeting transcript (for example from Fireflies)</option>
               <option value="questionnaire">The client’s questionnaire answers</option><option value="note">My own notes (producer)</option></select></div>
@@ -1030,8 +1034,9 @@
           const text = el.querySelector('#bf-src-text').value.trim();
           const files = [...el.querySelector('#bf-src-files').files];
           if (!text && !files.length) return err('Paste the client’s email or notes, or attach a file.');
-          const bad = files.find((f) => !/\.(pdf|docx|txt|png|jpe?g|webp|gif)$/i.test(f.name));
-          if (bad) return err(`${bad.name} isn’t a PDF, Word, text or image file. Export slides as a PDF first.`);
+          const bad = files.find((f) => !/\.(pdf|docx|txt|png|jpe?g|webp|gif)$/i.test(f.name) && !AUDIO_RE.test(f.name));
+          if (bad) return err(`${bad.name} isn’t a PDF, Word, text, image or audio file. Export slides as a PDF first.`);
+          const voice = files.some((f) => AUDIO_RE.test(f.name));
           const big = files.find((f) => f.size > 20 * 1024 * 1024);
           if (big) return err(`${big.name} is over 20 MB. Export a smaller version and try again.`);
           go.disabled = true; go.innerHTML = `${ui.spinner()}Uploading…`; err('');
@@ -1048,13 +1053,105 @@
             }
             const title = txt(el.querySelector('#bf-src-title').value, 200) || (files[0] ? files[0].name : txt(text.split('\n')[0], 60)) || 'Pasted text';
             const row = ctx.api.must(await ctx.sb.from('brief_sources').insert({
-              production_id: pid, type: el.querySelector('#bf-src-type').value === 'meeting' ? 'meeting' : 'manual', title, raw_content: raw.trim().slice(0, 200000) || null, attachments, created_by: ctx.session.user.id,
+              production_id: pid, type: voice ? 'voice' : el.querySelector('#bf-src-type').value === 'meeting' ? 'meeting' : 'manual', title, raw_content: raw.trim().slice(0, 200000) || null, attachments, created_by: ctx.session.user.id,
             }).select('id').single());
             ctx.closeOverlay();
             runExtract(row.id, title);
           } catch (ex) {
             ctx.api.removeMedia(uploaded);
             go.disabled = false; go.innerHTML = `${ui.icon('sparkles')}Read and suggest`; MPH.icons();
+            err(ex.message || String(ex));
+          }
+        });
+      };
+
+      /* ---------- voice memo: the producer tells the client's brief (record here or upload a voice note); the Brief Agent
+         transcribes it, then reads it like any other source */
+      const openVoiceMemo = () => {
+        const el = ctx.modal(ctx.frame({
+          title: 'Record the client’s brief',
+          sub: 'When the client won’t book a meeting, tell the brief in your own words. It’s transcribed, then the AI fills the brief from it.',
+          body: `
+            <div class="bf-rec" id="bf-rec">
+              <button type="button" class="btn btn-primary" id="bf-rec-go">${ui.icon('mic')}Start recording</button>
+              <span class="bf-rec-live" id="bf-rec-live" hidden><span class="bf-rec-dot"></span>Recording</span>
+              <span class="bf-rec-time" id="bf-rec-time">0:00</span>
+              <span class="spacer"></span><span class="tiny faint">Up to ${VOICE_MAX_MIN} minutes</span>
+            </div>
+            <audio id="bf-rec-play" class="bf-rec-play" controls hidden></audio>
+            <p class="tiny muted">Say what the client asked for: the goal and audience, every deliverable with its length, ratio and platform, usage rights, the budget range, the shoot and delivery dates, and who approves. Arabic, English or both.</p>
+            <div class="field"><label for="bf-vm-file">Or upload a voice note <span class="faint">(for example the client’s WhatsApp voice note; up to 20 MB)</span></label>
+              <input id="bf-vm-file" type="file" class="input" accept="${AUDIO_ACCEPT}"></div>
+            <div class="field"><label for="bf-vm-text">Anything to add in writing <span class="faint">(optional)</span></label>
+              <textarea id="bf-vm-text" class="textarea" rows="3" dir="auto" maxlength="20000" placeholder="Links, exact figures, names spelled right"></textarea></div>
+            <div class="field"><label for="bf-vm-title">Name this memo <span class="faint">(optional)</span></label>
+              <input id="bf-vm-title" class="input" dir="auto" maxlength="200" placeholder="For example: Call with Yousef, 31 Oct"></div>
+            <p class="tiny muted">${ui.icon('lock')} The recording and its transcript stay internal: clients never see them. Fields a person has edited are never overwritten.</p>
+            <div id="bf-vm-err"></div>`,
+          foot: `<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="bf-vm-go">${ui.icon('sparkles')}Transcribe and fill the brief</button>`,
+        }), { wide: true });
+        const $ = (q) => el.querySelector(q);
+        const err = (m) => { $('#bf-vm-err').innerHTML = m ? ui.errorBox(m) : ''; MPH.icons(); };
+        const recBtn = $('#bf-rec-go'), time = $('#bf-rec-time'), live = $('#bf-rec-live'), play = $('#bf-rec-play');
+        let rec = null, stream = null, chunks = [], blob = null, started = 0, timer = null;
+        const fmt = (ms) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+        const setBtn = (icon, label, cls) => { recBtn.className = `btn ${cls}`; recBtn.innerHTML = `${ui.icon(icon)}${label}`; MPH.icons(); };
+        const release = () => { clearInterval(timer); timer = null; if (stream) stream.getTracks().forEach((t) => t.stop()); stream = null; };
+        const stop = () => { if (rec && rec.state !== 'inactive') rec.stop(); };
+        recBtn.addEventListener('click', async () => {
+          if (rec && rec.state === 'recording') return stop();
+          if (!navigator.mediaDevices || !window.MediaRecorder) return err('This browser can’t record audio. Upload a voice note instead.');
+          err('');
+          try { stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+          catch (ex) { return err(ex && ex.name === 'NotAllowedError' ? 'Allow the microphone for this site in your browser, then try again.' : 'No microphone was found. Upload a voice note instead.'); }
+          const mime = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/webm'].find((m) => MediaRecorder.isTypeSupported(m)) || '';
+          rec = new MediaRecorder(stream, mime ? { mimeType: mime, audioBitsPerSecond: 48000 } : undefined);
+          chunks = []; blob = null; play.hidden = true;
+          rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+          rec.onstop = () => {
+            release(); live.hidden = true;
+            blob = chunks.length ? new Blob(chunks, { type: rec.mimeType || mime || 'audio/webm' }) : null;
+            if (blob) { play.src = URL.createObjectURL(blob); play.hidden = false; $('#bf-vm-file').value = ''; }
+            setBtn('rotate-ccw', 'Record again', 'btn-outline');
+          };
+          rec.start(1000);
+          started = Date.now(); time.textContent = '0:00'; live.hidden = false;
+          setBtn('square', 'Stop', 'btn-danger');
+          timer = setInterval(() => {
+            if (!el.isConnected) { stop(); release(); return; } // the modal was closed mid-recording
+            const ms = Date.now() - started;
+            time.textContent = fmt(ms);
+            if (ms >= VOICE_MAX_MIN * 60e3) stop();
+          }, 250);
+        });
+        const go = $('#bf-vm-go');
+        go.addEventListener('click', async () => {
+          if (rec && rec.state === 'recording') stop();
+          await wait(rec && rec.state !== 'inactive' ? 300 : 0);
+          const upload = $('#bf-vm-file').files[0];
+          if (upload && !AUDIO_RE.test(upload.name)) return err(`${upload.name} isn’t an audio file.`);
+          if (upload && upload.size > 20 * 1024 * 1024) return err(`${upload.name} is over 20 MB. Send a shorter voice note.`);
+          if (!upload && !blob) return err('Record the brief, or upload a voice note.');
+          if (!upload && Date.now() - started < 3000) return err('That recording is too short. Record the brief again.');
+          const ext = upload ? '' : (/mp4/.test(blob.type) ? 'm4a' : 'webm');
+          const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+          const file = upload || new File([blob], `voice-memo-${stamp}.${ext}`, { type: blob.type });
+          go.disabled = true; go.innerHTML = `${ui.spinner()}Uploading…`; err('');
+          let path = null;
+          try {
+            path = await ctx.api.uploadMedia(pid, file, 'internal', 'briefs');
+            const me = (ctx.session.profile && ctx.session.profile.full_name) || ctx.session.user.email;
+            const title = txt($('#bf-vm-title').value, 200) || (upload ? upload.name : `Voice memo from ${String(me).split(' ')[0]}`);
+            const row = ctx.api.must(await ctx.sb.from('brief_sources').insert({
+              production_id: pid, type: 'voice', title, raw_content: txt($('#bf-vm-text').value, 20000) || null,
+              attachments: [{ path, name: file.name, type: file.type || '' }],
+              participants: [{ name: me, email: ctx.session.user.email }], created_by: ctx.session.user.id,
+            }).select('id').single());
+            release(); ctx.closeOverlay();
+            runExtract(row.id, title);
+          } catch (ex) {
+            if (path) ctx.api.removeMedia([path]);
+            go.disabled = false; go.innerHTML = `${ui.icon('sparkles')}Transcribe and fill the brief`; MPH.icons();
             err(ex.message || String(ex));
           }
         });
@@ -1076,7 +1173,7 @@
           body: `
             ${x.status === 'failed' ? ui.errorBox(x.error || 'Reading this source failed.') : ''}
             ${c ? `<p class="small">${plural(c.applied || 0, 'field')} filled, ${plural(c.pending || 0, 'suggestion')} to review${c.conflicts ? `, ${plural(c.conflicts, 'conflict')}` : ''}.</p>` : ''}
-            ${(x.attachments || []).length ? `<div class="stack tight">${x.attachments.map((a) => `<a class="bf-link" href="${esc(urls[a.path] || '#')}" target="_blank" rel="noopener noreferrer">${ui.icon('paperclip')}${esc(a.name)}</a>`).join('')}</div>` : ''}
+            ${(x.attachments || []).length ? `<div class="stack tight">${x.attachments.map((a) => AUDIO_RE.test(a.path) && urls[a.path] ? `<audio class="bf-rec-play" controls preload="metadata" src="${esc(urls[a.path])}"></audio>` : `<a class="bf-link" href="${esc(urls[a.path] || '#')}" target="_blank" rel="noopener noreferrer">${ui.icon('paperclip')}${esc(a.name)}</a>`).join('')}</div>` : ''}
             ${mine.length ? `<h3 class="h3">What the AI took from it</h3><ul class="bf-sugs">${mine.map((sg) => `
               <li class="bf-sug"><div class="bf-sug-main"><div class="row wrap tight"><span class="bf-sug-f">${esc(labelOf(sg.field))}</span><span class="bf-sug-v" dir="auto">${fmtVal(sg.field, sg.value)}</span>
                 ${ui.pill({ accepted: sg.auto ? 'Filled' : 'Accepted', rejected: 'Removed', superseded: 'Replaced' }[sg.status] || 'To review', sg.status === 'accepted' ? 'ok' : '')}</div>
@@ -1346,6 +1443,7 @@
         else if (act === 'del-add') addRow(b.dataset.kind, b);
         else if (act === 'row-del') delRow(b.closest('[data-bf-row]'));
         else if (act === 'add-source') openAddSource();
+        else if (act === 'voice') openVoiceMemo();
         else if (act === 'kickoff') openKickoff();
         else if (act === 'notetaker-add') {
           b.disabled = true;

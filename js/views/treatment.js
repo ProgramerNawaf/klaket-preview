@@ -3,6 +3,9 @@
    approves or sends back; the lookbook (lookbook_items) is a masonry of images, notes and colour swatches in free-text
    boards. Editors write the latest draft inline (autosaved); sent versions are locked so the client reviews exactly
    what was sent. Clients only ever load non-draft versions, and the lookbook only once a version has been sent.
+   A version the Treatment Agent wrote from the approved script also has a deck (MPH.trDeck: the house layout with a
+   16:9 frame per picture); the Deck tab shows it, Present plays it and Export PDF prints it. Frames are painted in
+   the background; a producer can repaint one (with an edited prompt) or use their own picture.
    Also defines MPH.trShow, the full-screen slideshow the Storyboard reuses. */
 (function () {
   const esc = MPH.esc;
@@ -16,7 +19,7 @@
   };
 
   /* per-production UI state that outlives re-renders */
-  const S = { ver: {}, board: {}, boards: {}, aiForm: {}, aiErr: {} };
+  const S = { ver: {}, board: {}, boards: {}, aiForm: {}, aiErr: {}, lang: {} };
   const aiRuns = new Map(); // production id -> promise of the inserted treatment row
   let activeSaver = null;
   window.addEventListener('beforeunload', (e) => {
@@ -174,7 +177,20 @@
   const currentOf = (ctx, d) => d.versions.find((v) => v.version === S.ver[ctx.production.id]) || latestOf(d);
   const canWrite = (ctx) => ctx.canEdit && !ctx.isClient;
   const isEditable = (ctx, d, cur) => canWrite(ctx) && cur && cur === latestOf(d) && cur.status === 'draft';
-  const tabOf = (ctx) => (ctx.state.trTab === 'look' ? 'look' : 'doc');
+  const shownOf = (ctx, d) => (ctx.isClient ? latestOf(d) : currentOf(ctx, d));
+  const tabOf = (ctx, d) => {
+    if (ctx.state.trTab === 'look') return 'look';
+    const cur = d && shownOf(ctx, d);
+    return cur && cur.deck && ctx.state.trTab !== 'doc' ? 'deck' : 'doc';
+  };
+  const langOf = (ctx) => S.lang[ctx.production.id] || 'ar';
+  /* the deck's frames for a version: key → signed url, and (team) key → { status, error } */
+  const deckOpts = (ctx, d, t) => {
+    const urls = {};
+    for (const [k, path] of Object.entries(t.frame_images || {})) if (d.urls[path]) urls[k] = d.urls[path];
+    const frames = ctx.isClient ? null : Object.fromEntries((d.frames || []).filter((f) => f.treatment_id === t.id).map((f) => [f.key, f]));
+    return { lang: langOf(ctx), urls, frames, editable: isEditable(ctx, d, t) && t.source === 'ai' };
+  };
   const firstImage = (d) => d.items.find((i) => i.kind === 'image' && d.urls[i.image_path]);
 
   /* ------------------------------------------------------------ pieces */
@@ -186,9 +202,10 @@
 
   function tabsHtml(ctx, d, cur) {
     const { ui } = ctx;
-    const tab = tabOf(ctx);
+    const tab = tabOf(ctx, d);
     return `
       <div class="tabs tr-tabs" role="tablist">
+        ${cur && cur.deck ? `<button role="tab" aria-selected="${tab === 'deck'}" class="${tab === 'deck' ? 'on' : ''}" data-tr-tab="deck">${ui.icon('presentation')}Deck<span class="count">${MPH.trDeck.frameKeys(cur.deck).length}</span></button>` : ''}
         <button role="tab" aria-selected="${tab === 'doc'}" class="${tab === 'doc' ? 'on' : ''}" data-tr-tab="doc">${ui.icon('file-text')}Treatment${cur ? `<span class="count">v${esc(cur.version)}</span>` : ''}</button>
         <button role="tab" aria-selected="${tab === 'look'}" class="${tab === 'look' ? 'on' : ''}" data-tr-tab="look">${ui.icon('gallery-vertical-end')}Lookbook<span class="count">${d.items.length}</span></button>
       </div>`;
@@ -424,12 +441,50 @@
     return `<div class="stack tr-look">${bar}${note}${grid}</div>`;
   }
 
+  /* the deck tab: language, export, the agent's progress, then the slides */
+  function deckHtml(ctx, d, t) {
+    const { ui } = ctx;
+    const lang = langOf(ctx);
+    const mine = (d.frames || []).filter((f) => f.treatment_id === t.id);
+    const painted = mine.filter((f) => f.status === 'done' || f.status === 'uploaded').length;
+    const failed = mine.filter((f) => f.status === 'failed').length;
+    const busy = !ctx.isClient && mine.some((f) => f.status === 'pending' || f.status === 'running');
+    const prog = busy ? `<span class="dk-prog small">${ui.spinner()}Painting frames: ${painted} of ${mine.length}</span>`
+      : failed && !ctx.isClient ? `<span class="small" style="color:var(--danger)">${ui.icon('image-off')}${plural(failed, 'frame')} failed. Repaint or upload ${failed === 1 ? 'it' : 'them'}.</span>` : '';
+    const editor = canWrite(ctx) && t === latestOf(d);
+    return `
+      <div class="dk-bar">
+        <div class="seg" role="group" aria-label="Deck language"><button class="${lang === 'ar' ? 'on' : ''}" data-dk-lang="ar" aria-pressed="${lang === 'ar'}">العربية</button><button class="${lang === 'en' ? 'on' : ''}" data-dk-lang="en" aria-pressed="${lang === 'en'}">English</button></div>
+        ${prog}<span class="spacer"></span>
+        ${editor && t.source === 'ai' ? `<button class="btn btn-sm btn-ghost" data-tr="deck-regen">${ui.icon('refresh-cw')}Write it again</button>` : ''}
+        <button class="btn btn-sm btn-outline" data-tr="deck-pdf">${ui.icon('file-down')}Export PDF</button>
+      </div>
+      <div class="dk-deck">${MPH.trDeck.slides(t.deck, deckOpts(ctx, d, t)).join('')}</div>`;
+  }
+
+  /* the Treatment Agent: writing now, or ready to write from the approved script */
+  function agentHtml(ctx, d) {
+    const { ui } = ctx;
+    if (ctx.isClient || !canWrite(ctx)) return '';
+    if (d.job) {
+      const waiting = d.job.status === 'waiting';
+      return `<div class="callout ${waiting ? 'market' : 'info'}">${waiting ? ui.icon('clock') : ui.spinner()}<div class="grow stack tight"><span class="strong">${d.job.input && d.job.input.mode === 'frames' ? 'Painting the frames again…' : 'The Treatment Agent is writing the deck from the approved script…'}</span>
+        <span class="small muted">${waiting ? `Waiting to retry: ${esc(d.job.last_error || 'the AI service is busy')}.` : 'It writes the pages first (a few minutes), then paints a frame for every picture. You can leave this page; you’ll get a notification.'}</span></div></div>`;
+    }
+    const hasDeck = d.versions.some((v) => v.source === 'ai' && v.script_id === (d.script && d.script.id));
+    if (d.script && !hasDeck) {
+      return `<div class="callout">${ui.icon('sparkles')}<div class="grow"><span class="strong">The client approved script v${esc(d.script.version)}.</span> <span class="muted">Write the treatment deck and lookbook from it, with a painted frame for each scene and shot.</span></div>
+        <button class="btn btn-sm btn-primary" data-tr="deck-write">${ui.icon('sparkles')}Write the treatment deck</button></div>`;
+    }
+    return '';
+  }
+
   /* ------------------------------------------------------------ pages */
   function teamPage(ctx, d) {
     const { ui } = ctx;
     const p = ctx.production;
     const cur = currentOf(ctx, d);
-    const tab = tabOf(ctx);
+    const tab = tabOf(ctx, d);
     const shared = d.versions.some((v) => v.status !== 'draft');
     const head = ui.pageHead({
       eyebrow: 'Story · Client-visible',
@@ -440,11 +495,12 @@
     let body;
     if (tab === 'look') body = lookbookHtml(ctx, d, shared);
     else if (!cur || aiRuns.has(p.id)) body = startHtml(ctx);
+    else if (tab === 'deck') body = `${barHtml(ctx, d, cur)}${deckHtml(ctx, d, cur)}`;
     else {
       const editable = isEditable(ctx, d, cur);
       body = `${barHtml(ctx, d, cur)}<div class="tr-layout">${outlineHtml(ctx, cur, editable)}${paperHtml(ctx, d, cur, editable)}</div>`;
     }
-    return `<div class="page tr-page">${head}${tabsHtml(ctx, d, cur)}${body}</div>`;
+    return `<div class="page tr-page">${head}${agentHtml(ctx, d)}${tabsHtml(ctx, d, cur)}${body}</div>`;
   }
 
   function clientPage(ctx, d) {
@@ -477,7 +533,7 @@
     } else if (cur.status === 'changes_requested') {
       decision = `<div class="callout market">${ui.icon('message-square')}<div class="grow"><span class="strong">Changes requested${cur.decided_at ? ' on ' + esc(MPH.date(cur.decided_at, 'long')) : ''}.</span>${cur.client_note ? ` <span class="muted"><span dir="auto">“${esc(cur.client_note)}”</span></span>` : ''} <span class="muted">Your production team will send a revised version.</span></div></div>`;
     }
-    const tab = tabOf(ctx);
+    const tab = tabOf(ctx, d);
     return `
       <div class="page tr-page">
         ${ui.pageHead({
@@ -488,7 +544,7 @@
         })}
         ${decision}
         ${tabsHtml(ctx, d, cur)}
-        ${tab === 'look' ? lookbookHtml(ctx, d, true) : `<div class="tr-layout">${outlineHtml(ctx, cur, false)}${paperHtml(ctx, d, cur, false)}</div>`}
+        ${tab === 'look' ? lookbookHtml(ctx, d, true) : tab === 'deck' ? deckHtml(ctx, d, cur) : `<div class="tr-layout">${outlineHtml(ctx, cur, false)}${paperHtml(ctx, d, cur, false)}</div>`}
       </div>`;
   }
 
@@ -499,6 +555,9 @@
     const { ui } = ctx;
     const p = ctx.production;
     const t = ctx.isClient ? latestOf(d) : currentOf(ctx, d);
+    if (t && t.deck && tabOf(ctx, d) === 'deck') {
+      return MPH.trShow({ title: p.title, sub: `Treatment v${t.version}`, slides: MPH.trDeck.slides(t.deck, { ...deckOpts(ctx, d, t), editable: false }), start: startAt | 0 });
+    }
     const images = d.items.filter((i) => i.kind === 'image' && d.urls[i.image_path]);
     const slides = [];
     const cover = firstImage(d);
@@ -600,7 +659,7 @@
       let versions, items = [];
       if (ctx.isClient) {
         // clients (and the producer's preview) never load drafts
-        versions = must(await ctx.sb.from('treatments').select('id, version, title, status, sections, note, client_note, sent_at, decided_at, created_at, updated_at')
+        versions = must(await ctx.sb.from('treatments').select('id, version, title, status, sections, note, client_note, sent_at, decided_at, created_at, updated_at, source, deck, frame_images')
           .eq('production_id', pid).neq('status', 'draft').order('version', { ascending: false }));
         if (versions.length) items = must(await ctx.sb.from('lookbook_items').select('*').eq('production_id', pid));
       } else {
@@ -612,8 +671,20 @@
       }
       versions.forEach((v) => { v.sections = normSections(v.sections); });
       items.sort(itemOrder);
-      const urls = await ctx.api.mediaUrls(items.filter((i) => i.kind === 'image').map((i) => i.image_path));
-      return { versions, items, urls };
+      // the Treatment Agent (team): its frames, a run in progress, and the approved script it writes from
+      let frames = [], job = null, script = null;
+      if (!ctx.isClient) {
+        const ai = versions.filter((v) => v.source === 'ai').map((v) => v.id);
+        const [f, j, sc] = await Promise.all([
+          ai.length ? ctx.sb.from('treatment_frames').select('id, treatment_id, key, status, error, prompt').in('treatment_id', ai) : { data: [] },
+          ctx.sb.from('agent_jobs').select('id, status, last_error, input, created_at').eq('production_id', pid).eq('agent', 'treatment').in('status', ['queued', 'running', 'waiting']).order('created_at', { ascending: false }).limit(1),
+          ctx.sb.from('scripts').select('id, version').eq('production_id', pid).eq('source', 'ai').eq('status', 'approved').order('version', { ascending: false }).limit(1),
+        ]);
+        frames = f.data || []; job = (j.data || [])[0] || null; script = (sc.data || [])[0] || null;
+      }
+      const paths = [...items.filter((i) => i.kind === 'image').map((i) => i.image_path), ...versions.flatMap((v) => Object.values(v.frame_images || {}))];
+      const urls = await ctx.api.mediaUrls([...new Set(paths)]);
+      return { versions, items, urls, frames, job, script };
     },
 
     render: renderPage,
@@ -658,14 +729,20 @@
         listenAi();
       };
 
-      const createVersion = async (btn, row, toastMsg) => {
+      const createVersion = async (btn, row, toastMsg, from) => {
         if (btn) { btn.disabled = true; btn.innerHTML = `${ui.spinner()}Creating…`; }
         try {
           await saver.flush();
           const version = await ctx.api.nextVersion('treatments', pid);
           const ins = ctx.api.must(await ctx.sb.from('treatments').insert({ production_id: pid, version, status: 'draft', created_by: ctx.session.user.id, ...row }).select().single());
+          // a deck's frames come along (same pictures, same prompts), so the new draft can repaint them
+          const fr = from && row.deck ? (d.frames || []).filter((f) => f.treatment_id === from.id) : [];
+          if (fr.length) {
+            const { data: full } = await ctx.sb.from('treatment_frames').select('key, prompt, aspect, status, image_path, usage, sort').eq('treatment_id', from.id);
+            ctx.api.must(await ctx.sb.from('treatment_frames').insert((full || []).map((f) => ({ ...f, production_id: pid, treatment_id: ins.id, status: ['done', 'uploaded'].includes(f.status) ? f.status : 'failed' }))));
+          }
           S.ver[pid] = ins.version;
-          ctx.state.trTab = 'doc';
+          ctx.state.trTab = row.deck ? 'deck' : 'doc';
           ctx.toast(toastMsg(ins), 'file-plus');
           ctx.reload();
         } catch (ex) { ctx.toastError(ex); if (btn && btn.isConnected) { btn.disabled = false; repaint(); } }
@@ -887,7 +964,12 @@
           await saver.flush();
           return MPH.importer.treatment(ctx, { onDone: (row) => { if (row) { S.ver[pid] = row.version; ctx.state.trTab = 'doc'; } else ctx.state.trTab = 'look'; ctx.reload(); } });
         }
-        if (act === 'present') { await saver.flush(); return present(ctx, d, tabOf(ctx) === 'look' ? 'look' : 0); }
+        if (act === 'present') { await saver.flush(); return present(ctx, d, tabOf(ctx, d) === 'look' ? 'look' : 0); }
+        if (act === 'deck-pdf') {
+          const t0 = shownOf(ctx, d);
+          try { MPH.trDeck.print(t0.deck, { ...deckOpts(ctx, d, t0), editable: false }, `${ctx.production.title} · Treatment v${t0.version}`); } catch (ex) { ctx.toastError(ex); }
+          return;
+        }
         if (act === 'approve' || act === 'changes') return openDecide(act === 'approve');
         if (act === 'item-open') {
           const tile = b.closest('[data-item]');
@@ -902,6 +984,8 @@
           return present(ctx, d, k >= 0 ? offset + k : (it.kind === 'color' ? offset + nonColor.length : 0));
         }
         if (!canWrite(ctx)) return;
+        if (act === 'deck-write') return writeDeck(b, '');
+        if (act === 'deck-regen') return openRegen();
         if (act === 'ai-write') {
           const checks = [...root.querySelectorAll('.tr-checks input:checked')].map((x) => x.value);
           const extra = (root.querySelector('#tr-extra')?.value || '').split(/[,،]/).map((x) => x.trim()).filter(Boolean);
@@ -914,7 +998,8 @@
         if (act === 'start-blank') return createVersion(b, { title: ctx.production.title, sections: DEFAULT_SECTIONS.map((title) => ({ id: newId(), title, body: '' })) }, (r) => `Treatment v${r.version} started`);
         if (act === 'new-version') {
           const latest = latestOf(d);
-          return createVersion(b, { title: latest.title, sections: latest.sections.map((s) => ({ id: s.id, title: s.title, body: s.body })) }, (r) => `v${r.version} started from v${latest.version}`);
+          const deck = latest.deck ? { source: latest.source, script_id: latest.script_id, deck: latest.deck, frame_images: latest.frame_images || {} } : {};
+          return createVersion(b, { title: latest.title, sections: latest.sections.map((s) => ({ id: s.id, title: s.title, body: s.body })), ...deck }, (r) => `v${r.version} started from v${latest.version}`, latest);
         }
         if (act === 'send') { const cur = editDoc(); if (cur) openSend(cur); return; }
         if (act === 'sec-add') {
@@ -1001,8 +1086,76 @@
         }
       });
 
+      /* ---------- the Treatment Agent's deck: write, write again, repaint or replace a frame */
+      const busyDeck = () => d.job || (d.frames || []).some((f) => f.status === 'pending' || f.status === 'running');
+      if (!ctx.isClient && busyDeck()) setTimeout(() => { if (location.hash.startsWith(`#p.${pid}.treatment`) && document.body.contains(root) && !saver.dirty) ctx.reload(); }, 8000);
+      const writeDeck = async (btn, instruction) => {
+        if (btn) { btn.disabled = true; btn.innerHTML = `${ui.spinner()}Starting…`; }
+        try {
+          await ctx.api.fn('agents', 'generate_treatment', { production_id: pid, instruction: instruction || undefined });
+          ctx.state.trTab = 'deck';
+          ctx.toast('The Treatment Agent is writing the deck. You’ll get a notification when it’s ready.', 'sparkles');
+          ctx.reload();
+        } catch (ex) { ctx.toastError(ex); if (btn && btn.isConnected) repaint(); }
+      };
+      const openRegen = () => {
+        const el = ctx.modal(ctx.frame({
+          title: 'Write the treatment deck again',
+          sub: 'A new draft version from the approved script, with new frames. This version stays as it is.',
+          body: `<div class="field"><label for="dk-ins">What should change? <span class="faint">(optional)</span></label>
+            <textarea id="dk-ins" class="textarea" rows="3" dir="auto" maxlength="1000" placeholder="For example: warmer light, fewer close-ups, make the about page about the family"></textarea></div>
+            <p class="tiny muted">${ui.icon('info')}About $1 to write and about $0.05 a frame to paint.</p>`,
+          foot: `<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="dk-go">${ui.icon('sparkles')}Write it again</button>`,
+        }));
+        el.querySelector('#dk-go').addEventListener('click', (e) => { const ins = el.querySelector('#dk-ins').value.trim(); ctx.closeOverlay(); writeDeck(null, ins); void e; });
+      };
+      const openRepaint = (key) => {
+        const t0 = currentOf(ctx, d);
+        const f = (d.frames || []).find((x) => x.treatment_id === t0.id && x.key === key);
+        if (!f) return;
+        const el = ctx.modal(ctx.frame({
+          title: 'Paint this frame again',
+          sub: 'Edit the description if you want a different picture. Clients never see it.',
+          body: `<div class="field"><label for="dk-prompt">Picture description <span class="faint">(English works best)</span></label>
+            <textarea id="dk-prompt" class="textarea" rows="7" dir="auto" maxlength="2000">${esc(f.prompt || '')}</textarea></div>
+            <p class="tiny muted">${ui.icon('info')}About $0.05 and half a minute.</p>`,
+          foot: `<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="dk-go">${ui.icon('wand-sparkles')}Paint it</button>`,
+        }), { wide: true });
+        el.querySelector('#dk-go').addEventListener('click', async (e) => {
+          const go = e.currentTarget; go.disabled = true; go.innerHTML = `${ui.spinner()}Starting…`;
+          const prompt = el.querySelector('#dk-prompt').value.trim();
+          try {
+            await ctx.api.fn('agents', 'repaint_frames', { treatment_id: t0.id, keys: [key], prompts: prompt && prompt !== f.prompt ? { [key]: prompt } : undefined });
+            ctx.closeOverlay(); ctx.reload();
+          } catch (ex) { go.disabled = false; go.innerHTML = `${ui.icon('wand-sparkles')}Paint it`; MPH.icons(); ctx.toastError(ex); }
+        });
+      };
+      const uploadFrame = async (key, file) => {
+        const t0 = currentOf(ctx, d);
+        if (!isEditable(ctx, d, t0)) return;
+        if (!/^image\//.test(file.type)) return ctx.toastError(new Error(`${file.name} isn’t a picture.`));
+        try {
+          const path = await ctx.api.uploadMedia(pid, file, 'client', `treatment/${t0.id}`);
+          const old = (t0.frame_images || {})[key];
+          const images = { ...(t0.frame_images || {}), [key]: path };
+          ctx.api.must(await ctx.sb.from('treatments').update({ frame_images: images }).eq('id', t0.id));
+          ctx.api.must(await ctx.sb.from('treatment_frames').update({ status: 'uploaded', image_path: path, error: null }).eq('treatment_id', t0.id).eq('key', key));
+          // a picture another version still shows stays in storage
+          if (old && !d.versions.some((v) => v !== t0 && Object.values(v.frame_images || {}).includes(old))) ctx.api.removeMedia([old]).catch(() => {});
+          ctx.toast('Frame replaced', 'image');
+          ctx.reload();
+        } catch (ex) { ctx.toastError(ex); }
+      };
+      root.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-dk-lang], [data-dk="repaint"]');
+        if (!b) return;
+        if (b.dataset.dkLang) { S.lang[pid] = b.dataset.dkLang; repaint(); return; }
+        if (canWrite(ctx)) openRepaint(b.dataset.dkKey);
+      });
+
       /* ---------- files: picker, drop on the board */
       root.addEventListener('change', (e) => {
+        if (e.target.matches('[data-dk-upload]')) { const f = e.target.files[0]; const key = e.target.dataset.dkUpload; e.target.value = ''; if (f) uploadFrame(key, f); return; }
         if (e.target.matches('[data-tr-file]')) { const files = [...e.target.files]; e.target.value = ''; uploadFiles(files); }
         if (e.target.matches('[data-tr-moods]')) { const files = [...e.target.files]; e.target.value = ''; MPH.importer.moods(ctx, files, { onDone: () => { ctx.state.trTab = 'look'; ctx.reload(); } }); }
       });
