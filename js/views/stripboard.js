@@ -2,6 +2,8 @@
    Shoot days with colour-coded scene strips (INT/EXT × day/night, dawn/dusk/golden hour apricot), "End of Day" breaks
    with totals and a call sheet link, and an Unscheduled boneyard. Scenes move by native drag and drop, or by the
    "Move to…" menu on each strip (keyboard and touch). Writes scenes.shoot_day_id + scenes.day_sort.
+   Editors can also correct each scene's shooting time in its Est. box (45m, 1h 30m, 1:30 or 90); it writes
+   scenes.est_minutes, and the day totals, the 12-hour warning and the call sheet times follow it.
    "Suggest schedule" asks the AI for a plan that the user previews before it is applied. */
 (function () {
   const KINDS = [['int-day', 'INT Day'], ['ext-day', 'EXT Day'], ['int-night', 'INT Night'], ['ext-night', 'EXT Night'], ['dawn', 'Dawn, dusk, golden hour']];
@@ -16,6 +18,23 @@
   const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
   const pagesLabel = (n) => `${MPH.eighths(n)} ${n > 8 ? 'pages' : 'page'}`;
   const est = (s) => (s.est_minutes == null ? 60 : Number(s.est_minutes) || 0);
+  /* typed shooting time → minutes: "90", "90m", "45 min", "2h", "1h 30m", "1h30", "1.5h", "1:30", Arabic digits and
+     ساعة / دقيقة. A bare number is minutes. null when it can't be read or is outside 1 minute to 24 hours. */
+  const MAX_EST = 24 * 60;
+  const parseMin = (v) => {
+    let t = String(v == null ? '' : v).trim().toLowerCase()
+      .replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660)).replace(/[۰-۹]/g, (c) => String(c.charCodeAt(0) - 0x6f0))
+      .replace(/٫/g, '.').replace(/,/g, '.').replace(/ساعات|ساعة|ساعه|hours?|hrs?/g, 'h').replace(/دقائق|دقيقة|دقيقه|د|minutes?|mins?/g, 'm')
+      .replace(/\s+/g, '');
+    if (!t) return null;
+    let m = null, r;
+    if ((r = /^(\d+):([0-5]?\d)$/.exec(t))) m = Number(r[1]) * 60 + Number(r[2]);
+    else if ((r = /^(\d+(?:\.\d+)?)$/.exec(t))) m = Number(r[1]);
+    else if ((r = /^(?:(\d+(?:\.\d+)?)h)?(?:(\d+)m?)?$/.exec(t)) && (r[1] || r[2])) m = (r[1] ? Number(r[1]) * 60 : 0) + (r[2] ? Number(r[2]) : 0);
+    if (m == null || !isFinite(m)) return null;
+    m = Math.round(m);
+    return m >= 1 && m <= MAX_EST ? m : null;
+  };
   const ieOf = (s) => s.int_ext || (/^\s*EXT/i.test(s.heading || '') ? 'EXT' : /^\s*INT/i.test(s.heading || '') ? 'INT' : '');
   const kindOf = (s) => (/dawn|dusk|golden|sunrise|sunset|magic/i.test(s.day_night || '') ? 'dawn'
     : `${/EXT/i.test(ieOf(s)) ? 'ext' : 'int'}-${/night/i.test(s.day_night || '') ? 'night' : 'day'}`);
@@ -83,7 +102,9 @@
         <span class="stb-set"><span class="stb-set-name truncate" dir="auto" title="${esc(s.heading || '')}">${esc(setName(s))}</span>${s.synopsis ? `<span class="stb-syn truncate" dir="auto" title="${esc(s.synopsis)}">${esc(s.synopsis)}</span>` : ''}</span>
         <span class="stb-dn" title="${esc(s.day_night || '')}">${esc(s.day_night || '')}</span>
         <span class="stb-pg mono">${MPH.eighths(s.pages_eighths)}</span>
-        <span class="stb-est num">${fmtMin(est(s))}</span>
+        ${ed
+          ? `<span class="stb-est"><input class="cell-input num stb-est-in" data-est="${s.id}" value="${fmtMin(est(s))}" autocomplete="off" spellcheck="false" aria-label="Shooting time for scene ${esc(s.num)}" title="Shooting time: type 45m, 1h 30m, 1:30 or 90 (minutes)"></span>`
+          : `<span class="stb-est num">${fmtMin(est(s))}</span>`}
         <span class="stb-cast">${castChips(ctx, d, s)}</span>
         <span class="stb-loc truncate" dir="auto" title="${esc(s.location || '')}">${esc(s.location || '')}</span>
         ${ed ? moveMenu(ctx, s, dayId, idx, count, days) : '<span></span>'}
@@ -495,6 +516,7 @@
   }
 
   /* ------------------------------------------------------------ view */
+  MPH.stripboardTime = { parseMin, fmtMin };
   MPH.view('stripboard', {
     async load(ctx) {
       const pid = ctx.production.id;
@@ -535,6 +557,53 @@
           if (bad) { ctx.toastError(new Error(`The schedule change didn’t save: ${bad.error.message}`)); ctx.reload(); }
         });
       };
+
+      /* a scene's shooting time, typed in its Est. box: saved to scenes.est_minutes, then the page repaints so the day
+         totals, the 12-hour warning and the schedule totals follow it. Focus stays where the person tabbed to. */
+      const saveEst = (input) => {
+        const s = d.scenes.find((x) => x.id === input.dataset.est);
+        if (!s) return;
+        const was = est(s);
+        const m = parseMin(input.value);
+        if (m == null) {
+          input.value = fmtMin(was);
+          ctx.toast('Type a time between 1 minute and 24 hours, like 45m, 1h 30m or 90.', 'triangle-alert');
+          return;
+        }
+        input.value = fmtMin(m);
+        if (m === was && s.est_minutes != null) return;
+        s.est_minutes = m;
+        queue = queue.then(async () => {
+          const r = await ctx.sb.from('scenes').update({ est_minutes: m }).eq('id', s.id);
+          if (r.error) { ctx.toastError(new Error(`Sc. ${s.num}'s time didn’t save: ${r.error.message}`)); ctx.reload(); }
+        });
+        setTimeout(() => {
+          const a = document.activeElement;
+          const next = a && root.contains(a) && a.dataset ? a.dataset.est : null;
+          paint();
+          const el = next && root.querySelector(`[data-est="${next}"]`);
+          if (el) { el.focus(); el.select(); }
+        }, 0);
+        ctx.toast(`Sc. ${s.num}: ${fmtMin(m)} to shoot`, 'timer');
+      };
+      root.addEventListener('change', (e) => { const i = e.target.closest && e.target.closest('[data-est]'); if (i) saveEst(i); });
+      root.addEventListener('keydown', (e) => {
+        const i = e.target.closest && e.target.closest('[data-est]');
+        if (!i) return;
+        if (e.key === 'Enter') { e.preventDefault(); i.blur(); }
+        else if (e.key === 'Escape') { const s = d.scenes.find((x) => x.id === i.dataset.est); if (s) i.value = fmtMin(est(s)); i.blur(); }
+      });
+      /* typing in the box must not start a drag of its strip */
+      root.addEventListener('pointerdown', (e) => {
+        const i = e.target.closest && e.target.closest('[data-est]');
+        const st = i && i.closest('.stb-strip');
+        if (st) st.draggable = false;
+      });
+      root.addEventListener('focusin', (e) => { if (e.target.dataset && e.target.dataset.est) e.target.select(); });
+      root.addEventListener('focusout', (e) => {
+        const st = e.target.dataset && e.target.dataset.est && e.target.closest('.stb-strip');
+        if (st) st.draggable = true;
+      });
 
       /* move a scene to a day (or null = unscheduled), before/after a reference strip or at the end */
       const move = (id, toDay, refId, after) => {
