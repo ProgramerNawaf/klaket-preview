@@ -5,7 +5,9 @@
    Publishing writes a snapshot into call_sheets.content with names, roles, call times and key-contact phones only:
    never rates, costs or emails. The crew page (callsheet.html) renders that snapshot by share token.
    A new version keeps the same share link: the token moves to the newest row, so links already sent on WhatsApp
-   always open the latest version, and older rows stay in history. */
+   always open the latest version, and older rows stay in history.
+   Export PDF (drafts and published versions): a print window with the sheet on A4 in Klaket colours, the Klaket
+   wordmark in its footer and DRAFT across an unpublished one; the browser's Save as PDF makes the file. */
 (function () {
   const { esc } = MPH;
 
@@ -26,6 +28,28 @@
   const clone = (o) => JSON.parse(JSON.stringify(o || {}));
   const randHex = (bytes = 16) => [...crypto.getRandomValues(new Uint8Array(bytes))].map((b) => b.toString(16).padStart(2, '0')).join('');
   const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+
+  /* ------------------------------------------------------------ Export PDF
+     A print window holding the sheet on A4 in Klaket colours. Works for a draft (DRAFT watermark, "not shared")
+     and for a published version; the browser's print dialog saves it as a PDF. */
+  function exportPdf(snap, meta, title) {
+    const w = window.open('', '_blank');
+    if (!w) throw new Error('Allow pop-ups for this site to export the PDF.');
+    const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
+    const css = [...document.querySelectorAll('link[rel="stylesheet"]')]
+      .filter((l) => /fonts\.googleapis|\/app\.css|\/platform\.css|budget-callsheets\.css/.test(l.href))
+      .map((l) => `<link rel="stylesheet" href="${esc(l.href)}">`).join('');
+    const doc = sheetDoc(snap, Object.assign({}, meta, { klaket: base + 'brand/klaket-wordmark-ink.svg' }));
+    w.document.write(`<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><title>${esc(title)}</title>${css}
+      <style>@page{size:A4 portrait;margin:9mm}html,body{margin:0;background:#fff}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+      .cs-paper-wrap{border:0;border-radius:0;padding:0;background:none}.cs-doc{box-shadow:none;max-width:none;border-radius:0}</style></head>
+      <body><div class="cs-paper-wrap cs-print">${doc.replace('class="cs-doc', 'class="cs-doc cs-kl')}</div></body></html>`);
+    w.document.close();
+    const fonts = w.document.fonts && w.document.fonts.ready ? w.document.fonts.ready : Promise.resolve();
+    const imgs = [...w.document.images].map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; })));
+    Promise.race([Promise.all([fonts, ...imgs]), new Promise((r) => setTimeout(r, 4000))]).then(() => setTimeout(() => { w.focus(); w.print(); }, 250));
+    return w;
+  }
 
   /* ------------------------------------------------------------ snapshot (what the crew page renders) */
   const suggestedContacts = (people) => people
@@ -181,6 +205,7 @@
         </section>
 
         <footer class="cs-doc-foot">
+          ${meta.klaket ? `<span class="cs-kl-brand"><img src="${esc(meta.klaket)}" alt="Klaket" width="54" height="34"></span>` : ''}
           <span>v${esc(meta.version)}${draft ? ' · draft, not shared' : meta.published_at ? ` · published ${esc(MPH.date(meta.published_at, 'long'))} ${esc(MPH.date(meta.published_at, 'time'))}` : ''}</span>
           <span>Confirm your attendance from the link you received</span>
         </footer>
@@ -464,6 +489,7 @@
           <div class="cs-bar">
             <span class="tiny muted" id="cs-save" aria-live="polite">${ctx.canEdit ? 'Changes save automatically' : ''}</span>
             <span class="spacer"></span>
+            <button class="btn btn-sm btn-outline" data-cs="pdf" title="A PDF of this draft, marked DRAFT. Nothing is shared.">${ui.icon('file-down')}Export PDF</button>
             ${ctx.canEdit ? `<button class="btn btn-sm btn-ghost" data-cs="del-draft">${ui.icon('trash-2')}Delete draft</button>
               <button class="btn btn-sm btn-primary" data-cs="publish">${ui.icon('send')}Publish v${esc(sheet.version)}</button>` : ''}
           </div>
@@ -488,6 +514,7 @@
             <button role="tab" aria-selected="${tab === 'tracking'}" class="${tab === 'tracking' ? 'on' : ''}" data-cs="tab" data-t="tracking">${ui.icon('users')}Share & tracking <span class="count">${tr.confirmed}/${tr.total}</span></button>
           </div>
           <div class="toolbar">
+            <button class="btn btn-sm btn-outline" data-cs="pdf">${ui.icon('file-down')}Export PDF</button>
             <button class="btn btn-sm btn-outline" data-cs="copy">${ui.icon('copy')}Copy link</button>
             ${ctx.canEdit && isLatest ? (openDraft && openDraft.version > sheet.version
               ? `<a class="btn btn-sm btn-primary" href="#p.${p.id}.callsheets.${openDraft.id}">${ui.icon('pencil')}Open draft v${esc(openDraft.version)}</a>`
@@ -502,6 +529,7 @@
   }
 
   /* ------------------------------------------------------------ view */
+  MPH.callSheetPdf = { exportPdf, sheetDoc };
   MPH.view('callsheets', {
     async load(ctx) {
       const pid = ctx.production.id;
@@ -577,12 +605,24 @@
           if (a === 'copy') return copy(shareUrl(sheet.share_token));
           if (a === 'refresh') return ctx.reload();
           if (a === 'publish') return openPublish();
+          if (a === 'pdf') return exportSheet();
           if (a === 'del-draft') return await delDraft(el);
           if (a === 'new-version') return await newVersion(el);
         } catch (ex) { ctx.toastError(ex); }
       });
 
       function rerenderSheet() { root.innerHTML = renderSheet(ctx, d); MPH.icons(); }
+
+      /* Export PDF: a draft exports what the preview shows right now (marked DRAFT); a published version its snapshot */
+      function exportSheet() {
+        const dday = d.days.find((x) => x.id === sheet.shoot_day_id);
+        const pub = sheet.status === 'published';
+        const snap = pub ? (sheet.content || {}) : buildSnapshot(ctx, d, dday, d.edits || {});
+        const n = (snap.day && snap.day.day_no) || (dday && dday.day_no) || '';
+        const title = `${ctx.production.title || 'Call sheet'} · Day ${n} call sheet v${sheet.version}${pub ? '' : ' (draft)'}`;
+        exportPdf(snap, pub ? { status: 'published', version: sheet.version, published_at: sheet.published_at } : { status: 'draft', version: sheet.version }, title);
+        ctx.toast(pub ? 'Choose “Save as PDF” in the print window' : 'Draft PDF: choose “Save as PDF” in the print window', 'file-down');
+      }
 
       /* published sheet → start the next version as a draft (copies this version's sheet details and call times) */
       async function newVersion(el) {

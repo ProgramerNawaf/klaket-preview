@@ -209,6 +209,14 @@ button.bid-ver.on { background: var(--raised); box-shadow: inset 3px 0 0 var(--p
 }
 @media (max-width: 760px) { .cs-paper-wrap { padding: 8px; } .cs-doc { padding: 16px 14px 12px; } }
 
+/* Export PDF: the same sheet in Klaket's colours (teal bands, ink text, a white page), with the wordmark in the footer */
+.cs-doc.cs-kl { --paper: #FFFFFF; --ink: #121212; --ink-2: #4A4744; --rule: #E3D7C3; --band: #0A3F3C; --lime: #0F5C57; font-family: "IBM Plex Sans", "IBM Plex Sans Arabic", var(--font-ui), sans-serif; }
+.cs-doc.cs-kl .cs-title, .cs-doc.cs-kl .cs-your-t, .cs-doc.cs-kl .cs-dayof { font-family: "Cairo", var(--font-display), sans-serif; }
+.cs-doc.cs-kl .cs-watermark { color: rgba(15, 92, 87, .08); font-family: "Cairo", var(--font-display), sans-serif; }
+.cs-doc.cs-kl .cs-general, .cs-doc.cs-kl .cs-sec-t { color: #F6EBD9; }
+.cs-kl-brand { display: inline-flex; align-items: center; margin-inline-end: auto; }
+.cs-kl-brand img { height: 22px; width: auto; display: block; }
+
 @media print {
   .rail, .topbar, .prod-head, .client-banner, .cs-top, .cs-bar, .cs-build-col, .page-head { display: none !important; }
   .cs-paper-wrap { border: 0; padding: 0; background: none; }
