@@ -9,7 +9,6 @@
    Also defines MPH.trShow, the full-screen slideshow the Storyboard reuses. */
 (function () {
   const esc = MPH.esc;
-  const DEFAULT_SECTIONS = ['Vision', 'Story', 'Look & light', 'Casting', 'Locations', 'Wardrobe & art', 'Sound & music'];
   const BOARD_IDEAS = ['Mood', 'Light', 'Wardrobe', 'Locations'];
   const STATUS = {
     draft: { label: 'Draft', kind: '', icon: 'pencil-line' },
@@ -19,8 +18,7 @@
   };
 
   /* per-production UI state that outlives re-renders */
-  const S = { ver: {}, board: {}, boards: {}, aiForm: {}, aiErr: {}, lang: {} };
-  const aiRuns = new Map(); // production id -> promise of the inserted treatment row
+  const S = { ver: {}, board: {}, boards: {}, lang: {} };
   let activeSaver = null;
   window.addEventListener('beforeunload', (e) => {
     if (activeSaver && activeSaver.dirty) { activeSaver.flush(); e.preventDefault(); e.returnValue = ''; }
@@ -61,7 +59,6 @@
     return 'pilcrow';
   };
   const firstSentence = (s) => { const m = /^[\s\S]*?[.!?؟](\s|$)/.exec(String(s || '').trim()); return m ? m[0].trim() : ''; };
-  const onView = (pid) => location.hash.startsWith(`#p.${pid}.treatment`);
 
   /* pitch-style cover: forest sky, apricot sun, layered dunes (flat shapes, no outlines) */
   let artSeq = 0;
@@ -304,7 +301,7 @@
     let actions = '';
     if (!isLatest) actions = `<button class="btn btn-sm btn-outline" data-tr-ver="${latest.version}">${ui.icon('arrow-right')}Open the latest, v${esc(latest.version)}</button>`;
     else if (editor) {
-      actions = `<button class="btn btn-sm btn-ghost" data-tr="import" title="Import a treatment deck as a new version">${ui.icon('file-up')}Import</button>`;
+      actions = '';
       if (cur.status === 'draft') actions += `<button class="btn btn-sm btn-ghost" data-tr="new-version" title="Copy v${esc(cur.version)} into a new draft">${ui.icon('copy-plus')}New version</button><button class="btn btn-sm btn-primary" data-tr="send">${ui.icon('send')}Send to client</button>`;
       if (['draft', 'sent'].includes(cur.status) && ctx.canSeeInternal) actions += `<button class="btn btn-sm btn-outline" data-tr="behalf">${ui.icon('badge-check')}Approve on behalf of the client</button>`;
       else if (cur.status === 'changes_requested') actions += `<button class="btn btn-sm btn-primary" data-tr="new-version">${ui.icon('file-pen-line')}Start v${esc(cur.version + 1)} from these notes</button>`;
@@ -323,62 +320,31 @@
       ${isLatest && editor && cur.status !== 'draft' ? `<p class="tiny faint tr-sentnote">${ui.icon('lock')}Sent versions are locked, so the client reviews exactly what you sent. Start a new version to make changes.</p>` : ''}`;
   }
 
-  /* first-run: write with AI, or start blank */
-  function startHtml(ctx) {
+  /* first run: the treatment is written by the Treatment Agent from the approved script (it starts by itself when the
+     client approves a script, by email or on their behalf; Run Treatment Agent starts it by hand) */
+  function startHtml(ctx, d) {
     const { ui } = ctx;
     const pid = ctx.production.id;
     if (!canWrite(ctx)) {
-      return ui.panel({ body: ui.empty('gallery-vertical-end', 'No treatment yet', 'Producers and heads of department write the director’s treatment here. It appears for you as soon as they start.') });
+      return ui.panel({ body: ui.empty('gallery-vertical-end', 'No treatment yet', 'The director’s treatment appears here once the client has approved the script.') });
     }
-    const f = S.aiForm[pid] || { brief: '', sections: DEFAULT_SECTIONS.slice(), extra: '' };
-    const running = aiRuns.has(pid);
-    const err = S.aiErr[pid];
-    const aiBody = running ? `
-      <div class="tr-ai-run" role="status">
-        <span class="spin"></span>
-        <div class="stack tight" style="gap:3px"><span class="strong">Writing the treatment…</span>
-          <span class="small muted">The AI is reading the script and your notes, then writing each section. This takes about a minute. You can leave this page; the draft will be waiting when it’s done.</span></div>
-      </div>
-      <div class="tr-ai-ghost" aria-hidden="true">${[72, 94, 88, 60, 90, 80].map((w, i) => `<span style="width:${w}%;animation-delay:${i * 120}ms"></span>`).join('')}</div>` : `
-      ${err ? ui.errorBox(err) : ''}
-      <div class="field"><label for="tr-brief">Director’s notes <span class="faint">(optional)</span></label>
-        <textarea id="tr-brief" class="textarea" rows="3" dir="auto" placeholder="Tone, references, what must be in it. For example: warm and quiet, one family, no voice-over until the last shot.">${esc(f.brief)}</textarea></div>
-      <div class="field"><span class="label">Sections to write</span>
-        <div class="tr-checks">${DEFAULT_SECTIONS.map((s) => `<label class="tr-check"><input type="checkbox" value="${esc(s)}" ${f.sections.includes(s) ? 'checked' : ''}><span>${ui.icon('check')}${esc(s)}</span></label>`).join('')}</div>
-        <input class="input" id="tr-extra" dir="auto" value="${esc(f.extra)}" placeholder="Other sections, separated by commas (e.g. Edit & pace, References)" aria-label="Other sections"></div>
-      <div class="row wrap"><button class="btn btn-primary" data-tr="ai-write">${ui.icon('sparkles')}Write the treatment</button><span class="tiny faint">Takes 20 to 60 seconds. Everything stays editable.</span></div>`;
+    const busy = !!d.job;
+    const action = busy ? `<span class="small muted">${ui.spinner()} The Treatment Agent is writing the deck. It takes about 15 minutes.</span>`
+      : d.script ? `<button class="btn btn-primary" data-tr="deck-write">${ui.icon('sparkles')}Run Treatment Agent</button><span class="tiny faint">From script v${esc(d.script.version)}, approved by the client.</span>`
+      : `<a class="btn btn-primary" href="#p.${esc(pid)}.script">${ui.icon('file-text')}Approve the script first</a><span class="tiny faint">On the Script tab: approve a version on behalf of the client, or email it. The deck starts by itself once it’s approved.</span>`;
     return `
       <div class="tr-start">
-        <section class="tr-start-card tr-start-ai ${running ? 'is-running' : ''}">
+        <section class="tr-start-card tr-start-ai ${busy ? 'is-running' : ''}">
           <div class="tr-start-art">${MPH.art.step('treatment')}</div>
           <div class="stack">
-            <div class="stack tight">${ui.aiBadge('Write with AI')}<h2 class="h2">Draft the treatment from your script</h2>
-              <p class="small muted">The AI reads the script breakdown and the production summary, then writes each section in the script’s language: Arabic, English or both.</p></div>
-            ${aiBody}
+            <div class="stack tight">${ui.aiBadge('Treatment Agent')}<h2 class="h2">The treatment deck is written from the approved script</h2>
+              <p class="small muted">The Treatment Agent writes the deck in Arabic and English (cover, about the project, deliverables, a page per scene and shot, look and mood, colours), paints a film-still frame for every picture, and fills the lookbook boards. It starts by itself when the client approves a script.</p></div>
+            <div class="row wrap" style="gap:10px;align-items:center">${action}</div>
           </div>
         </section>
-        <div class="tr-start-side">
-          <section class="tr-start-card tr-start-import">
-            <div class="tr-start-art">${MPH.art.step('storyboard')}</div>
-            <div class="stack">
-              <div class="stack tight">${ui.aiBadge('Bring your own')}<h2 class="h2">Import a treatment</h2>
-                <p class="small muted">Already have a deck? Upload the PDF, slide images or a Word file. The AI writes the text into sections and sorts the pages onto lookbook boards. You review it before anything is saved.</p></div>
-              <div><button class="btn btn-outline" data-tr="import" ${running ? 'disabled' : ''}>${ui.icon('file-up')}Import a treatment</button></div>
-            </div>
-          </section>
-          <section class="tr-start-card tr-start-blank">
-            <div class="tr-start-art">${MPH.art.step('script')}</div>
-            <div class="stack">
-              <div class="stack tight"><span class="eyebrow">Write it yourself</span><h2 class="h2">Start blank</h2>
-                <p class="small muted">Seven sections ready to fill in: ${DEFAULT_SECTIONS.map(esc).join(', ')}. Rename, reorder or remove any of them.</p></div>
-              <div><button class="btn btn-outline" data-tr="start-blank" ${running ? 'disabled' : ''}>${ui.icon('file-plus')}Start a blank treatment</button></div>
-            </div>
-          </section>
-        </div>
       </div>`;
   }
 
-  /* ------------------------------------------------------------ lookbook */
   function tileHtml(ctx, d, it, editable, showBoard) {
     const { ui } = ctx;
     let media;
@@ -474,8 +440,9 @@
     }
     const hasDeck = d.versions.some((v) => v.source === 'ai' && v.script_id === (d.script && d.script.id));
     if (d.script && !hasDeck) {
-      return `<div class="callout">${ui.icon('sparkles')}<div class="grow"><span class="strong">The client approved script v${esc(d.script.version)}.</span> <span class="muted">Write the treatment deck and lookbook from it, with a painted frame for each scene and shot.</span></div>
-        <button class="btn btn-sm btn-primary" data-tr="deck-write">${ui.icon('sparkles')}Write the treatment deck</button></div>`;
+      if (!d.versions.length) return ''; // the start page offers it
+      return `<div class="callout">${ui.icon('sparkles')}<div class="grow"><span class="strong">The client approved script v${esc(d.script.version)}.</span> <span class="muted">The Treatment Agent writes the deck and lookbook from it, with a painted frame for each scene and shot.</span></div>
+        <button class="btn btn-sm btn-primary" data-tr="deck-write">${ui.icon('sparkles')}Run Treatment Agent</button></div>`;
     }
     return '';
   }
@@ -490,12 +457,12 @@
     const head = ui.pageHead({
       eyebrow: 'Story · Client-visible',
       title: ctx.t('Treatment & Lookbook'),
-      sub: cur ? `${esc(cur.title || p.title)} · ${plural(d.versions.length, 'version')} · ${plural(d.items.length, 'lookbook item')}` : 'The director’s vision for the film, and the pictures behind it. Write it here, then send it to the client to approve.',
+      sub: cur ? `${esc(cur.title || p.title)} · ${plural(d.versions.length, 'version')} · ${plural(d.items.length, 'lookbook item')}` : 'The director’s vision for the film, and the pictures behind it. The Treatment Agent writes it from the approved script; then the client approves it.',
       actions: (cur || d.items.length) ? `<button class="btn btn-sm btn-outline" data-tr="present">${ui.icon('presentation')}Present</button>` : '',
     });
     let body;
     if (tab === 'look') body = lookbookHtml(ctx, d, shared);
-    else if (!cur || aiRuns.has(p.id)) body = startHtml(ctx);
+    else if (!cur) body = startHtml(ctx, d);
     else if (tab === 'deck') body = `${barHtml(ctx, d, cur)}${deckHtml(ctx, d, cur)}`;
     else {
       const editable = isEditable(ctx, d, cur);
@@ -702,33 +669,6 @@
       const repaint = () => { saver.bind(editDoc()); root.innerHTML = renderPage(ctx, d); MPH.icons(); sizeAll(); };
       saver.bind(editDoc());
       sizeAll();
-
-      /* ---------- AI run (survives navigation; this screen just listens) */
-      const listenAi = () => {
-        const run = aiRuns.get(pid);
-        if (!run) return;
-        run.then((row) => { if (root.isConnected) { S.ver[pid] = row.version; ctx.state.trTab = 'doc'; ctx.reload(); } },
-          (err) => { if (root.isConnected) repaint(); void err; });
-      };
-      listenAi();
-      const startAi = (brief, sections) => {
-        if (aiRuns.has(pid)) return;
-        S.aiErr[pid] = null;
-        const run = (async () => {
-          const out = await ctx.api.ai('treatment', { production_id: pid, brief: brief || undefined, sections });
-          const secs = normSections(out && out.sections).filter((s) => s.title.trim() || s.body.trim());
-          if (!secs.length) throw new Error('The AI didn’t return any sections. Add a few director’s notes and try again.');
-          const version = await ctx.api.nextVersion('treatments', pid);
-          return ctx.api.must(await ctx.sb.from('treatments').insert({
-            production_id: pid, version, title: txt(out.title, 300) || ctx.production.title, sections: secs, status: 'draft', created_by: ctx.session.user.id,
-          }).select().single());
-        })();
-        aiRuns.set(pid, run);
-        run.then((row) => { aiRuns.delete(pid); if (!onView(pid)) ctx.toast(`Treatment v${row.version} for ${ctx.production.title} is ready`, 'sparkles'); },
-          (err) => { aiRuns.delete(pid); S.aiErr[pid] = err.message || String(err); if (!onView(pid)) ctx.toastError(new Error(`The treatment draft failed: ${S.aiErr[pid]}`)); });
-        repaint();
-        listenAi();
-      };
 
       const createVersion = async (btn, row, toastMsg, from) => {
         if (btn) { btn.disabled = true; btn.innerHTML = `${ui.spinner()}Creating…`; }
@@ -961,10 +901,6 @@
         }
         if (!(b = t.closest('[data-tr]')) || b.disabled) return;
         const act = b.dataset.tr;
-        if (act === 'import') {
-          await saver.flush();
-          return MPH.importer.treatment(ctx, { onDone: (row) => { if (row) { S.ver[pid] = row.version; ctx.state.trTab = 'doc'; } else ctx.state.trTab = 'look'; ctx.reload(); } });
-        }
         if (act === 'present') { await saver.flush(); return present(ctx, d, tabOf(ctx, d) === 'look' ? 'look' : 0); }
         if (act === 'deck-pdf') {
           const t0 = shownOf(ctx, d);
@@ -987,16 +923,6 @@
         if (!canWrite(ctx)) return;
         if (act === 'deck-write') return writeDeck(b, '');
         if (act === 'deck-regen') return openRegen();
-        if (act === 'ai-write') {
-          const checks = [...root.querySelectorAll('.tr-checks input:checked')].map((x) => x.value);
-          const extra = (root.querySelector('#tr-extra')?.value || '').split(/[,،]/).map((x) => x.trim()).filter(Boolean);
-          const brief = (root.querySelector('#tr-brief')?.value || '').trim();
-          const sections = [...new Set([...checks, ...extra])].slice(0, 10);
-          S.aiForm[pid] = { brief, sections: checks, extra: extra.join(', ') };
-          if (!sections.length) return ctx.toast('Choose at least one section to write', 'list-checks');
-          return startAi(brief.slice(0, 4000), sections);
-        }
-        if (act === 'start-blank') return createVersion(b, { title: ctx.production.title, sections: DEFAULT_SECTIONS.map((title) => ({ id: newId(), title, body: '' })) }, (r) => `Treatment v${r.version} started`);
         if (act === 'new-version') {
           const latest = latestOf(d);
           const deck = latest.deck ? { source: latest.source, script_id: latest.script_id, deck: latest.deck, frame_images: latest.frame_images || {} } : {};
