@@ -102,8 +102,8 @@ MPH.view('home', {
       const st = stats[p.id] || {};
       if (clientOnly) return ['Open', `p.${p.id}.overview`, 'arrow-right'];
       if (!st.scripts) return ['Add the script', `p.${p.id}.script`, 'file-up'];
-      if (!st.broken) return ['Run the AI breakdown', `p.${p.id}.breakdown`, 'sparkles'];
-      if (st.pending) return [`Review ${st.pending} AI suggestions`, `p.${p.id}.breakdown`, 'scan-text'];
+      if (!st.broken) return ['Run the AI breakdown', `p.${p.id}.script`, 'sparkles'];
+      if (st.pending) return [`Review ${st.pending} AI suggestions`, `p.${p.id}.script`, 'scan-text'];
       if (!st.shots) return ['Build the shot list', `p.${p.id}.shotlist`, 'list-video'];
       if (!st.sheets) return ['Schedule and send call sheets', `p.${p.id}.stripboard`, 'rows-3'];
       return ['Open', `p.${p.id}.overview`, 'arrow-right'];

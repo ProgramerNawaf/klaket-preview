@@ -1,6 +1,9 @@
-/* AI Breakdown: MPH's signature feature. The AI reads the latest script version and proposes scenes plus the
+/* Script (the AI Breakdown): MPH's signature feature. The AI reads a script version and proposes scenes plus the
    elements each department needs, each tied to the words that call for it. The producer accepts, corrects or
    removes every suggestion; every action is saved to `elements` straight away.
+   It is the Script tab: a version bar picks the version on screen (the latest by default) and adds a new one (pasted,
+   PDF or Word, the same form as before), with the client's decision on that version under it (approved on their behalf
+   or by email); with no script yet it shows the add-the-script page (views/script.js).
    Depends on MPH.scriptKit from views/script.js (loaded first). */
 (function () {
   const { esc } = MPH;
@@ -321,7 +324,30 @@
   }
 
   /* ------------------------------------------------------------ pieces */
-  const head = (ctx, sub, actions = '') => ctx.ui.pageHead({ eyebrow: 'Pre-production · AI Breakdown', title: 'Script breakdown', sub, actions });
+  let VERS = null; // { list, script } of the screen being drawn, for the version bar under the heading
+  const versionBar = (ctx) => {
+    if (!VERS || !VERS.list.length) return '';
+    const { ui } = ctx;
+    return `<div class="sc-toolbar bd-vers"><div class="seg sc-vers" role="tablist" aria-label="Script version">${VERS.list.map((v) => `<button class="${v.id === VERS.script.id ? 'on' : ''}" role="tab" aria-selected="${v.id === VERS.script.id}" data-bd-ver="${v.version}" title="${esc(v.title || `Version ${v.version}`)}">${v.locked ? ui.icon('lock') : ''}v${v.version}</button>`).join('')}</div>
+      ${VERS.script.id !== VERS.list[VERS.list.length - 1].id ? `<span class="small muted">You’re viewing v${VERS.script.version}; the latest is v${VERS.list[VERS.list.length - 1].version}.</span>` : ''}
+      <span class="spacer"></span>${ctx.canEdit ? `<button class="btn btn-sm btn-outline" data-bd-newver>${ui.icon('plus')}New version</button>` : ''}</div>${approvalRow(ctx)}`;
+  };
+  /* the client's decision on the version shown; on the latest draft or sent version, owners and producers record it on
+     their behalf or email it (MPH.approve). An approved version is locked and the Treatment Agent writes the deck. */
+  const DECISION = { draft: ['Not sent to the client', '', 'pencil'], sent: ['Waiting for the client', 'warn', 'send'], approved: ['Approved by the client', 'ok', 'badge-check'], changes_requested: ['Changes requested', 'danger', 'message-square-warning'] };
+  const approvalRow = (ctx) => {
+    if (ctx.isClient) return '';
+    const { ui } = ctx;
+    const s = VERS.script;
+    const st = DECISION[s.status] || DECISION.draft;
+    const open = ['draft', 'sent'].includes(s.status) && s.id === VERS.list[VERS.list.length - 1].id && ctx.canEdit && ctx.canSeeInternal;
+    const who = MPH.approve.decidedLine(s);
+    return `<div class="bd-approval row wrap" style="gap:10px;align-items:center;margin:-4px 0 12px">
+      ${ui.pill(st[0], st[1], st[2])}${who ? `<span class="small muted">${who}</span>` : ''}${s.client_note ? `<span class="small" dir="auto">“${esc(s.client_note)}”</span>` : ''}
+      <span class="spacer"></span>
+      ${open ? `<button class="btn btn-sm btn-ghost" data-bd-approve="email">${ui.icon('mail')}Email for approval</button><button class="btn btn-sm btn-primary" data-bd-approve="behalf">${ui.icon('badge-check')}Approve on behalf of the client</button>` : ''}</div>`;
+  };
+  const head = (ctx, sub, actions = '') => ctx.ui.pageHead({ eyebrow: 'Pre-production · Script', title: 'Script breakdown', sub, actions }) + versionBar(ctx);
 
   function sourceLine(s) {
     if (s.source_type === 'pdf') return `PDF · ${esc(K().fileName(s.file_path))}`;
@@ -742,13 +768,22 @@
   }
 
   /* ------------------------------------------------------------ view */
-  MPH.view('breakdown', {
+  const view = {
     async load(ctx) {
       const { sb, api } = ctx;
       const pid = ctx.production.id;
-      // one round trip: the latest script with its scenes and their elements embedded
-      const script = api.must(await sb.from('scripts').select('*, scenes(*, elements(*))').eq('production_id', pid).order('version', { ascending: false }).limit(1))[0] || null;
-      if (!script) return { script: null, scenes: [], older: 0 };
+      const want = K().state(ctx).ver;
+      // the versions, and the chosen one (else the latest) with its scenes and their elements embedded
+      const pick = (ver) => { const q = sb.from('scripts').select('*, scenes(*, elements(*))').eq('production_id', pid); return (ver ? q.eq('version', ver) : q.order('version', { ascending: false })).limit(1); };
+      const [listRes, pickRes] = await Promise.all([
+        sb.from('scripts').select('id, version, title, locked').eq('production_id', pid).order('version'),
+        pick(want),
+      ]);
+      const list = api.must(listRes);
+      let script = api.must(pickRes)[0] || null;
+      if (!script && want) script = api.must(await pick(null))[0] || null; // the remembered version was deleted
+      // no script yet: the add-the-script page
+      if (!script) return { script: null, scenes: [], older: 0, list, add: await MPH.views['script-add'].load(ctx) };
       const scenes = (script.scenes || []).sort((a, b) => (a.sort || 0) - (b.sort || 0));
       delete script.scenes;
       scenes.forEach((s) => { s.elements = (s.elements || []).sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))); });
@@ -757,17 +792,12 @@
         const { count } = await sb.from('scenes').select('id', { count: 'exact', head: true }).eq('production_id', pid).neq('script_id', script.id);
         older = count || 0;
       }
-      return { script, scenes, older };
+      return { script, scenes, older, list, latest: list[list.length - 1] };
     },
 
     render(ctx, d) {
-      const { ui, production: p } = ctx;
-      if (!d.script) {
-        return `<div class="page bd-page">${head(ctx, esc(p.title))}
-          <div class="panel">${ui.empty('scan-text', 'No script to break down yet',
-            'Add the script first. The AI reads it in Arabic and English and suggests cast, props, wardrobe, vehicles, locations and more against each line, and you accept or correct every one.',
-            `<a class="btn btn-primary" href="#p.${p.id}.script">${ui.icon('file-text')}Go to Script</a>`)}</div></div>`;
-      }
+      if (!d.script) return MPH.views['script-add'].render(ctx, d.add);
+      VERS = { list: d.list, script: d.script };
       const run = RUNS[d.script.id];
       if (run && !run.done) return runningPage(ctx, d);
       if (!d.scenes.length) return startPage(ctx, d, run);
@@ -776,7 +806,15 @@
 
     mount(root, ctx, d) {
       const script = d.script;
-      if (!script) return;
+      if (!script) return MPH.views['script-add'].mount(root, ctx, d.add);
+      // the version bar
+      root.addEventListener('click', (e) => {
+        const v = e.target.closest('[data-bd-ver]');
+        if (v) { K().state(ctx).ver = Number(v.dataset.bdVer); ctx.reload(); return; }
+        if (e.target.closest('[data-bd-newver]')) return K().newVersion(ctx, { latest: d.latest });
+        const ap = e.target.closest('[data-bd-approve]');
+        if (ap) MPH.approve[ap.dataset.bdApprove === 'email' ? 'email' : 'onBehalf'](ctx, { type: 'script', id: script.id, title: `Script v${script.version}` });
+      });
       const { sb, api, ui } = ctx;
       const pid = ctx.production.id;
       const u = uiState(ctx, d);
@@ -784,7 +822,7 @@
       const repaint = () => {
         const sc = root.querySelector('.bd-scenes');
         const top = sc ? sc.scrollTop : 0;
-        root.innerHTML = MPH.views.breakdown.render(ctx, d);
+        root.innerHTML = view.render(ctx, d);
         MPH.icons();
         const sc2 = root.querySelector('.bd-scenes');
         if (sc2) sc2.scrollTop = top;
@@ -814,7 +852,7 @@
       };
       if (RUNS[script.id] && !RUNS[script.id].done) attach(RUNS[script.id]);
       if (ctx.params[0] === 'run') {
-        try { history.replaceState(null, '', `#p.${pid}.breakdown`); } catch (e) { /* ignore */ }
+        try { history.replaceState(null, '', `#p.${pid}.script`); } catch (e) { /* ignore */ }
         if (ctx.canEdit && !d.scenes.length && !RUNS[script.id] && !isRecentRun(script) && !d.older && !AUTO_USED[script.id]) {
           AUTO_USED[script.id] = true;
           begin();
@@ -990,5 +1028,7 @@
         }
       });
     },
-  });
+  };
+  MPH.view('script', view);
+  MPH.view('breakdown', view); // old links (#p.<id>.breakdown, .breakdown.run) open the same screen
 })();

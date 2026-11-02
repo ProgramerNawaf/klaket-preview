@@ -280,7 +280,7 @@
       const list = open();
       if (!roles.size) {
         body.innerHTML = ui.empty('scan-text', 'No accepted cast yet', 'Run the AI Breakdown and accept its cast suggestions. Each character then shows up here, ready for you to add the actor who plays them.',
-          `<a class="btn btn-primary btn-sm" href="#p.${pid}.breakdown">${ui.icon('scan-text')}Open AI Breakdown</a>`);
+          `<a class="btn btn-primary btn-sm" href="#p.${pid}.script">${ui.icon('scan-text')}Open AI Breakdown</a>`);
         foot.innerHTML = '<button class="btn btn-ghost" data-close>Close</button>';
       } else if (!list.length) {
         body.innerHTML = ui.empty('circle-check', 'Every cast role is on the job', 'All the accepted cast roles in the breakdown already have someone assigned.');

@@ -14,11 +14,10 @@
     /* each phase is an ordered sequence of steps, grouped into activities (tabs keep the same order) */
     { id: 'pre', label: 'Pre-production', icon: 'pencil-ruler', color: 'var(--phase-band)',
       tabs: [['brief', 'Brief', 'clipboard-list', 1], ['concepts', 'Concepts', 'lightbulb', 1], ['script', 'Script', 'file-text', 1], ['treatment', 'Treatment & Lookbook', 'gallery-vertical-end', 1],
-             ['breakdown', 'AI Breakdown', 'scan-text', 1],
              ['storyboard', 'Storyboard', 'layout-grid', 1], ['shotlist', 'Shot List', 'list-video', 1],
              ['stripboard', 'Stripboard', 'rows-3', 1], ['calendar', 'Calendar', 'calendar-days', 1],
              ['budget', 'Budget & Bid', 'calculator', 1]],
-      groups: [['Brief', ['brief', 'concepts']], ['Story', ['script', 'treatment']], ['Breakdown', ['breakdown']], ['Visualize', ['storyboard', 'shotlist']],
+      groups: [['Brief', ['brief', 'concepts']], ['Story', ['script', 'treatment']], ['Visualize', ['storyboard', 'shotlist']],
                ['Schedule', ['stripboard', 'calendar']], ['Budget', ['budget']]] },
     { id: 'prod', label: 'Production', icon: 'clapperboard', color: 'var(--phase-band)',
       tabs: [['crew', 'Crew & Talent', 'users', 1], ['locations', 'Locations', 'map-pin', 1], ['callsheets', 'Call Sheets', 'clipboard-list', 1], ['shootday', 'Shoot Day', 'radio', 1]],
@@ -102,7 +101,8 @@
   const parse = () => {
     const raw = decodeURIComponent(location.hash.replace(/^#/, '')) || 'home';
     const parts = raw.split('.');
-    if (parts[0] === 'p') return { section: 'p', productionId: parts[1], view: parts[2] || 'overview', params: parts.slice(3) };
+    // the AI Breakdown is the Script tab now: old links (#p.<id>.breakdown, .breakdown.run) open it
+    if (parts[0] === 'p') return { section: 'p', productionId: parts[1], view: parts[2] === 'breakdown' ? 'script' : parts[2] || 'overview', params: parts.slice(3) };
     return { section: parts[0], view: parts[0], params: parts.slice(1) };
   };
   const go = (hash) => { const h = hash.startsWith('#') ? hash : '#' + hash; if (location.hash === h) render(); else location.hash = h; };

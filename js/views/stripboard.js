@@ -211,7 +211,7 @@
           ${ui.pageHead({ title: ctx.t('Stripboard'), sub: esc(p.title) })}
           ${ui.panel({ body: ui.empty('rows-3', 'No strips yet',
             'The stripboard builds itself from the AI Breakdown: one strip per scene, coloured by interior, exterior, day and night. Add the script and run the breakdown first.',
-            `<a class="btn btn-primary" href="#p.${p.id}.breakdown">${ui.icon('scan-text')}Open AI Breakdown</a>`) })}
+            `<a class="btn btn-primary" href="#p.${p.id}.script">${ui.icon('scan-text')}Open AI Breakdown</a>`) })}
         </div>`;
     }
     const b = buckets(d);

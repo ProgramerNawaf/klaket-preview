@@ -503,7 +503,11 @@
   }
 
   const SCRIPT_OPEN = new Set(); // producers who chose to start before the client's pick
-  MPH.view('script', {
+  // the Script tab is the AI Breakdown screen (views/breakdown.js); this view is its "add the script" page and keeps the
+  // version form it opens
+  MPH.scriptKit.newVersion = (ctx, d) => openNewVersion(ctx, d);
+  MPH.scriptKit.state = uiState;
+  MPH.view('script-add', {
     async load(ctx) {
       const { sb, api } = ctx;
       const pid = ctx.production.id;
@@ -539,7 +543,8 @@
         return `<div class="page">${ui.empty('lock', 'Script unlocks when the client picks an idea', 'Send the concept set from the Concepts screen; the client’s choice opens the script.',
           `<a class="btn btn-primary" href="#p.${esc(p.id)}.concepts">${ui.icon('lightbulb')}Open Concepts</a>${canWrite(ctx) ? ` <button class="btn btn-ghost" data-sc-open>Start the script anyway</button>` : ''}`)}</div>`;
       }
-      if (!d.script) return `${agentNote(ctx, d)}${emptyPage(ctx)}`;
+      // the agent's note goes inside the page, above its heading
+      if (!d.script) return emptyPage(ctx).replace(/(<div class="page[^"]*">)/, `$1${agentNote(ctx, d)}`);
       const st = uiState(ctx);
       const edit = canWrite(ctx);
       const s = d.script;
@@ -658,7 +663,7 @@
           root._scIO = io;
         }
       };
-      const repaint = () => { root.innerHTML = MPH.views.script.render(ctx, d); MPH.icons(); afterPaint(); };
+      const repaint = () => { root.innerHTML = MPH.views['script-add'].render(ctx, d); MPH.icons(); afterPaint(); };
       afterPaint();
 
       const busy = (b, on, text) => {

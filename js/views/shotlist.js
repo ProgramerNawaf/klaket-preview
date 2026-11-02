@@ -269,7 +269,7 @@
           ${ui.pageHead({ title: ctx.t('Shot List'), sub: esc(p.title) })}
           ${ui.panel({ body: ui.empty('list-video', 'No scenes to plan shots for yet',
             'The shot list is built scene by scene. Add the script and run the AI Breakdown first; every scene it finds appears here, ready for coverage.',
-            `<a class="btn btn-primary" href="#p.${p.id}.breakdown">${ui.icon('scan-text')}Open AI Breakdown</a>`) })}
+            `<a class="btn btn-primary" href="#p.${p.id}.script">${ui.icon('scan-text')}Open AI Breakdown</a>`) })}
         </div>`;
     }
 
