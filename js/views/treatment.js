@@ -302,10 +302,10 @@
     if (!isLatest) actions = `<button class="btn btn-sm btn-outline" data-tr-ver="${latest.version}">${ui.icon('arrow-right')}Open the latest, v${esc(latest.version)}</button>`;
     else if (editor) {
       actions = '';
-      if (cur.status === 'draft') actions += `<button class="btn btn-sm btn-ghost" data-tr="new-version" title="Copy v${esc(cur.version)} into a new draft">${ui.icon('copy-plus')}New version</button><button class="btn btn-sm btn-primary" data-tr="send">${ui.icon('send')}Send to client</button>`;
+      if (cur.status === 'draft') actions += `<button class="btn btn-sm btn-ghost" data-tr="new-version" title="The Treatment Agent writes a new version from the latest script">${ui.icon('sparkles')}New version</button><button class="btn btn-sm btn-primary" data-tr="send">${ui.icon('send')}Send to client</button>`;
       if (['draft', 'sent'].includes(cur.status) && ctx.canSeeInternal) actions += `<button class="btn btn-sm btn-outline" data-tr="behalf">${ui.icon('badge-check')}Approve on behalf of the client</button>`;
       else if (cur.status === 'changes_requested') actions += `<button class="btn btn-sm btn-primary" data-tr="new-version">${ui.icon('file-pen-line')}Start v${esc(cur.version + 1)} from these notes</button>`;
-      else actions += `<button class="btn btn-sm btn-outline" data-tr="new-version">${ui.icon('copy-plus')}New version</button>`;
+      else actions += `<button class="btn btn-sm btn-outline" data-tr="new-version">${ui.icon('sparkles')}New version</button>`;
     }
     return `
       <section class="tr-bar k-${esc(cur.status)}">
@@ -330,15 +330,15 @@
     }
     const busy = !!d.job;
     const action = busy ? `<span class="small muted">${ui.spinner()} The Treatment Agent is writing the deck. It takes about 15 minutes.</span>`
-      : d.script ? `<button class="btn btn-primary" data-tr="deck-write">${ui.icon('sparkles')}Run Treatment Agent</button><span class="tiny faint">From script v${esc(d.script.version)}, approved by the client.</span>`
-      : `<a class="btn btn-primary" href="#p.${esc(pid)}.script">${ui.icon('file-text')}Approve the script first</a><span class="tiny faint">On the Script tab: approve a version on behalf of the client, or email it. The deck starts by itself once it’s approved.</span>`;
+      : d.script ? `<button class="btn btn-primary" data-tr="deck-write">${ui.icon('sparkles')}Run Treatment Agent</button><span class="tiny faint">From script v${esc(d.script.version)}${d.script.status === 'approved' ? ', approved by the client' : ', not approved yet'}.</span>`
+      : `<a class="btn btn-primary" href="#p.${esc(pid)}.script">${ui.icon('file-text')}Add the script first</a><span class="tiny faint">The treatment is written from the script.</span>`;
     return `
       <div class="tr-start">
         <section class="tr-start-card tr-start-ai ${busy ? 'is-running' : ''}">
           <div class="tr-start-art">${MPH.art.step('treatment')}</div>
           <div class="stack">
             <div class="stack tight">${ui.aiBadge('Treatment Agent')}<h2 class="h2">The treatment deck is written from the approved script</h2>
-              <p class="small muted">The Treatment Agent writes the deck in Arabic and English (cover, about the project, deliverables, a page per scene and shot, look and mood, colours), paints a film-still frame for every picture, and fills the lookbook boards. It starts by itself when the client approves a script.</p></div>
+              <p class="small muted">The Treatment Agent writes the deck in Arabic and English (cover, about the project, deliverables, a page per scene and shot, look and mood, colours), paints a film-still frame for every picture, and fills the lookbook boards. Run it on the latest script version at any time; it also starts by itself when the client approves a script.</p></div>
             <div class="row wrap" style="gap:10px;align-items:center">${action}</div>
           </div>
         </section>
@@ -435,11 +435,11 @@
     if (ctx.isClient || !canWrite(ctx)) return '';
     if (d.job) {
       const waiting = d.job.status === 'waiting';
-      return `<div class="callout ${waiting ? 'market' : 'info'}">${waiting ? ui.icon('clock') : ui.spinner()}<div class="grow stack tight"><span class="strong">${d.job.input && d.job.input.mode === 'frames' ? 'Painting the frames again…' : 'The Treatment Agent is writing the deck from the approved script…'}</span>
+      return `<div class="callout ${waiting ? 'market' : 'info'}">${waiting ? ui.icon('clock') : ui.spinner()}<div class="grow stack tight"><span class="strong">${d.job.input && d.job.input.mode === 'frames' ? 'Painting the frames again…' : 'The Treatment Agent is writing the deck from the script…'}</span>
         <span class="small muted">${waiting ? `Waiting to retry: ${esc(d.job.last_error || 'the AI service is busy')}.` : 'It writes the pages first (a few minutes), then paints a frame for every picture. You can leave this page; you’ll get a notification.'}</span></div></div>`;
     }
     const hasDeck = d.versions.some((v) => v.source === 'ai' && v.script_id === (d.script && d.script.id));
-    if (d.script && !hasDeck) {
+    if (d.script && d.script.status === 'approved' && !hasDeck) {
       if (!d.versions.length) return ''; // the start page offers it
       return `<div class="callout">${ui.icon('sparkles')}<div class="grow"><span class="strong">The client approved script v${esc(d.script.version)}.</span> <span class="muted">The Treatment Agent writes the deck and lookbook from it, with a painted frame for each scene and shot.</span></div>
         <button class="btn btn-sm btn-primary" data-tr="deck-write">${ui.icon('sparkles')}Run Treatment Agent</button></div>`;
@@ -646,7 +646,7 @@
         const [f, j, sc] = await Promise.all([
           ai.length ? ctx.sb.from('treatment_frames').select('id, treatment_id, key, status, error, prompt').in('treatment_id', ai) : { data: [] },
           ctx.sb.from('agent_jobs').select('id, status, last_error, input, created_at').eq('production_id', pid).eq('agent', 'treatment').in('status', ['queued', 'running', 'waiting']).order('created_at', { ascending: false }).limit(1),
-          ctx.sb.from('scripts').select('id, version').eq('production_id', pid).eq('status', 'approved').order('version', { ascending: false }).limit(1),
+          ctx.sb.from('scripts').select('id, version, status').eq('production_id', pid).order('version', { ascending: false }).limit(1),
         ]);
         frames = f.data || []; job = (j.data || [])[0] || null; script = (sc.data || [])[0] || null;
       }
@@ -670,24 +670,6 @@
       saver.bind(editDoc());
       sizeAll();
 
-      const createVersion = async (btn, row, toastMsg, from) => {
-        if (btn) { btn.disabled = true; btn.innerHTML = `${ui.spinner()}Creating…`; }
-        try {
-          await saver.flush();
-          const version = await ctx.api.nextVersion('treatments', pid);
-          const ins = ctx.api.must(await ctx.sb.from('treatments').insert({ production_id: pid, version, status: 'draft', created_by: ctx.session.user.id, ...row }).select().single());
-          // a deck's frames come along (same pictures, same prompts), so the new draft can repaint them
-          const fr = from && row.deck ? (d.frames || []).filter((f) => f.treatment_id === from.id) : [];
-          if (fr.length) {
-            const { data: full } = await ctx.sb.from('treatment_frames').select('key, prompt, aspect, status, image_path, usage, sort').eq('treatment_id', from.id);
-            ctx.api.must(await ctx.sb.from('treatment_frames').insert((full || []).map((f) => ({ ...f, production_id: pid, treatment_id: ins.id, status: ['done', 'uploaded'].includes(f.status) ? f.status : 'failed' }))));
-          }
-          S.ver[pid] = ins.version;
-          ctx.state.trTab = row.deck ? 'deck' : 'doc';
-          ctx.toast(toastMsg(ins), 'file-plus');
-          ctx.reload();
-        } catch (ex) { ctx.toastError(ex); if (btn && btn.isConnected) { btn.disabled = false; repaint(); } }
-      };
 
       /* ---------- sections */
       const secIndex = (el) => { const doc = editDoc(); const sec = el.closest('[data-sec]'); return doc && sec ? doc.sections.findIndex((s) => s.id === sec.dataset.sec) : -1; };
@@ -923,11 +905,9 @@
         if (!canWrite(ctx)) return;
         if (act === 'deck-write') return writeDeck(b, '');
         if (act === 'deck-regen') return openRegen();
-        if (act === 'new-version') {
-          const latest = latestOf(d);
-          const deck = latest.deck ? { source: latest.source, script_id: latest.script_id, deck: latest.deck, frame_images: latest.frame_images || {} } : {};
-          return createVersion(b, { title: latest.title, sections: latest.sections.map((s) => ({ id: s.id, title: s.title, body: s.body })), ...deck }, (r) => `v${r.version} started from v${latest.version}`, latest);
-        }
+        // a new version is written by the Treatment Agent from the latest script (approved or not); after the client
+        // asked for changes, their note is the instruction
+        if (act === 'new-version') { await saver.flush(); const latest = latestOf(d); return openRegen(latest.status === 'changes_requested' ? latest.client_note || '' : ''); }
         if (act === 'send') { const cur = editDoc(); if (cur) openSend(cur); return; }
         if (act === 'behalf') { await saver.flush(); const cur = latestOf(d); return MPH.approve.onBehalf(ctx, { type: 'treatment', id: cur.id, title: `Treatment v${cur.version}` }); }
         if (act === 'sec-add') {
@@ -1020,20 +1000,22 @@
       const writeDeck = async (btn, instruction) => {
         if (btn) { btn.disabled = true; btn.innerHTML = `${ui.spinner()}Starting…`; }
         try {
-          await ctx.api.fn('agents', 'generate_treatment', { production_id: pid, instruction: instruction || undefined });
+          await ctx.api.fn('agents', 'generate_treatment', { production_id: pid, script_id: d.script ? d.script.id : undefined, instruction: instruction || undefined });
           ctx.state.trTab = 'deck';
           ctx.toast('The Treatment Agent is writing the deck. You’ll get a notification when it’s ready.', 'sparkles');
           ctx.reload();
         } catch (ex) { ctx.toastError(ex); if (btn && btn.isConnected) repaint(); }
       };
-      const openRegen = () => {
+      const openRegen = (ins0 = '') => {
+        if (!d.script) return ctx.toastError(new Error('Add the script first: the treatment is written from it.'));
+        const next = (latestOf(d) ? latestOf(d).version : 0) + 1;
         const el = ctx.modal(ctx.frame({
-          title: 'Write the treatment deck again',
-          sub: 'A new draft version from the approved script, with new frames. This version stays as it is.',
+          title: `Write treatment v${next}`,
+          sub: `The Treatment Agent writes it from script v${esc(d.script.version)}${d.script.status === 'approved' ? '' : ' (not approved yet)'}, with new frames. Earlier versions stay as they are.`,
           body: `<div class="field"><label for="dk-ins">What should change? <span class="faint">(optional)</span></label>
-            <textarea id="dk-ins" class="textarea" rows="3" dir="auto" maxlength="1000" placeholder="For example: warmer light, fewer close-ups, make the about page about the family"></textarea></div>
+            <textarea id="dk-ins" class="textarea" rows="3" dir="auto" maxlength="1000" placeholder="For example: warmer light, fewer close-ups, make the about page about the family">${esc(ins0)}</textarea></div>
             <p class="tiny muted">${ui.icon('info')}About $1 to write and about $0.05 a frame to paint.</p>`,
-          foot: `<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="dk-go">${ui.icon('sparkles')}Write it again</button>`,
+          foot: `<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="dk-go">${ui.icon('sparkles')}Write v${next}</button>`,
         }));
         el.querySelector('#dk-go').addEventListener('click', (e) => { const ins = el.querySelector('#dk-ins').value.trim(); ctx.closeOverlay(); writeDeck(null, ins); void e; });
       };
