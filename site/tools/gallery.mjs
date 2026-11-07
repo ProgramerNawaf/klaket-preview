@@ -75,6 +75,7 @@ const html = `<!doctype html>
     <p>Every page below is a complete landing page in Klaket's identity. They share one engine and one set of words, and differ in the five slots listed on each card, so what you are judging is the direction, not the copy. ${readyCount} of ${built.length} have all their parts on disk.</p>
     <p>Each one comes in two readings of the same identity. <b>Colour</b> is teal, ink, paper and signal red. <b>Mono</b> is black and white with signal red as the only colour left. Open either from the card, or switch inside any page with the dock at the bottom right. Keys: <b>b</b> switches brand, <b>[</b> and <b>]</b> step through the directions.</p>
     <nav class="g-links" aria-label="Other pages">
+      <a href="_lab/">Motion lab</a>
       <a href="demo/">Request demo page</a>
       <a href="blog/">Journal</a>
       <a href="sections/_preview-value.html">Value treatments</a>
