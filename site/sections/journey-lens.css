@@ -1,0 +1,211 @@
+/* J2, the lens.
+   One zoom that never stops: a wide film set, in on the camera on its tripod,
+   into the lens, through the glass, and out the other side into the Klaket
+   interface, where the six steps then run. Every stage is a DOM layer on the
+   same centre, scaled by a power of five, so stage n is drawn as the small
+   target in the middle of stage n-1 and the push never has to cut.
+   SVG and transforms on purpose, no WebGL: it stays sharp at 600x, needs no
+   context, and survives a resize without re-uploading anything. */
+
+.jlens { position: relative; }
+
+.jlens__pin {
+  position: relative;
+  height: 100vh;
+  min-height: 520px;
+  overflow: hidden;              /* the stages grow past the frame, nothing leaks */
+  background: var(--bg-deep);
+  isolation: isolate;
+}
+
+/* ---- the drawn stages ---- */
+.jlens__well { position: absolute; inset: 0; }
+.jlens__stage {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform-origin: 50% 50%;
+  will-change: transform, opacity, filter;
+  backface-visibility: hidden;
+}
+.jlens__stage svg { width: 100%; height: 100%; }
+
+/* Fills live here, never in the markup, so the four colours stay in the tokens. */
+.jlens .f-deep   { fill: var(--bg-deep); }
+.jlens .f-ink    { fill: var(--ink); }
+.jlens .f-surf   { fill: var(--surface); }
+.jlens .f-raised { fill: var(--raised); }
+.jlens .f-paper  { fill: var(--paper); }
+.jlens .f-teal   { fill: var(--teal); }
+.jlens .f-deepteal { fill: var(--teal-deep); }
+.jlens .f-tint   { fill: var(--teal-tint); }
+.jlens .f-signal { fill: var(--signal); }
+.jlens .s-tint   { fill: none; stroke: var(--teal-tint); stroke-linejoin: round; stroke-linecap: round; }
+.jlens .s-faint  { fill: none; stroke: var(--line-2); }
+.jlens .o-55 { opacity: 0.55; }
+.jlens .o-30 { opacity: 0.3; }
+.jlens .o-16 { opacity: 0.16; }
+
+/* ---- the title, over the set, gone by the time we reach the glass ---- */
+.jlens__title {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: clamp(2.5rem, 9vh, 5.5rem);
+  transform: translateX(-50%);
+  width: min(100% - var(--gut) * 2, 20ch);
+  text-align: center;
+  font-size: var(--t-2xl);
+  pointer-events: none;
+}
+
+/* ---- the interface, the last stage of the same zoom ---- */
+.jlens__ui {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  width: min(100% - var(--gut) * 2, 1040px);
+  height: min(72%, 600px);
+  transform: translate(-50%, -50%) scale(0.2);
+  transform-origin: 50% 50%;
+  opacity: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-lg);
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--line-2), 0 60px 120px -40px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+  will-change: transform, opacity, filter;
+}
+.jlens__ui.is-live { pointer-events: auto; }
+
+.jlens__bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.jlens__traffic { display: flex; gap: 0.35rem; }
+.jlens__traffic i { width: 9px; height: 9px; border-radius: 50%; background: var(--line-2); }
+.jlens__bar-meta { margin-inline-start: auto; }
+
+.jlens__panel { position: relative; flex: 1; min-height: 0; padding: clamp(0.9rem, 2.2vh, 1.6rem); }
+
+.jlens__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 46%;
+  height: 100%;
+}
+.jlens__step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  border-radius: var(--r-sm);
+  color: var(--faint);
+  transition: background-color var(--d) var(--e-out), color var(--d) var(--e-out);
+}
+.jlens__step.is-on { background: var(--raised); color: var(--text); }
+.jlens__step-t {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--r-sm);
+  text-align: start;
+  font-size: var(--t-sm);
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.jlens__step-n { color: inherit; opacity: 0.7; }
+.jlens__step.is-on .jlens__step-n { color: var(--accent); opacity: 1; }
+
+/* Bodies are parked in the right half and crossfaded, so nothing reflows while
+   the scroll is being scrubbed. */
+.jlens__step-b {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  inset-inline: auto clamp(0.9rem, 2.2vh, 1.6rem);
+  width: calc(46% - clamp(1.8rem, 4.4vh, 3.2rem));
+  margin: 0;
+  font-size: var(--t-sm);
+  line-height: 1.55;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity var(--d) var(--e-out);
+}
+.jlens__step.is-on .jlens__step-b { opacity: 1; }
+
+@media (max-width: 860px) {
+  .jlens__title { font-size: var(--t-xl); top: clamp(1.5rem, 6vh, 3rem); }
+  .jlens__ui { height: min(76%, 560px); }
+  .jlens__panel { padding: 0.9rem; }
+  .jlens__steps { width: 100%; height: auto; flex: none; }
+  .jlens__step { min-height: 2.6rem; }
+  .jlens__step-t { padding: 0.35rem 0.55rem; }
+  .jlens__step-t { font-size: var(--t-xs); font-family: var(--body); text-transform: none; letter-spacing: -0.01em; }
+  .jlens__step-b {
+    top: auto;
+    transform: none;
+    bottom: 0.9rem;
+    inset-inline: 0.9rem;
+    width: auto;
+    height: 8.5em;
+    font-size: var(--t-xs);
+  }
+}
+
+/* ---- reduced motion: the set, then the six steps, all of it still ---- */
+.jlens.is-still .jlens__pin { height: auto; min-height: 0; padding-block: var(--sec); overflow: visible; }
+.jlens.is-still .jlens__well { position: relative; height: clamp(200px, 30vw, 380px); }
+.jlens.is-still .jlens__stage { opacity: 0; }
+.jlens.is-still .jlens__stage[data-i='0'] { opacity: 1; transform: none; }
+.jlens.is-still .jlens__title {
+  position: static;
+  transform: none;
+  width: min(100% - var(--gut) * 2, 24ch);
+  margin: clamp(1.5rem, 5vh, 3rem) auto 0;
+  text-align: center;
+}
+.jlens.is-still .jlens__ui {
+  position: static;
+  width: min(100% - var(--gut) * 2, var(--page));
+  height: auto;
+  margin: clamp(1.5rem, 5vh, 3rem) auto 0;
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.jlens.is-still .jlens__steps { width: 100%; height: auto; gap: 1px; }
+.jlens.is-still .jlens__step {
+  display: block;
+  flex: none;
+  padding: 1rem 0;
+  color: var(--text);
+  background: none;
+  border-top: 1px solid var(--line);
+}
+.jlens.is-still .jlens__step:first-child { border-top: 0; }
+.jlens.is-still .jlens__step-n { color: var(--accent); opacity: 1; }
+.jlens.is-still .jlens__step-b {
+  position: static;
+  transform: none;
+  width: auto;
+  height: auto;
+  inset: auto;
+  opacity: 1;
+  margin-top: 0.4rem;
+  max-width: 68ch;
+}
+.jlens.is-still .jlens__step-t { padding-inline: 0; }

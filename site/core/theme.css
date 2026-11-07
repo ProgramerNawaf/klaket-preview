@@ -1,0 +1,60 @@
+/* The review dock: brand switch and a way through the 24.
+   It is a tool, not part of the design, so it is deliberately plain and sits
+   out of the way. It comes out when a direction is chosen. */
+
+.kldock {
+  position: fixed;
+  z-index: 200;
+  right: clamp(0.75rem, 2vw, 1.25rem);
+  bottom: clamp(0.75rem, 2vh, 1.25rem);
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: rgba(10, 10, 10, 0.72);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14) inset, 0 12px 34px -10px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: #fff;
+  transition: opacity var(--d) var(--e-out), transform var(--d) var(--e-out);
+}
+/* On a light section the dock keeps its own dark chrome, so it never fights
+   the page it is sitting on. */
+
+.kldock button, .kldock a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4em;
+  min-width: 30px;
+  padding: 0.5em 0.7em;
+  border-radius: var(--r-pill);
+  color: rgba(255, 255, 255, 0.62);
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  transition: color 140ms, background-color 140ms;
+}
+.kldock button:hover, .kldock a:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+.kldock [aria-pressed='true'] { color: #000; background: #fff; }
+.kldock [aria-pressed='true']:hover { color: #000; background: #fff; }
+.kldock button[disabled] { opacity: 0.28; pointer-events: none; }
+
+.kldock__sep { width: 1px; margin: 5px 3px; background: rgba(255, 255, 255, 0.18); flex: none; }
+.kldock__n { padding-inline: 0.7em; display: inline-flex; align-items: center; color: rgba(255, 255, 255, 0.85); }
+
+/* Folded away, a single dot that brings it back. */
+.kldock.is-folded { gap: 0; }
+.kldock.is-folded > :not(.kldock__fold) { display: none; }
+.kldock__fold { min-width: 26px; padding: 0.5em; }
+
+@media (max-width: 560px) {
+  .kldock { left: clamp(0.75rem, 2vw, 1.25rem); right: clamp(0.75rem, 2vw, 1.25rem); justify-content: center; }
+  .kldock__title { display: none; }
+}
+
+@media print { .kldock { display: none; } }

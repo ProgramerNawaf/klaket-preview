@@ -1,0 +1,157 @@
+/* F1, the features carousel (Enode's platform pages, minus the eyebrow).
+   A row of cards that scrolls sideways under the heading: drawn preview on top,
+   title, two or three lines. The row is a real scroll container with real
+   scroll-snap, so the arrows, the drag and the indicator are all decoration on
+   top of something that already works. */
+
+.fcar {
+  position: relative;
+  overflow: hidden; /* the rail bleeds past the gutter; nothing may widen the page */
+  --fcar-card: clamp(16rem, 26vw, 23rem);
+  --fcar-gap: clamp(0.75rem, 1.4vw, 1.25rem);
+  /* The rail bleeds to the window edge but its first card still lines up with
+     .wrap. The percentage resolves against .fcar, which is the same box .wrap
+     measures itself against, so the two agree even with a scrollbar present. */
+  --fcar-pad: max(var(--gut), calc((100% - var(--page)) / 2));
+}
+
+/* ---- heading, with the arrows beside it ---- */
+.fcar__head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--gut);
+  margin-bottom: clamp(2rem, 5vh, 3.5rem);
+}
+.fcar__title { max-width: 22ch; }
+
+.fcar__arrows { display: flex; gap: 0.5rem; flex: none; padding-bottom: 0.35rem; }
+.fcar__arrow {
+  width: 2.875rem;
+  height: 2.875rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  transition: background-color var(--d-fast) var(--e-out), color var(--d-fast) var(--e-out),
+              box-shadow var(--d-fast) var(--e-out), opacity var(--d-fast) var(--e-out);
+}
+.fcar__arrow svg { width: 1.0625rem; height: 1.0625rem; }
+.fcar__arrow:hover:not([disabled]) { background: var(--teal); box-shadow: inset 0 0 0 1px var(--teal); color: var(--paper); }
+.fcar__arrow[disabled] { opacity: 0.3; cursor: default; }
+
+/* ---- the rail ---- */
+.fcar__rail {
+  display: flex;
+  gap: var(--fcar-gap);
+  padding-inline: var(--fcar-pad);
+  /* The snapport has to be inset by the same amount as the padding. Without this
+     a mandatory rail snaps the first card to the scrollport edge, scrolls straight
+     past the leading gutter, and the row no longer lines up with .wrap. */
+  scroll-padding-inline: var(--fcar-pad);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  /* the row is taller than its scrollbar track; hiding it keeps the cards level */
+  scrollbar-width: none;
+}
+.fcar__rail::-webkit-scrollbar { display: none; }
+.fcar__rail:focus-visible { outline-offset: -3px; }
+/* While a mouse is dragging the rail, snapping would fight the pointer. */
+.fcar__rail.is-dragging { scroll-snap-type: none; scroll-behavior: auto; cursor: grabbing; user-select: none; }
+.fcar__rail.is-dragging .fcar__card { pointer-events: none; }
+
+.fcar__card {
+  flex: 0 0 var(--fcar-card);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+/* The last card snaps to the far edge, so the end of the scroll range is itself a
+   snap point. Without it a mandatory rail refuses to show the final card. */
+.fcar__card:last-child { scroll-snap-align: end; }
+
+.fcar__pic {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r);
+  background: var(--bg-deep);
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow: hidden;
+}
+.fcar__pic svg { width: 100%; height: 100%; }
+
+.fcar__name { font-size: var(--t-lg); font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; }
+.fcar__body { font-size: var(--t-sm); color: var(--muted); line-height: 1.55; }
+
+/* ---- the numbered indicator, bottom right ---- */
+.fcar__count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  justify-content: end;
+  margin-top: clamp(1.5rem, 4vh, 2.5rem);
+}
+.fcar__count-n {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: var(--t-xl);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+}
+.fcar__count-of { font-family: var(--mono); font-size: var(--t-xs); color: var(--faint); }
+.fcar__count-name { font-size: var(--t-sm); color: var(--text); font-weight: 600; }
+
+/* ---- the drawings: every colour comes from a token, never from the markup.
+   The app's strip colours (cream, yellow, blue, green, apricot) are the one place
+   the product leaves the four, because that is the physical stripboard
+   convention. This site does not get to leave them, so a strip here keeps the
+   shape that matters, a pale wash behind a saturated leading spine, in teal. ---- */
+.fcar svg .p-deep { fill: var(--bg-deep); }
+.fcar svg .p-bg { fill: var(--bg); }
+.fcar svg .p-surface { fill: var(--surface); }
+.fcar svg .p-raised { fill: var(--raised); }
+.fcar svg .p-raised-2 { fill: var(--raised-2); }
+.fcar svg .p-paper { fill: var(--paper); }
+.fcar svg .p-ink { fill: var(--ink); }
+.fcar svg .p-teal { fill: var(--teal); }
+.fcar svg .p-teal-deep { fill: var(--teal-deep); }
+.fcar svg .p-tint { fill: var(--teal-tint); }
+.fcar svg .p-pale { fill: var(--teal-pale); }
+.fcar svg .p-signal { fill: var(--signal); }
+.fcar svg .p-text { fill: var(--text); }
+.fcar svg .p-text-2 { fill: var(--muted); }
+.fcar svg .p-muted { fill: var(--muted); }
+.fcar svg .p-faint { fill: var(--faint); }
+.fcar svg .p-accent { fill: var(--accent); }
+/* a warning in this product is never yellow: it is the text colour, outlined */
+.fcar svg .p-warn { fill: var(--paper); }
+.fcar svg .p-accent-soft { fill: color-mix(in srgb, var(--teal) 32%, transparent); }
+.fcar svg .p-strip { fill: color-mix(in srgb, var(--teal) 26%, var(--surface)); }
+.fcar svg .p-strip-2 { fill: color-mix(in srgb, var(--teal-pale) 14%, var(--surface)); }
+.fcar svg .p-break { fill: var(--raised-2); }
+/* a storyboard frame sits on near black, so a pale sketch on it reads */
+.fcar svg .p-frame { fill: color-mix(in srgb, var(--ink) 78%, var(--teal-deep)); }
+
+.fcar svg .s-tint { stroke: var(--teal-tint); }
+.fcar svg .s-pale { stroke: var(--teal-pale); }
+.fcar svg .s-teal { stroke: var(--teal); }
+.fcar svg .s-ink { stroke: var(--ink); }
+.fcar svg .s-paper { stroke: var(--paper); }
+.fcar svg .s-line { stroke: var(--line-2); }
+.fcar svg .s-faint { stroke: var(--faint); }
+.fcar svg .s-warn { stroke: var(--line-2); }
+.fcar svg .s-signal { stroke: var(--signal); }
+/* Anything lettered in a drawing is a number a crew reads off a slate, so it is
+   always the mono face, never the body one. */
+.fcar svg text { font-family: var(--mono); font-weight: 500; letter-spacing: 0.08em; }
+
+@media (max-width: 720px) {
+  .fcar { --fcar-card: min(78vw, 20rem); }
+  .fcar__head { flex-direction: column; align-items: start; }
+  .fcar__arrows { order: -1; padding: 0; }
+  .fcar__count { justify-content: start; }
+}

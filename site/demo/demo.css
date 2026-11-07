@@ -1,0 +1,244 @@
+/* The Request Demo page. A page, not a modal: the ask is the whole screen.
+   Every offset is logical (inline-start, padding-inline), so the layout mirrors under dir="rtl"
+   without a single override. */
+
+/* Asking someone to request a demo on the request-demo page is a dead end, so the island
+   drops its call to action here and keeps only the menu and the sign-in link. */
+.island__cta { display: none; }
+
+.dm {
+  /* clears the fixed island, which is top-docked on this page */
+  padding-block: clamp(6.5rem, 14vh, 10rem) var(--sec);
+}
+
+/* rem, not ch: ch here resolves against the body font and would squeeze the headline to a column. */
+.dm__head { max-width: 46rem; margin-block-end: clamp(2.5rem, 6vh, 4rem); }
+/* A step down from a hero headline: this page is a form, and the form is the point. */
+.dm__head h1 { font-size: var(--t-3xl); }
+.dm__head .lede { margin-block-start: 1rem; }
+
+.dm__cols {
+  display: grid;
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+}
+@media (max-width: 60rem) {
+  .dm__cols { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---- the form card: a slate, bar at the top ---- */
+.dmf,
+.dm__done {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  padding-block-start: clamp(2rem, 4vw, 2.75rem);
+  overflow: hidden;
+}
+
+.dmf__bar {
+  --stripe-w: 13px;
+  --stripe-a: var(--paper);
+  --stripe-b: var(--ink);
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  height: 10px;
+}
+
+.dmf__grid {
+  display: grid;
+  gap: 1.25rem clamp(1rem, 2.5vw, 1.75rem);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.dmf__field--wide { grid-column: 1 / -1; }
+@media (max-width: 34rem) {
+  .dmf__grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---- one field ---- */
+.dmf__field { display: flex; flex-direction: column; gap: 0.45rem; }
+
+.dmf__field label {
+  font-size: var(--t-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: start;
+}
+.dmf__opt { font-weight: 400; color: var(--faint); }
+
+.dmf input,
+.dmf select,
+.dmf textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.75em 0.9em;
+  border: 0;
+  border-radius: var(--r);
+  background: var(--bg-deep);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  text-align: start;
+  transition: box-shadow var(--d-fast) var(--e-out);
+}
+.dmf textarea { resize: vertical; min-height: 6.5rem; line-height: 1.5; }
+.dmf input::placeholder, .dmf textarea::placeholder { color: var(--faint); }
+.dmf input:hover, .dmf select:hover, .dmf textarea:hover {
+  background: color-mix(in srgb, var(--text) 4%, var(--bg-deep));
+}
+
+/* ---- selects: the native menu, our own arrow ---- */
+.dmf__select { position: relative; display: block; }
+.dmf__select select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline-end: 2.5rem;
+  cursor: pointer;
+}
+.dmf__select svg {
+  position: absolute;
+  inset-inline-end: 0.9rem;
+  inset-block-start: 50%;
+  translate: 0 -50%;
+  width: 1rem;
+  height: 1rem;
+  color: var(--muted);
+  pointer-events: none;
+}
+/* An unchosen select reads as a prompt, not as an answer. The empty option fails `required`,
+   which is true whether or not the form carries novalidate. */
+.dmf__select select:invalid { color: var(--muted); }
+
+/* ---- phone: code and number, wrapping on a narrow screen rather than squeezing ---- */
+.dmf__phone { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+/* The code is listed first in each option, so it stays readable when the select is too narrow
+   to show the country name as well. */
+.dmf__select--cc { flex: 0 1 10.5rem; }
+.dmf__select--cc select { padding-inline: 0.7em 2rem; }
+.dmf__select--cc svg { inset-inline-end: 0.6rem; }
+.dmf__phone > input { flex: 1 1 7rem; width: auto; }
+
+/* ---- the error state ------------------------------------------------
+   Never colour alone: a wrong field carries a paper outline, the message
+   carries a mono "!" and the message itself says what to do. This is the
+   brand's dark-mode warning treatment, and it keeps signal free for the
+   one banner at the top (signal appears at most once per screen). */
+.dmf__err {
+  display: none;
+  font-size: var(--t-sm);
+  line-height: 1.4;
+  color: var(--text);
+}
+.dmf__err:not(:empty) {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5em;
+  align-items: start;
+}
+.dmf__err:not(:empty)::before {
+  content: '!';
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: var(--t-xs);
+  line-height: 1.35;
+  width: 1.35em;
+  text-align: center;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+.dmf [aria-invalid='true'] { box-shadow: inset 0 0 0 2px var(--text); }
+
+/* ---- the submit banner: the single signal element on this page ---- */
+.dmf__banner {
+  display: flex;
+  gap: 0.75rem;
+  align-items: start;
+  margin-block-end: 1.5rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--r);
+  background: color-mix(in srgb, var(--signal) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--signal) 45%, transparent);
+  font-size: var(--t-sm);
+}
+.dmf__banner[hidden] { display: none; }
+.dmf__bang {
+  flex: none;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: var(--t-xs);
+  line-height: 1.5;
+  width: 1.5em;
+  text-align: center;
+  border-radius: 3px;
+  color: var(--signal);
+  box-shadow: inset 0 0 0 1.5px currentColor;
+}
+
+/* ---- foot of the form ---- */
+.dmf__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-block-start: 1.75rem;
+}
+.dmf__submit[disabled] { opacity: 0.55; cursor: progress; transform: none; }
+.dmf__status { font-size: var(--t-sm); color: var(--muted); }
+
+.dmf__noscript {
+  margin-block-start: 1.5rem;
+  padding-block-start: 1.25rem;
+  border-block-start: 1px solid var(--line);
+  font-size: var(--t-sm);
+  color: var(--muted);
+}
+.dmf__noscript a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+/* Off screen, off the tab order, and hidden from screen readers: only a bot fills this in. */
+.dmf__trap { display: none; }
+
+/* ---- the success state, in the form's place ---- */
+.dm__done[hidden] { display: none; }
+.dm__done h2 { font-size: var(--t-2xl); }
+.dm__done p { margin-block-start: 1rem; max-width: 42ch; }
+.dm__done b { color: var(--accent); font-weight: 600; overflow-wrap: anywhere; }
+
+/* ---- the aside ---- */
+.dm__aside-title { font-size: var(--t-lg); font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; }
+
+.dm__steps { margin-block-start: 1.25rem; display: grid; gap: 1.1rem; }
+.dm__steps li { display: grid; grid-template-columns: auto 1fr; gap: 0.85rem; align-items: start; }
+.dm__steps .data { line-height: 1.7; color: var(--accent); }
+.dm__steps p { font-size: var(--t-sm); color: var(--muted); }
+
+.dm__contact {
+  margin-block-start: 2rem;
+  padding-block-start: 1.5rem;
+  border-block-start: 1px solid var(--line);
+  font-size: var(--t-sm);
+  color: var(--muted);
+}
+.dm__contact a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---- footer: a plate, not the full footer shot (that one asks for a demo) ---- */
+.dm__foot { border-block-start: 1px solid var(--line); padding-block: 2rem; }
+.dm__foot-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem clamp(1rem, 4vw, 3rem);
+  font-size: var(--t-sm);
+}
+.dm__foot-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  margin-inline-end: auto;
+}
+.dm__foot .ar { font-size: var(--t-sm); color: var(--muted); }

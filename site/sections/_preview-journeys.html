@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- The brand is set before the first paint, or the page flashes the other one. -->
+<script>try{var q=new URLSearchParams(location.search).get('brand');var b=q||localStorage.getItem('klaket.brand');if(b==='mono')document.documentElement.setAttribute('data-brand','mono')}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Journey: J2, J3, J4 in sequence</title>
+
+<link rel="icon" href="../../brand/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+
+<link rel="stylesheet" href="../core/tokens.css">
+<link rel="stylesheet" href="../core/base.css">
+<link rel="stylesheet" href="journey-lens.css">
+<link rel="stylesheet" href="journey-strip.css">
+<link rel="stylesheet" href="journey-stack.css">
+
+<style>
+  /* Preview chrome only. Nothing here ships: it exists so the three treatments
+     can be told apart and jumped between while choosing one. */
+  .pv-head { padding: clamp(3rem, 10vh, 6rem) 0 2rem; }
+  .pv-head h1 { font-size: var(--t-2xl); }
+  .pv-head p { margin-top: 0.75rem; color: var(--muted); max-width: 54ch; }
+  .pv-jump { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+  .pv-jump a {
+    font-family: var(--mono); font-size: var(--t-xs); letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 0.6em 1em; border-radius: var(--r-pill);
+    box-shadow: inset 0 0 0 1px var(--line-2);
+  }
+  .pv-jump a:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+  .pv-mark {
+    position: relative; z-index: 60;
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.6rem var(--gut);
+    background: var(--bg-deep);
+    border-block: 1px solid var(--line);
+    font-family: var(--mono); font-size: var(--t-xs); letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--faint);
+  }
+  .pv-mark b { color: var(--text); font-weight: 500; }
+</style>
+<link rel="stylesheet" href="../core/theme.css">
+
+</head>
+<body>
+
+<a class="skip" href="#j2">Skip to the first treatment</a>
+
+<header class="pv-head wrap">
+  <h1>Three journey sections, same six steps.</h1>
+  <p>J2, J3 and J4 render from <code>KLDATA.journey</code>. A variant page includes exactly one of them.</p>
+  <nav class="pv-jump" aria-label="Jump to a treatment">
+    <a href="#j2">J2 lens</a>
+    <a href="#j3">J3 strip</a>
+    <a href="#j4">J4 stack</a>
+  </nav>
+</header>
+
+<div class="pv-mark" id="j2"><b>J2</b> one continuous zoom, set to lens to interface</div>
+<section class="jlens" aria-labelledby="jlens-title"></section>
+
+<div class="pv-mark" id="j3"><b>J3</b> pinned horizontal film strip, one frame per step</div>
+<section class="jstrip" aria-labelledby="jstrip-title"></section>
+
+<div class="pv-mark" id="j4"><b>J4</b> slate cards that clap into a stack, then fan</div>
+<section class="jstack" aria-labelledby="jstack-title"></section>
+
+<div style="height:40vh"></div>
+
+<script src="../vendor/gsap.min.js"></script>
+<script src="../vendor/ScrollTrigger.min.js"></script>
+<script src="../vendor/lenis.min.js"></script>
+<script src="../core/boot.js"></script>
+<script src="../core/data.js"></script>
+<script src="journey-lens.js"></script>
+<script src="journey-strip.js"></script>
+<script src="journey-stack.js"></script>
+<script src="../core/theme.js"></script>
+
+</body>
+</html>

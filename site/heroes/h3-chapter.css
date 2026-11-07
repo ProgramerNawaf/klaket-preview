@@ -1,0 +1,184 @@
+/* H3, the chapter card.
+   After monogrid.io's World Tour: a full-bleed set behind a tinted title card,
+   with the chrome of a film around it. The set is drawn, not photographed, so it
+   costs nothing over the wire and stays inside the four colours.
+   The card is the title card; everything else is chrome and sits at the edges. */
+
+.hero-chapter {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  overflow: clip;
+  background: var(--bg-deep);
+  padding: clamp(3.5rem, 7svh, 5.5rem) var(--gut) clamp(1rem, 3svh, 2rem);
+}
+
+/* ---- the set ---------------------------------------------------------- */
+
+.hc__set {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.hc__set .s-wall-a { stop-color: var(--teal-deep); }
+.hc__set .s-wall-b { stop-color: var(--bg-deep); }
+.hc__set .s-glow-a { stop-color: var(--teal); stop-opacity: 0.55; }
+.hc__set .s-glow-b { stop-color: var(--teal); stop-opacity: 0; }
+.hc__set .s-cone-a { stop-color: var(--paper); stop-opacity: 0.58; }
+.hc__set .s-cone-b { stop-color: var(--paper); stop-opacity: 0; }
+.hc__set .s-vig-a  { stop-color: var(--ink); stop-opacity: 0; }
+.hc__set .s-vig-b  { stop-color: var(--ink); stop-opacity: 0.86; }
+
+.hc__floor  { fill: var(--ink); opacity: 0.66; }
+.hc__seam   { stroke: var(--teal-tint); stroke-width: 2; fill: none; opacity: 0.22; }
+.hc__mark   { stroke: var(--paper); stroke-width: 4; fill: none; opacity: 0.3; stroke-linecap: round; }
+.hc__pool   { fill: var(--paper); opacity: 0.1; }
+.hc__rig    { fill: var(--ink); }
+.hc__lens   { fill: var(--paper); opacity: 0.42; }
+.hc__rim    { stroke: var(--teal-tint); stroke-width: 2.6; fill: none; opacity: 0.55; }
+.hc__glass  { fill: var(--teal-tint); opacity: 0.7; }
+.hc__mote   { fill: var(--paper); opacity: 0.16; }
+.hc__cone   { mix-blend-mode: screen; }
+
+/* The cone breathes the way a tungsten head does. JS drives the custom property
+   so reduced motion simply leaves it at rest. */
+.hc__cone-g { opacity: var(--hc-flicker, 0.82); }
+
+/* ---- the title card --------------------------------------------------- */
+
+.hc__card {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 980px);
+  margin-inline: auto;
+  padding: clamp(1.4rem, 3.4vw, 2.8rem) clamp(1.25rem, 4vw, 3.5rem) clamp(1.8rem, 4vw, 3rem);
+  background: color-mix(in srgb, var(--teal-deep) 90%, transparent);
+  box-shadow: 0 40px 120px -40px color-mix(in srgb, var(--ink) 90%, transparent);
+  text-align: center;
+
+  /* A torn edge, the way the reference paints its panels. Static, so it reads
+     the same with JS off. */
+  clip-path: polygon(
+    0.6% 2.2%, 14% 0.6%, 31% 2.4%, 48% 0.4%, 66% 2.6%, 83% 0.8%, 99.4% 2.4%,
+    99% 18%, 99.6% 42%, 98.8% 66%, 99.4% 84%, 98.6% 97.4%,
+    84% 99.4%, 67% 97.2%, 50% 99.6%, 33% 97.4%, 16% 99.4%, 1% 97.6%,
+    1.6% 82%, 0.4% 58%, 1.4% 34%, 0.6% 18%
+  );
+}
+
+/* The slate header row: a real board carries its scene and roll along the top,
+   so the card does too. Chrome at the card's edge, not a label over the title. */
+.hc__slug {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.9rem;
+  margin-bottom: clamp(1.1rem, 3vh, 2rem);
+  border-bottom: 1px solid var(--line);
+  color: var(--teal-pale);
+}
+.hc__slug span { display: inline-flex; align-items: center; gap: 0.55rem; }
+.hc__tally {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--signal);
+  flex: none;
+}
+
+.hc__title {
+  font-size: clamp(2rem, 5.4vw, 4.25rem);
+  color: var(--paper);
+  margin-inline: auto;
+  max-width: 17ch;
+}
+
+.hc__ar {
+  margin-top: clamp(0.5rem, 1.6vh, 0.9rem);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.1rem, 2.3vw, 1.8rem);
+  line-height: 1.5;
+  color: var(--teal-pale);
+}
+
+.hc__lede {
+  margin: clamp(0.9rem, 2.4vh, 1.5rem) auto 0;
+  max-width: 56ch;
+  font-size: var(--t-base);
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--paper) 76%, transparent);
+}
+
+.hc__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: clamp(1.2rem, 3vh, 2rem);
+}
+.hc__ctas .btn { --btn-bg: var(--paper); --btn-fg: var(--ink); }
+.hc__ctas .btn--ghost {
+  --btn-bg: transparent;
+  --btn-fg: color-mix(in srgb, var(--paper) 72%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--paper) 26%, transparent);
+}
+.hc__ctas .btn--ghost:hover { --btn-fg: var(--paper); }
+
+/* ---- the film chrome -------------------------------------------------- */
+
+.hc__chrome {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(100%, 980px);
+  margin: clamp(1.25rem, 4svh, 2.5rem) auto 0;
+}
+
+.hc__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6em 1.05em;
+  border-radius: var(--r-pill);
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: var(--t-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--paper) 62%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--paper) 18%, transparent);
+  transition: color var(--d-fast) var(--e-out), box-shadow var(--d-fast) var(--e-out);
+}
+.hc__btn:hover { color: var(--paper); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--paper) 40%, transparent); }
+.hc__btn svg { width: 1.05em; height: 1.05em; flex: none; }
+.hc__btn[aria-pressed='true'] { color: var(--teal-pale); box-shadow: inset 0 0 0 1px var(--teal-tint); }
+
+/* The skip arrow leans the way the button arrows do elsewhere. */
+.hc__skip svg { transition: transform var(--d) var(--e-out); }
+.hc__skip:hover svg { transform: translateX(3px); }
+
+@media (max-width: 560px) {
+  .hero-chapter { padding-inline: clamp(0.75rem, 4vw, 1.25rem); }
+  .hc__card { padding-inline: clamp(1rem, 6vw, 2rem); }
+  .hc__slug { font-size: 0.6875rem; letter-spacing: 0.1em; }
+  .hc__chrome { gap: 0.5rem; }
+  .hc__btn { padding: 0.55em 0.85em; letter-spacing: 0.08em; }
+}
+
+/* Short, wide windows: the card must not push the chrome off the screen. */
+@media (max-height: 680px) {
+  .hc__title { font-size: clamp(1.75rem, 4vw, 2.75rem); }
+  .hc__lede { font-size: var(--t-sm); }
+}

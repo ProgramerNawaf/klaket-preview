@@ -1,0 +1,45 @@
+/* Hero 2: crane down the set.
+   The shot starts high and wide over a working set and comes down to the slate.
+   The copy sits over the bottom left, the way a title card sits over a plate. */
+
+.hero-crane { position: relative; min-height: 100svh; display: grid; align-items: end; overflow: hidden; background: var(--bg-deep); }
+.hero-crane__stage { position: absolute; inset: 0; z-index: 0; }
+.hero-crane__stage canvas { width: 100%; height: 100%; display: block; }
+
+/* The plate is darkened at the bottom so the words always have ground to sit on,
+   whatever the camera happens to be looking at. */
+.hero-crane::after {
+  content: '';
+  position: absolute;
+  inset: 40% 0 0 0;
+  z-index: 1;
+  background: linear-gradient(to top, var(--bg-deep) 8%, rgba(11, 11, 11, 0.72) 42%, transparent);
+  pointer-events: none;
+}
+
+.hero-crane__copy {
+  position: relative;
+  z-index: 2;
+  width: min(100% - var(--gut) * 2, var(--page));
+  margin-inline: auto;
+  padding-bottom: clamp(3.5rem, 11vh, 7rem);
+  padding-top: 30vh;
+}
+.hero-crane__copy > * { max-width: min(38rem, 58vw); }
+.hero-crane h1 { font-size: clamp(2.5rem, 1.1rem + 4.6vw, 4.5rem); }
+.hero-crane__ar { font-family: var(--display); font-weight: 700; font-size: var(--t-xl); color: var(--accent); margin-top: 0.7rem; text-align: left; }
+html[dir='rtl'] .hero-crane__ar { text-align: right; }
+.hero-crane__lede { margin-top: clamp(1.1rem, 2.5vh, 1.5rem); }
+.hero-crane__cta { display: flex; flex-wrap: wrap; gap: 0.85rem; margin-top: clamp(1.6rem, 4vh, 2.25rem); }
+
+/* The slate mark in the corner, the way a camera stamps a frame. */
+.hero-crane__stamp { position: absolute; z-index: 2; top: clamp(5rem, 12vh, 7rem); inset-inline-start: var(--gut); }
+
+@media (max-width: 900px) {
+  .hero-crane__copy > * { max-width: none; }
+  .hero-crane__copy { padding-top: 24vh; }
+}
+
+/* No WebGL: the set drawn flat, lit the same way. */
+.hero-crane__flat { position: absolute; inset: 0; z-index: 0; }
+.hero-crane__flat svg { width: 100%; height: 100%; }

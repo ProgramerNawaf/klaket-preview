@@ -1,0 +1,278 @@
+/* F3, the bento. Six cards at four sizes, each running a small loop of the thing
+   it describes: the call sheet fills in and gets confirmed, two strips trade
+   places and the day total follows, tags come out of the script, a version goes
+   draft to sent to approved, the brief parses field by field, shots get ticked.
+
+   Every loop is a class or a custom property on a handful of nodes, so the whole
+   grid costs one transition at a time instead of a canvas. The drawn bits keep
+   the app's signatures: the mono chip on anything numbered, the coloured leading
+   spine on a strip and on a version bar, the 2px underline on a tagged run, and
+   the dashed outline that means nobody has reviewed it yet. */
+
+.fbento { position: relative; }
+
+.fbento__head { margin-bottom: clamp(2rem, 6vh, 3.5rem); }
+.fbento__title { max-width: 24ch; }
+
+.fbento__grid { display: grid; gap: clamp(0.75rem, 1.2vw, 1.125rem); grid-template-columns: 1fr; }
+
+.fb__card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: clamp(1rem, 1.6vw, 1.5rem);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+  min-height: 17rem;
+  overflow: hidden;
+}
+.fb__demo {
+  flex: 1;
+  min-height: 8rem;
+  border-radius: var(--r);
+  background: var(--bg-deep);
+  box-shadow: inset 0 0 0 1px var(--line);
+  padding: 0.7rem 0.8rem;
+  overflow: hidden;
+  position: relative;
+}
+.fb__name { font-family: var(--display); font-weight: 700; font-size: var(--t-lg); letter-spacing: -0.02em; }
+.fb__body { font-size: var(--t-sm); color: var(--muted); line-height: 1.55; margin-top: -0.45rem; }
+
+@media (min-width: 46rem) {
+  .fbento__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+/* The sizes stop being uniform here: one wide, one tall, one wide, three small. */
+@media (min-width: 64rem) {
+  .fbento__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      'cs cs bd'
+      'bo ap bd'
+      'br sh sh';
+  }
+  .fb__card--callsheet { grid-area: cs; }
+  .fb__card--breakdown { grid-area: bd; }
+  .fb__card--board { grid-area: bo; }
+  .fb__card--approvals { grid-area: ap; }
+  .fb__card--brief { grid-area: br; }
+  .fb__card--shots { grid-area: sh; }
+  .fb__card--callsheet, .fb__card--shots { min-height: 20rem; }
+}
+
+/* ---- the pieces every demo shares ---- */
+.fb-num {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fb-num--on { color: var(--accent); }
+.fb-num--text { color: var(--text); }
+.fb-num--warn { color: var(--paper); }    /* a warning here is never yellow */
+.fb-bar { height: 5px; border-radius: 2.5px; background: var(--text); opacity: 0.34; }
+.fb-row { display: flex; align-items: center; gap: 0.45rem; }
+.fb-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem;
+  padding-bottom: 0.4rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--line);
+}
+/* The mono chip the app puts round every number a crew reads. */
+.fb-chip {
+  font-family: var(--mono); font-weight: 500; font-size: 0.5625rem; letter-spacing: 0.06em;
+  color: var(--paper); background: var(--teal);
+  border-radius: 4px; padding: 0.12rem 0.3rem; flex: none;
+}
+.fb-tick {
+  width: 13px; height: 13px; flex: none; border-radius: 50%;
+  background: color-mix(in srgb, var(--paper) 12%, transparent);
+  position: relative;
+  transition: background-color var(--d) var(--e-out);
+}
+.fb-tick::after {
+  content: ''; position: absolute; inset: 0;
+  background: var(--teal); border-radius: 50%;
+  opacity: 0; transform: scale(0.4);
+  transition: opacity var(--d-fast) var(--e-out), transform var(--d) var(--e-slate);
+}
+.fb-tick::before {
+  content: ''; position: absolute; z-index: 1;
+  left: 3.5px; top: 5px; width: 3px; height: 5.5px;
+  border: 1.6px solid var(--paper); border-top: 0; border-right: 0;
+  transform: rotate(-45deg) scale(0.4);
+  opacity: 0;
+  transition: opacity var(--d-fast) var(--e-out) 60ms, transform var(--d) var(--e-slate) 60ms;
+}
+.fb-tick.is-on::after { opacity: 1; transform: none; }
+.fb-tick.is-on::before { opacity: 1; transform: rotate(-45deg); }
+
+/* ---- the call sheet filling in, then getting confirmed ---- */
+.fb-cs { display: flex; flex-direction: column; height: 100%; }
+.fb-cs__time { font-family: var(--mono); font-weight: 500; font-size: 1.0625rem; color: var(--paper); font-variant-numeric: tabular-nums; }
+.fb-cs__rows { display: flex; flex-direction: column; gap: 0.4rem; flex: 1; justify-content: space-evenly; }
+.fb-cs__row {
+  opacity: 0; transform: translateY(7px);
+  transition: opacity var(--d) var(--e-out), transform var(--d) var(--e-out);
+}
+.fb-cs__row.is-in { opacity: 1; transform: none; }
+.fb-cs__row .fb-bar { flex: 1; max-width: 8rem; }
+.fb-cs__foot { margin-top: 0.6rem; display: flex; align-items: center; gap: 0.6rem; }
+.fb-cs__track {
+  flex: 1; height: 6px; border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--paper) 12%, transparent);
+  overflow: hidden;
+}
+.fb-cs__fill {
+  display: block; height: 100%; border-radius: var(--r-pill);
+  width: calc(var(--p, 0) * 1%);
+  background: var(--teal);
+  transition: width var(--d-slow) var(--e-out);
+}
+
+/* ---- two strips trading places, and the total that follows them ---- */
+.fb-bo { display: flex; flex-direction: column; height: 100%; }
+.fb-bo__stack { position: relative; flex: 1; min-height: 5.5rem; }
+.fb-bo__strip {
+  position: absolute; inset-inline: 0; height: 1.4rem;
+  display: flex; align-items: center; gap: 0.4rem;
+  padding-inline: 0.3rem;
+  border-radius: 3px;
+  border-inline-start: 4px solid var(--teal);
+  background: color-mix(in srgb, var(--teal) 26%, var(--surface));
+  transform: translateY(calc(var(--y, 0) * 1.7rem));
+  transition: transform var(--d-slow) var(--e-out);
+}
+.fb-bo__strip--alt { background: color-mix(in srgb, var(--teal-pale) 14%, var(--surface)); }
+.fb-bo__strip.is-lift { box-shadow: 0 10px 20px -6px rgba(0, 0, 0, 0.9); z-index: 2; }
+.fb-bo__slug { flex: 1; height: 4px; border-radius: 2px; background: var(--text); opacity: 0.6; }
+.fb-bo__tot { margin-top: 0.5rem; display: flex; justify-content: space-between; gap: 0.5rem; }
+
+/* ---- tags coming out of the script ---- */
+.fb-bd { display: flex; flex-direction: column; height: 100%; }
+.fb-bd__scene { font-family: var(--mono); font-weight: 500; font-size: 0.5625rem; letter-spacing: 0.06em; color: var(--teal-pale); }
+.fb-bd__page { flex: 1; display: flex; flex-direction: column; gap: 0.4rem; margin-block: 0.55rem; justify-content: space-evenly; }
+.fb-bd__ln { display: flex; align-items: center; gap: 0.3rem; }
+.fb-bd__ln .fb-bar { flex: 1; }
+.fb-bd__run {
+  flex: none; width: 2.75rem; height: 11px;
+  border-radius: 2px;
+  display: flex; align-items: center;
+  border-bottom: 2px solid transparent;
+  transition: background-color var(--d) var(--e-out), border-color var(--d) var(--e-out);
+}
+.fb-bd__run i { display: block; width: 100%; height: 4px; border-radius: 2px; background: var(--text); opacity: 0.34; }
+/* an accepted tag: a tinted run under a 2px rule */
+.fb-bd__run.is-in { background: color-mix(in srgb, var(--teal) 24%, transparent); border-bottom-color: var(--teal-tint); }
+/* a suggestion nobody has reviewed: the rule, a dashed outline, no fill */
+.fb-bd__run--sug.is-in { background: transparent; outline: 1px dashed color-mix(in srgb, var(--teal-tint) 70%, transparent); outline-offset: 1px; }
+.fb-bd__foot { display: flex; justify-content: space-between; gap: 0.5rem; }
+
+/* ---- a version going draft, sent, approved ---- */
+.fb-ap { display: flex; flex-direction: column; height: 100%; }
+.fb-ap__page { flex: 1; border-radius: 5px; background: var(--surface); overflow: hidden; min-height: 5rem; }
+.fb-ap__top { height: 1.5rem; background: var(--teal); display: flex; align-items: center; padding-inline: 0.4rem; }
+.fb-ap__mark { width: 1.75rem; height: 0.5rem; border-radius: 2px; background: var(--paper); opacity: 0.9; }
+.fb-ap__kv { padding: 0.45rem 0.5rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.fb-ap__kv .fb-bar { width: 60%; }
+.fb-ap__btns { display: flex; gap: 0.3rem; padding: 0 0.5rem 0.5rem; }
+.fb-ap__yes, .fb-ap__no {
+  flex: 1; text-align: center; border-radius: 4px; padding: 0.22rem 0;
+  font-family: var(--mono); font-weight: 500; font-size: 0.5rem; letter-spacing: 0.06em;
+}
+.fb-ap__yes { background: var(--teal); color: var(--paper); }
+.fb-ap__no { box-shadow: inset 0 0 0 1px var(--teal-tint); color: var(--teal-tint); }
+/* the version bar, with the status spine the app draws down its leading edge */
+.fb-ap__bar {
+  margin-top: 0.5rem;
+  display: flex; align-items: center; gap: 0.3rem;
+  padding: 0.35rem 0.4rem 0.35rem 0.55rem;
+  border-radius: 5px;
+  background: var(--surface);
+  border-inline-start: 3px solid var(--spine, var(--line-2));
+  transition: border-color var(--d) var(--e-out);
+}
+.fb-ap__bar[data-k='draft'] { --spine: var(--teal-tint); }
+.fb-ap__bar[data-k='sent'] { --spine: var(--paper); }
+.fb-ap__bar[data-k='approved'] { --spine: var(--teal); }
+.fb-ap__v {
+  font-family: var(--mono); font-weight: 500; font-size: 0.5625rem;
+  padding: 0.1rem 0.28rem; border-radius: 3px;
+  background: var(--raised); color: var(--faint);
+}
+.fb-ap__v.is-on { background: var(--raised-2); color: var(--text); }
+.fb-ap__state { margin-inline-start: auto; }
+.fb-ap__bar .fb-tick { margin-inline-start: 0.15rem; }
+
+/* ---- the brief parsing, field by field ---- */
+.fb-br { display: flex; flex-direction: column; height: 100%; }
+.fb-br__in { display: flex; align-items: center; gap: 0.4rem; padding-bottom: 0.45rem; border-bottom: 1px solid var(--line); }
+/* the one red thing on this screen, and it is red in the product too */
+.fb-br__dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--signal); animation: fb-rec 1.2s linear infinite; }
+@keyframes fb-rec { 50% { opacity: 0.3; } }
+.fb-br__fields { flex: 1; display: flex; flex-direction: column; justify-content: space-evenly; padding-block: 0.3rem; }
+.fb-br__field { display: flex; align-items: baseline; gap: 0.4rem; }
+.fb-br__v {
+  margin-inline-start: auto;
+  font-family: var(--mono); font-weight: 500; font-size: 0.625rem; color: var(--teal-pale);
+  font-variant-numeric: tabular-nums;
+  opacity: 0; transform: translateX(6px);
+  transition: opacity var(--d) var(--e-out), transform var(--d) var(--e-out);
+}
+.fb-br__v.is-in { opacity: 1; transform: none; }
+
+/* ---- shots being ticked off ---- */
+.fb-sh { display: flex; flex-direction: column; height: 100%; }
+.fb-sh__bar {
+  width: 4rem; height: 5px; border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--paper) 14%, transparent);
+  overflow: hidden;
+}
+.fb-sh__bar i { display: block; height: 100%; width: calc(var(--p, 0) * 1%); background: var(--teal); transition: width var(--d-slow) var(--e-out); }
+.fb-sh__strip { display: flex; gap: 0.4rem; flex: 1; min-height: 4.5rem; align-items: stretch; }
+.fb-sh__frame {
+  position: relative; flex: 1; min-width: 0; border-radius: 4px;
+  background: color-mix(in srgb, var(--ink) 78%, var(--teal-deep));
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow: hidden;
+}
+.fb-sh__frame svg { width: 100%; height: 100%; }
+.fb-sh__frame .fb-tick { position: absolute; right: 4px; top: 4px; }
+.fb-sh__code {
+  position: absolute; left: 4px; bottom: 3px;
+  font-family: var(--mono); font-weight: 500; font-size: 0.5rem; letter-spacing: 0.04em;
+  color: var(--teal-pale);
+}
+.fb-sh__size {
+  position: absolute; right: 4px; bottom: 3px;
+  font-family: var(--mono); font-weight: 500; font-size: 0.5rem; letter-spacing: 0.04em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--teal) 32%, transparent);
+  border-radius: 3px; padding: 0 0.18rem;
+}
+.fb-sh__frame.is-done .fb-sh__code { opacity: 0.5; }
+
+/* ---- the drawn sketches inside the storyboard frames ---- */
+.fbento svg .p-tint { fill: var(--teal-tint); }
+.fbento svg .p-pale { fill: var(--teal-pale); }
+.fbento svg .s-tint { stroke: var(--teal-tint); }
+
+/* ---- the loops idle while the section is off screen ---- */
+.fbento.is-idle .fb-br__dot { animation-play-state: paused; }
+
+/* ---- reduced motion: the JS parks every loop on the last state of its cycle,
+   which is the state that makes the point (sheet confirmed, script tagged, shots
+   done), so all this has to do is make sure nothing travels to get there ---- */
+.fbento--still .fb-cs__row,
+.fbento--still .fb-bd__run,
+.fbento--still .fb-br__v,
+.fbento--still .fb-bo__strip,
+.fbento--still .fb-cs__fill,
+.fbento--still .fb-ap__bar,
+.fbento--still .fb-tick,
+.fbento--still .fb-tick::before,
+.fbento--still .fb-tick::after,
+.fbento--still .fb-sh__bar i { transition: none; }
+.fbento--still .fb-br__dot { animation: none; }

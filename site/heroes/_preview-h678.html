@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- The brand is set before the first paint, or the page flashes the other one. -->
+<script>try{var q=new URLSearchParams(location.search).get('brand');var b=q||localStorage.getItem('klaket.brand');if(b==='mono')document.documentElement.setAttribute('data-brand','mono')}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Heroes: H6, H7, H8 in sequence</title>
+
+<link rel="icon" href="../../brand/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+
+<link rel="stylesheet" href="../core/tokens.css">
+<link rel="stylesheet" href="../core/base.css">
+<link rel="stylesheet" href="h6-slate.css">
+<link rel="stylesheet" href="h7-projector.css">
+<link rel="stylesheet" href="h8-runway.css">
+
+<style>
+  /* Preview chrome only. Nothing here ships: it exists so the three heroes can
+     be told apart and jumped between while choosing one. On a real variant page
+     a hero is the only hero and carries the page's single h1; here the preview
+     owns the h1 and each hero is demoted with data-h="2". */
+  .pv-head { padding: clamp(3rem, 10vh, 6rem) 0 2rem; }
+  .pv-head h1 { font-size: var(--t-2xl); }
+  .pv-head p { margin-top: 0.75rem; color: var(--muted); max-width: 54ch; }
+  .pv-jump { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+  .pv-jump a {
+    font-family: var(--mono); font-size: var(--t-xs); letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 0.6em 1em; border-radius: var(--r-pill);
+    box-shadow: inset 0 0 0 1px var(--line-2);
+  }
+  .pv-jump a:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+  .pv-mark {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.6rem var(--gut);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono); font-size: var(--t-xs); letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--faint);
+  }
+  .pv-mark b { color: var(--text); font-weight: 500; }
+</style>
+<link rel="stylesheet" href="../core/theme.css">
+
+</head>
+<body>
+
+<a class="skip" href="#h6">Skip to the first hero</a>
+
+<header class="pv-head wrap">
+  <h1>Three heroes, same six lines of copy.</h1>
+  <p>H6, H7 and H8 render the slogan, the Arabic line, the lede and both actions from <code>KLDATA.hero</code>. A variant page includes exactly one of them.</p>
+  <nav class="pv-jump" aria-label="Jump to a hero">
+    <a href="#h6">H6 slate</a>
+    <a href="#h7">H7 projector</a>
+    <a href="#h8">H8 runway</a>
+  </nav>
+</header>
+
+<div class="pv-mark" id="h6"><b>H6</b> flat SVG slate, fields chalked in, the stick shuts</div>
+<section class="hero-slate" data-h="2"></section>
+
+<div class="pv-mark" id="h7"><b>H7</b> projector, volumetric beam, light lands on the headline</div>
+<section class="hero-projector" data-h="2"></section>
+
+<div class="pv-mark" id="h8"><b>H8</b> film strip down the rail, one frame comes to rest</div>
+<section class="hero-runway" data-h="2"></section>
+
+<script src="../vendor/gsap.min.js"></script>
+<script src="../vendor/ScrollTrigger.min.js"></script>
+<script src="../vendor/lenis.min.js"></script>
+<script src="../core/boot.js"></script>
+<script src="../core/data.js"></script>
+<script src="h6-slate.js"></script>
+<script type="module" src="h7-projector.js"></script>
+<script type="module" src="h8-runway.js"></script>
+<script src="../core/theme.js"></script>
+
+</body>
+</html>

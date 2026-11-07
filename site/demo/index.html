@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<!-- The brand is set before the first paint, or the page flashes the other one. -->
+<script>try{var q=new URLSearchParams(location.search).get('brand');var b=q||localStorage.getItem('klaket.brand');if(b==='mono')document.documentElement.setAttribute('data-brand','mono')}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Request a demo | Klaket</title>
+<meta name="description" content="A 30 minute demo of Klaket against your real slate, not a sandbox. Tell us what you shoot and we will set it up.">
+<meta name="theme-color" content="#121212">
+<meta name="robots" content="index, follow">
+
+<link rel="icon" href="../../brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="../../brand/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="apple-touch-icon" sizes="180x180" href="../../brand/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+
+<link rel="stylesheet" href="../core/tokens.css">
+<link rel="stylesheet" href="../core/base.css">
+<link rel="stylesheet" href="../core/nav.css">
+<link rel="stylesheet" href="demo.css">
+<link rel="stylesheet" href="../core/theme.css">
+
+</head>
+<body class="dm-page">
+
+<a class="skip" href="#dm-form">Skip to the form</a>
+
+<nav class="island" data-dock="top" aria-label="Klaket"></nav>
+
+<main id="top">
+  <div class="wrap dm">
+
+    <header class="dm__head" data-reveal="up">
+      <h1>Request a demo.</h1>
+      <p class="lede">A 30 minute demo against your real slate, not a sandbox.</p>
+    </header>
+
+    <div class="dm__cols">
+
+      <!-- The form is written here rather than rendered from KLDATA on purpose: with JavaScript off it
+           still has to appear, and a field the visitor cannot see is a field they cannot fill in. -->
+      <form class="dmf" id="dm-form" method="post" action="" data-reveal="up">
+        <span class="dmf__bar stripes" aria-hidden="true"></span>
+
+        <div class="dmf__banner" id="dm-banner" role="alert" hidden>
+          <span class="dmf__bang" aria-hidden="true">!</span>
+          <p id="dm-banner-text"></p>
+        </div>
+
+        <div class="dmf__grid">
+
+          <p class="dmf__field">
+            <label for="dm-name">Full name</label>
+            <input id="dm-name" name="name" type="text" autocomplete="name"
+                   maxlength="200" required aria-describedby="dm-name-err">
+            <span class="dmf__err" id="dm-name-err" aria-live="polite"></span>
+          </p>
+
+          <p class="dmf__field">
+            <label for="dm-email">Work email</label>
+            <input id="dm-email" name="email" type="email" autocomplete="email" inputmode="email"
+                   spellcheck="false" maxlength="200" required aria-describedby="dm-email-err">
+            <span class="dmf__err" id="dm-email-err" aria-live="polite"></span>
+          </p>
+
+          <p class="dmf__field">
+            <label for="dm-company">Company</label>
+            <input id="dm-company" name="company" type="text" autocomplete="organization"
+                   maxlength="200" required aria-describedby="dm-company-err">
+            <span class="dmf__err" id="dm-company-err" aria-live="polite"></span>
+          </p>
+
+          <p class="dmf__field">
+            <label for="dm-role">Your role</label>
+            <span class="dmf__select">
+              <select id="dm-role" name="role" required aria-describedby="dm-role-err">
+                <option value="">Choose one</option>
+                <option value="producer">Producer</option>
+                <option value="line_producer">Line producer</option>
+                <option value="production_manager">Production manager</option>
+                <option value="director">Director</option>
+                <option value="other">Other</option>
+              </select>
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 6.5 8 10.5 12 6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="dmf__err" id="dm-role-err" aria-live="polite"></span>
+          </p>
+
+          <p class="dmf__field">
+            <label for="dm-volume">Productions per year</label>
+            <span class="dmf__select">
+              <select id="dm-volume" name="volume" required aria-describedby="dm-volume-err">
+                <option value="">Choose one</option>
+                <option value="1-5">1 to 5</option>
+                <option value="6-15">6 to 15</option>
+                <option value="16-40">16 to 40</option>
+                <option value="40+">More than 40</option>
+              </select>
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 6.5 8 10.5 12 6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span class="dmf__err" id="dm-volume-err" aria-live="polite"></span>
+          </p>
+
+          <p class="dmf__field">
+            <label for="dm-phone">Phone <span class="dmf__opt">(optional)</span></label>
+            <span class="dmf__phone">
+              <span class="dmf__select dmf__select--cc">
+                <select id="dm-phone-cc" name="phone_cc" aria-label="Country calling code">
+                  <option value="+966" selected>+966 Saudi Arabia</option>
+                  <option value="+971">+971 United Arab Emirates</option>
+                  <option value="+965">+965 Kuwait</option>
+                  <option value="+974">+974 Qatar</option>
+                  <option value="+973">+973 Bahrain</option>
+                  <option value="+968">+968 Oman</option>
+                  <option value="+962">+962 Jordan</option>
+                  <option value="+961">+961 Lebanon</option>
+                  <option value="+20">+20 Egypt</option>
+                  <option value="+212">+212 Morocco</option>
+                  <option value="+216">+216 Tunisia</option>
+                  <option value="+90">+90 Turkey</option>
+                  <option value="+44">+44 United Kingdom</option>
+                  <option value="+1">+1 United States and Canada</option>
+                  <option value="+33">+33 France</option>
+                  <option value="+49">+49 Germany</option>
+                  <option value="+91">+91 India</option>
+                  <option value="+92">+92 Pakistan</option>
+                </select>
+                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M4 6.5 8 10.5 12 6.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </span>
+              <input id="dm-phone" name="phone" type="tel" autocomplete="tel-national" inputmode="tel"
+                     maxlength="24" aria-describedby="dm-phone-err">
+            </span>
+            <span class="dmf__err" id="dm-phone-err" aria-live="polite"></span>
+          </p>
+
+          <p class="dmf__field dmf__field--wide">
+            <label for="dm-message">Anything we should know <span class="dmf__opt">(optional)</span></label>
+            <textarea id="dm-message" name="message" rows="4" maxlength="2000"
+                      aria-describedby="dm-message-err"></textarea>
+            <span class="dmf__err" id="dm-message-err" aria-live="polite"></span>
+          </p>
+
+        </div>
+
+        <!-- Bots fill in every field they find. This one is hidden from sight, from the keyboard and from
+             screen readers, so only a machine ever puts anything in it. Named to read like a real field. -->
+        <div class="dmf__trap" aria-hidden="true">
+          <label for="dm-company-website">Company website</label>
+          <input id="dm-company-website" name="company_website" type="text" tabindex="-1" autocomplete="off">
+        </div>
+        <!-- Stamped by demo.js on load. A form sent in under a couple of seconds was not typed by a person. -->
+        <input type="hidden" name="started_at" id="dm-started-at" value="">
+
+        <div class="dmf__foot">
+          <button class="btn dmf__submit" type="submit">
+            <span>Request demo</span>
+            <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <span class="dmf__status" id="dm-status" aria-live="polite"></span>
+        </div>
+
+        <noscript>
+          <p class="dmf__noscript">This form needs JavaScript to send. With it switched off, email the details
+            to <a href="mailto:hello@klaket.com">hello@klaket.com</a> instead and we will reply the same way.</p>
+        </noscript>
+      </form>
+
+      <!-- Replaces the form once the row is in. Focus moves here, so a screen reader lands on the outcome. -->
+      <section class="dm__done" id="dm-done" aria-labelledby="dm-done-title" tabindex="-1" hidden>
+        <span class="dmf__bar stripes" aria-hidden="true"></span>
+        <h2 id="dm-done-title">That is booked in.</h2>
+        <p>We have your request and will write to <b id="dm-done-email">you</b> within one working day to
+          pick a time.</p>
+        <p class="muted">Nothing else is needed from you now.</p>
+      </section>
+
+      <aside class="dm__aside" data-reveal="up">
+        <h2 class="dm__aside-title">What happens next</h2>
+        <ol class="dm__steps">
+          <li><span class="data">01</span><p>We read what you shoot and come back within one working day.</p></li>
+          <li><span class="data">02</span><p>Thirty minutes, on a call, with Klaket set up on your own slate.</p></li>
+          <li><span class="data">03</span><p>You keep the setup whether or not you carry on with us.</p></li>
+        </ol>
+        <!-- PLACEHOLDER-CONTACT: Klaket has no published inbox yet. Replace this address everywhere it
+             appears on this page (here and in the noscript block) before the site goes live. -->
+        <p class="dm__contact">Prefer email? Write to
+          <a href="mailto:hello@klaket.com">hello@klaket.com</a>.</p>
+      </aside>
+
+    </div>
+  </div>
+</main>
+
+<footer class="dm__foot">
+  <div class="wrap dm__foot-in">
+    <a class="dm__foot-brand" href="../">
+      <img src="../../brand/klaket-mark-on-dark.svg" alt="" width="22" height="22" decoding="async">
+      <span>KLAKET</span>
+    </a>
+    <span class="muted">© 2026 Klaket</span>
+    <span class="ar" dir="rtl" lang="ar">كل شغل يبدأ بكلاكيت.</span>
+  </div>
+</footer>
+
+<script src="../vendor/gsap.min.js"></script>
+<script src="../vendor/ScrollTrigger.min.js"></script>
+<script src="../vendor/lenis.min.js"></script>
+<script src="../core/boot.js"></script>
+<script src="../core/data.js"></script>
+<script src="../core/nav.js"></script>
+<script src="../../js/config.js"></script>
+<script src="vendor/supabase.js"></script>
+<script src="demo.js"></script>
+<script src="../core/theme.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,60 @@
+{
+  "heroes": {
+    "clap":      { "root": "hero-clap",      "file": "h1-clap",      "name": "The clap" },
+    "crane":     { "root": "hero-crane",     "file": "h2-crane",     "name": "Crane down the set" },
+    "chapter":   { "root": "hero-chapter",   "file": "h3-chapter",   "name": "Chapter card" },
+    "depth":     { "root": "hero-depth",     "file": "h4-depth",     "name": "Depth type", "paper": true },
+    "mosaic":    { "root": "hero-mosaic",    "file": "h5-mosaic",    "name": "Mosaic" },
+    "slateType": { "root": "hero-slate",     "file": "h6-slate",     "name": "The slate fills in" },
+    "projector": { "root": "hero-projector", "file": "h7-projector", "name": "Projector" },
+    "runway":    { "root": "hero-runway",    "file": "h8-runway",    "name": "Film strip runway" }
+  },
+  "value": {
+    "reel":     { "root": "vreel",  "file": "value-reel",     "name": "Cards through the gap" },
+    "wipe":     { "root": "vwipe",  "file": "value-wipe",     "name": "The slate wipes" },
+    "slate":    { "root": "vslate", "file": "value-slate",    "name": "Four fields of a slate" },
+    "counters": { "root": "vcount", "file": "value-counters", "name": "Numbers with proof" }
+  },
+  "journey": {
+    "fly":   { "root": "jfly",   "file": "journey-fly",   "name": "3D flythrough" },
+    "lens":  { "root": "jlens",  "file": "journey-lens",  "name": "One continuous zoom" },
+    "strip": { "root": "jstrip", "file": "journey-strip", "name": "Horizontal film strip" },
+    "stack": { "root": "jstack", "file": "journey-stack", "name": "Slates clapping into a stack" }
+  },
+  "features": {
+    "carousel": { "root": "fcar",   "file": "features-carousel", "name": "Card carousel" },
+    "sticky":   { "root": "fstick", "file": "features-sticky",   "name": "Sticky split" },
+    "bento":    { "root": "fbento", "file": "features-bento",    "name": "Bento with live demos" }
+  },
+  "footer": {
+    "reel":     { "root": "foot",  "file": "footer",          "core": true, "name": "Camera, tape, screen" },
+    "marquee":  { "root": "fmarq", "file": "footer-marquee",  "name": "Ghost marquee and aperture" },
+    "endscene": { "root": "fend",  "file": "footer-endscene", "name": "Build chips and end scene" }
+  },
+  "variants": [
+    ["clap",      "reel",     "fly",   "carousel", "reel",     "The clap, straight down the middle"],
+    ["clap",      "slate",    "strip", "bento",    "marquee",  "The clap, typographic and mechanical"],
+    ["clap",      "counters", "lens",  "sticky",   "endscene", "The clap, numbers first"],
+    ["crane",     "reel",     "lens",  "bento",    "marquee",  "Crane in, then zoom all the way through"],
+    ["crane",     "wipe",     "fly",   "sticky",   "reel",     "Crane in, wipe, fly the set"],
+    ["crane",     "slate",    "stack", "carousel", "endscene", "Crane in, slates all the way down"],
+    ["chapter",   "reel",     "stack", "sticky",   "endscene", "A film in chapters"],
+    ["chapter",   "wipe",     "strip", "carousel", "reel",     "Chapters, wipes and a strip"],
+    ["chapter",   "counters", "fly",   "bento",    "marquee",  "Chapters with the numbers up front"],
+    ["depth",     "slate",    "lens",  "carousel", "endscene", "Paper ground, type with depth"],
+    ["depth",     "reel",     "strip", "bento",    "reel",     "Paper ground, the mess falls through"],
+    ["depth",     "wipe",     "stack", "sticky",   "marquee",  "Paper ground, wiped clean"],
+    ["mosaic",    "counters", "fly",   "carousel", "reel",     "Tiles assembling, then the set"],
+    ["mosaic",    "slate",    "strip", "sticky",   "marquee",  "Tiles assembling, slate logic"],
+    ["mosaic",    "reel",     "lens",  "bento",    "endscene", "Tiles assembling, one long zoom"],
+    ["slateType", "wipe",     "stack", "bento",    "reel",     "The quiet one"],
+    ["slateType", "counters", "fly",   "sticky",   "endscene", "The quiet one, with receipts"],
+    ["slateType", "reel",     "strip", "carousel", "marquee",  "The quiet one, mechanical"],
+    ["projector", "slate",    "lens",  "sticky",   "reel",     "Projected, then zoomed"],
+    ["projector", "wipe",     "fly",   "carousel", "endscene", "Projected, then flown"],
+    ["projector", "counters", "stack", "bento",    "marquee",  "Projected, stacked, counted"],
+    ["runway",    "reel",     "fly",   "bento",    "endscene", "Film rushing at you, then the set"],
+    ["runway",    "counters", "strip", "carousel", "reel",     "Film rushing at you, all mechanical"],
+    ["runway",    "wipe",     "lens",  "sticky",   "marquee",  "Film rushing at you, then through the lens"]
+  ]
+}

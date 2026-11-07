@@ -1,0 +1,118 @@
+<!doctype html><html><head><meta charset="utf-8"><title>audit: pending</title>
+<style>body{font:13px/1.5 ui-monospace,monospace;background:#111;color:#eee;margin:0;padding:16px}
+pre{white-space:pre-wrap}.bad{color:#F2483A}.ok{color:#5FA8A1}iframe{position:fixed;left:-9999px;border:0}</style>
+</head><body><pre id="o">starting…</pre><iframe id="f"></iframe>
+<script>
+const o = document.getElementById('o'), f = document.getElementById('f');
+/* The iframe is sized exactly, because the shared Chrome window cannot be
+   resized while other sessions are driving it. */
+const Q = new URLSearchParams(location.search);
+const VW = +(Q.get('w') || 1440), VH = +(Q.get('h') || 900);
+const BRAND = Q.get('brand') === 'mono' ? 'mono' : 'colour';
+/* The brand is pinned per page in the query string. localStorage is shared
+   across every session driving this browser, so another agent flipping it
+   mid-run used to make this audit lie. */
+
+/* Colours that must not survive a switch to mono: the two teals, the teal tint,
+   the pale teal and the cream paper. Anything still painting these is carrying
+   a hardcoded value instead of a token. */
+const COLOUR_ONLY = {
+  'rgb(15, 92, 87)': 'teal',
+  'rgb(10, 63, 60)': 'teal-deep',
+  'rgb(95, 168, 161)': 'teal-tint',
+  'rgb(181, 221, 216)': 'teal-pale',
+  'rgb(246, 235, 217)': 'paper cream',
+};
+const PROPS = ['color', 'backgroundColor', 'borderTopColor', 'borderBottomColor', 'fill', 'stroke', 'outlineColor'];
+
+function leaks(d) {
+  const found = new Map();
+  const all = d.querySelectorAll('*');
+  const n = Math.min(all.length, 4000);
+  for (let i = 0; i < n; i++) {
+    const el = all[i];
+    if (el.closest('.kldock')) continue;          // the dock keeps its own chrome
+    const cs = getComputedStyle(el);
+    for (const prop of PROPS) {
+      const v = cs[prop];
+      const name = COLOUR_ONLY[v];
+      if (!name) continue;
+      const key = name + ' via ' + prop;
+      if (!found.has(key)) found.set(key, (el.className && el.className.baseVal !== undefined ? el.className.baseVal : el.className) || el.tagName);
+    }
+  }
+  return [...found].slice(0, 6).map(([k, where]) => k + ' on ' + String(where).split(' ')[0]);
+}
+f.style.width = VW + 'px'; f.style.height = VH + 'px';
+const WAIT = 2600;
+const EXPECT = ['hero', 'companies', 'value', 'journey', 'features', 'faq', 'companies2'];
+
+function probe(w, d) {
+  const errs = w.__errs || [];
+  const secs = [...d.querySelectorAll('main > section')].map(s => ({
+    cls: s.className.split(' ')[0], kids: s.children.length, h: Math.round(s.offsetHeight),
+  }));
+  const foot = d.querySelector('footer');
+  const de = d.documentElement;
+  return {
+    bodyH: d.body.scrollHeight,
+    overflowX: Math.max(0, de.scrollWidth - w.innerWidth),
+    h1: d.querySelectorAll('h1').length,
+    empty: secs.filter(s => s.kids === 0 || s.h < 40).map(s => s.cls),
+    footKids: foot ? foot.children.length : -1,
+    footH: foot ? Math.round(foot.offsetHeight) : -1,
+    canvases: d.querySelectorAll('canvas').length,
+    imgsBroken: [...d.images].filter(i => i.complete && i.naturalWidth === 0).map(i => i.src.split('/').pop()),
+    brand: d.documentElement.getAttribute('data-brand') || 'colour',
+    leaks: BRAND === 'mono' ? leaks(d) : [],
+    errs: errs.slice(0, 4),
+    secs,
+  };
+}
+
+async function one(dir) {
+  return new Promise((res) => {
+    f.src = '../' + dir + '/?audit=1&brand=' + BRAND;
+    f.onload = () => {
+      const w = f.contentWindow;
+      w.__errs = [];
+      w.addEventListener('error', e => w.__errs.push((e.message || '') + ' @' + ((e.filename||'').split('/').pop())), true);
+      w.addEventListener('unhandledrejection', e => w.__errs.push('reject: ' + e.reason));
+      setTimeout(() => {
+        let r;
+        try { r = probe(w, f.contentDocument); } catch (e) { r = { fatal: String(e) }; }
+        res(r);
+      }, WAIT);
+    };
+  });
+}
+
+(async () => {
+  const built = await fetch('./built.json').then(r => r.json());
+  const out = [];
+  for (const b of built) {
+    o.textContent = 'auditing ' + b.n + '/' + built.length + '  ' + b.dir;
+    const r = await one(b.dir);
+    const problems = [];
+    if (r.fatal) problems.push('FATAL ' + r.fatal);
+    if (r.overflowX > 0) problems.push('overflowX ' + r.overflowX + 'px');
+    if (r.h1 !== 1) problems.push('h1 count ' + r.h1);
+    if (r.empty && r.empty.length) problems.push('empty: ' + r.empty.join(','));
+    if (r.footKids === 0) problems.push('footer empty');
+    if (r.footH < 100) problems.push('footer h=' + r.footH);
+    if (r.imgsBroken && r.imgsBroken.length) problems.push('broken img: ' + r.imgsBroken.join(','));
+    if (r.errs && r.errs.length) problems.push('JS: ' + r.errs.join(' | '));
+    if (r.brand !== BRAND) problems.push('brand not applied: got ' + r.brand);
+    if (r.bodyH < 3000) problems.push('page short: ' + r.bodyH);
+    if (r.leaks && r.leaks.length) problems.push('colour left in mono: ' + r.leaks.join('; '));
+    out.push({ n: b.n, dir: b.dir, problems, bodyH: r.bodyH, canvases: r.canvases });
+  }
+  f.src = 'about:blank';
+  const bad = out.filter(x => x.problems.length);
+  document.title = 'audit ' + BRAND + ' ' + VW + 'w: ' + (out.length - bad.length) + '/' + out.length + ' clean';
+  o.textContent = 'BRAND ' + BRAND + '   VIEWPORT ' + VW + 'x' + VH + '   CLEAN ' + (out.length - bad.length) + ' / ' + out.length + '\n\n' +
+    out.map(x => (x.problems.length ? 'BAD  ' : 'ok   ') + x.n + ' ' + x.dir.padEnd(46) +
+      ' h=' + x.bodyH + ' cv=' + x.canvases +
+      (x.problems.length ? '\n       ' + x.problems.join('\n       ') : '')).join('\n');
+})();
+</script></body></html>

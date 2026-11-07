@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en" data-reroot="1">
+<head>
+<meta charset="utf-8">
+<!-- The brand is set before the first paint, or the page flashes the other one. -->
+<script>try{var q=new URLSearchParams(location.search).get('brand');var b=q||localStorage.getItem('klaket.brand');if(b==='mono')document.documentElement.setAttribute('data-brand','mono')}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>How a call sheet gets built, and where it breaks on the day | Klaket</title>
+<meta name="description" content="A call sheet is built backwards from the first shot, not forwards from the call. The order it gets assembled in, what belongs in each block, and the seven ways it quietly goes wrong on a shoot day.">
+<link rel="canonical" href="https://klaket.ai/site/blog/how-a-call-sheet-gets-built/">
+<meta name="theme-color" content="#121212">
+<meta name="author" content="Nawaf Alahmed">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Klaket">
+<meta property="og:locale" content="en">
+<meta property="og:title" content="How a call sheet gets built, and where it breaks on the day">
+<meta property="og:description" content="A call sheet is built backwards from the first shot. The order it gets assembled in, and the seven ways it quietly goes wrong on a shoot day.">
+<meta property="og:url" content="https://klaket.ai/site/blog/how-a-call-sheet-gets-built/">
+<meta property="og:image" content="https://klaket.ai/brand/icon-512.png">
+<meta property="og:image:width" content="512">
+<meta property="og:image:height" content="512">
+<meta property="og:image:alt" content="The Klaket mark: a clapperboard drawn as a speech bubble.">
+<meta property="article:published_time" content="2026-10-21">
+<meta property="article:author" content="Nawaf Alahmed">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="How a call sheet gets built, and where it breaks on the day">
+<meta name="twitter:description" content="A call sheet is built backwards from the first shot. The order it gets assembled in, and the seven ways it quietly goes wrong on a shoot day.">
+<meta name="twitter:image" content="https://klaket.ai/brand/icon-512.png">
+<meta name="twitter:image:alt" content="The Klaket mark: a clapperboard drawn as a speech bubble.">
+
+<link rel="icon" href="../../../brand/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../../brand/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+
+<link rel="stylesheet" href="../../core/tokens.css">
+<link rel="stylesheet" href="../../core/base.css">
+<link rel="stylesheet" href="../../core/nav.css">
+<link rel="stylesheet" href="../../core/footer.css">
+<link rel="stylesheet" href="../blog.css">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "How a call sheet gets built, and where it breaks on the day",
+  "description": "A call sheet is built backwards from the first shot, not forwards from the call. The order it gets assembled in, what belongs in each block, and the seven ways it quietly goes wrong on a shoot day.",
+  "url": "https://klaket.ai/site/blog/how-a-call-sheet-gets-built/",
+  "mainEntityOfPage": { "@type": "WebPage", "@id": "https://klaket.ai/site/blog/how-a-call-sheet-gets-built/" },
+  "datePublished": "2026-10-21",
+  "dateModified": "2026-10-21",
+  "inLanguage": "en",
+  "wordCount": 1552,
+  "author": { "@type": "Person", "name": "Nawaf Alahmed" },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Klaket",
+    "url": "https://klaket.ai",
+    "logo": { "@type": "ImageObject", "url": "https://klaket.ai/brand/icon-512.png", "width": 512, "height": 512 }
+  },
+  "image": "https://klaket.ai/brand/icon-512.png",
+  "isPartOf": { "@type": "Blog", "name": "Klaket Journal", "url": "https://klaket.ai/site/blog/" },
+  "about": ["Call sheets", "Film production", "Assistant directing", "Production in Saudi Arabia"]
+}
+</script>
+<link rel="stylesheet" href="../../core/theme.css">
+
+</head>
+
+<body id="top">
+<a class="skip" href="#main">Skip to the article</a>
+
+<nav class="island" data-dock="top" aria-label="Main"></nav>
+
+<main class="jmain" id="main">
+  <article>
+
+    <header class="post__head">
+      <div class="wrap-narrow">
+        <h1>How a call sheet gets built, and where it breaks on the day</h1>
+        <p class="post__stand">A call sheet is a promise about tomorrow, kept by about forty people who were not in the room when it was written. Here is the order it gets assembled in, and the places it quietly fails.</p>
+        <p class="post__by">
+          <span class="post__author">Nawaf Alahmed</span>
+          <time class="data" datetime="2026-10-21">21 October 2026</time>
+          <span class="data">7 min read</span>
+        </p>
+      </div>
+    </header>
+
+    <div class="prose wrap-narrow">
+
+      <p>The call sheet is the only document on a production that the whole unit reads. The script is read by a handful of people. The budget by three. The breakdown by heads of department and nobody else. The call sheet is read by the driver, the runner, the gaffer, the client’s marketing manager and the actor’s mother, and every one of them acts on it.</p>
+
+      <p>It is also the document with the least time spent on it. It is built last, usually between 19:00 and 22:00 the night before, by one person who has been standing up since 05:00.</p>
+
+      <h2>A call sheet is downstream of four other documents</h2>
+
+      <p>Nothing on it is original. Every line is copied, derived or inherited from somewhere else:</p>
+
+      <ul>
+        <li>the <strong>schedule</strong>, which decides what is being shot and in what order;</li>
+        <li>the <strong>breakdown</strong>, which decides who and what has to be there for it;</li>
+        <li><strong>cast availability and the deal memos</strong>, which decide the earliest and latest you can legally call each actor;</li>
+        <li><strong>locations</strong>, which carry the access times, the permit conditions, the gate, the parking and the contact who holds the key.</li>
+      </ul>
+
+      <p>If any one of those four is stale, the sheet is wrong, and it is wrong in a way nobody can catch by reading it. A call sheet with a location that changed after the schedule was locked looks exactly like a correct one. You cannot proofread a call sheet into correctness.</p>
+
+      <h2>It is built backwards from the first shot, not forwards from the call</h2>
+
+      <p>You do not pick a call time. You pick the moment the camera turns over on shot one, and then you walk backwards, department by department, until you run out of night.</p>
+
+      <p>Take an exterior with one actor, first shot at <span class="t">06:30</span>:</p>
+
+      <ul>
+        <li>Camera and grip want <strong>45 minutes</strong> from unit call to being ready on a simple setup. Put a dolly track or a crane in the first shot and it is 90.</li>
+        <li>Art needs to dress before anyone lights, so their pre-call is an hour ahead of the unit.</li>
+        <li>Hair and makeup on a straightforward look is <strong>60 to 90 minutes</strong>, then wardrobe, then the drive from base camp to set.</li>
+        <li>Breakfast has to be open fifteen minutes before the first person is expected to have eaten it.</li>
+      </ul>
+
+      <p>Work it through and you get art at <span class="t">04:00</span>, talent pickup at <span class="t">04:15</span>, unit call at <span class="t">05:00</span>, breakfast from <span class="t">04:45</span>, camera ready at <span class="t">06:15</span> so that <span class="t">06:30</span> is real and not aspirational.</p>
+
+      <p class="pull">Eleven times on a call sheet are derived from one number. Move the first shot by thirty minutes and all eleven move.</p>
+
+      <p>That is the most common way a sheet ends up internally inconsistent. Somebody moved the first shot at 21:00, hand-edited four of the eleven times, and sent it. The crew arrives correctly, the actor arrives an hour late, and it reads as the actor’s fault.</p>
+
+      <figure class="draw" tabindex="0">
+        <svg viewBox="0 0 640 430" role="img" aria-labelledby="fig1-t fig1-d">
+          <title id="fig1-t">The anatomy of a call sheet</title>
+          <desc id="fig1-d">A drawn single page call sheet on a teal and cream ground, divided into six blocks from top to bottom: a header band carrying the production, the day number and the date; a unit call time with per department pre-calls; a row of sunrise, sunset and temperature; a scene strip table copied from the stripboard; a cast table with pickup, makeup and on set times; and a contacts block with the nearest hospital. A red marker sits beside the location line, where a change arrived at 23:41 after the page was sent.</desc>
+
+          <!-- the page -->
+          <rect x="150" y="14" width="350" height="400" rx="6" class="f-paper"/>
+
+          <!-- header band -->
+          <path d="M150 20a6 6 0 0 1 6-6h338a6 6 0 0 1 6 6v46H150Z" class="f-teal"/>
+          <text x="166" y="34" class="lbl lbl--cream">RIYADH / SPOT 60</text>
+          <text x="166" y="50" class="lbl lbl--cream lbl--big">DAY 3 OF 7</text>
+          <text x="484" y="34" class="lbl lbl--cream" text-anchor="end">MON 12 JAN</text>
+          <text x="484" y="52" class="lbl lbl--cream" text-anchor="end">UNIT 1</text>
+
+          <!-- call block -->
+          <text x="166" y="92" class="lbl lbl--big lbl--ink">UNIT CALL 05:00</text>
+          <g class="lbl lbl--on-paper">
+            <text x="166" y="110">ART 04:00</text>
+            <text x="246" y="110">H/MU 04:15</text>
+            <text x="336" y="110">CAM 05:00</text>
+            <text x="420" y="110">1ST SHOT 06:30</text>
+          </g>
+          <path d="M166 120H484" class="s-line" stroke-width="1" opacity=".5"/>
+
+          <!-- sun and weather -->
+          <g>
+            <rect x="166" y="130" width="98" height="30" rx="3" class="f-teal" opacity=".12"/>
+            <rect x="272" y="130" width="98" height="30" rx="3" class="f-teal" opacity=".12"/>
+            <rect x="378" y="130" width="106" height="30" rx="3" class="f-teal" opacity=".12"/>
+            <g class="lbl lbl--on-paper">
+              <text x="176" y="143">SUNRISE</text><text x="176" y="154" class="lbl--teal">06:41</text>
+              <text x="282" y="143">SUNSET</text><text x="282" y="154" class="lbl--teal">17:25</text>
+              <text x="388" y="143">TEMP</text><text x="388" y="154" class="lbl--teal">21 / 9 C</text>
+            </g>
+          </g>
+
+          <!-- scene strip -->
+          <g class="lbl lbl--on-paper">
+            <text x="166" y="184">SC</text><text x="196" y="184">I/E</text><text x="228" y="184">D/N</text>
+            <text x="262" y="184">SET</text><text x="420" y="184">8THS</text><text x="456" y="184">CAST</text>
+          </g>
+          <path d="M166 190H484" class="s-line" stroke-width="1"/>
+          <g class="lbl lbl--on-paper">
+            <text x="166" y="206">14</text><text x="196" y="206">EXT</text><text x="228" y="206">D</text><text x="262" y="206">NORTH GATE, CAR PULLS IN</text><text x="420" y="206">3/8</text><text x="456" y="206">1, 2</text>
+            <text x="166" y="224">14A</text><text x="196" y="224">EXT</text><text x="228" y="224">D</text><text x="262" y="224">INSERT, KEY IN THE DOOR</text><text x="420" y="224">1/8</text><text x="456" y="224">2</text>
+            <text x="166" y="242">22</text><text x="196" y="242">INT</text><text x="228" y="242">D</text><text x="262" y="242">LOBBY, THE HANDOVER</text><text x="420" y="242">7/8</text><text x="456" y="242">1, 3</text>
+            <text x="166" y="260">23</text><text x="196" y="260">INT</text><text x="228" y="260">N</text><text x="262" y="260">LOBBY, EMPTY</text><text x="420" y="260">2/8</text><text x="456" y="260">-</text>
+          </g>
+          <path d="M166 272H484" class="s-line" stroke-width="1" opacity=".5"/>
+
+          <!-- cast table -->
+          <g class="lbl lbl--on-paper">
+            <text x="166" y="292">NO</text><text x="196" y="292">CAST</text><text x="310" y="292">P/U</text><text x="356" y="292">H/MU</text><text x="410" y="292">SET</text><text x="452" y="292">W/O</text>
+            <text x="166" y="310">1</text><text x="196" y="310">THE DRIVER</text><text x="310" y="310">04:15</text><text x="356" y="310">04:45</text><text x="410" y="310">06:15</text><text x="452" y="310">19:00</text>
+            <text x="166" y="328">2</text><text x="196" y="328">THE COURIER</text><text x="310" y="328">04:15</text><text x="356" y="328">05:15</text><text x="410" y="328">06:15</text><text x="452" y="328">14:00</text>
+            <text x="166" y="346">3</text><text x="196" y="346">THE CLIENT</text><text x="310" y="346">09:30</text><text x="356" y="346">10:00</text><text x="410" y="346">11:30</text><text x="452" y="346">19:00</text>
+          </g>
+          <path d="M166 358H484" class="s-line" stroke-width="1" opacity=".5"/>
+
+          <!-- contacts -->
+          <g class="lbl lbl--on-paper">
+            <text x="166" y="378">LOCATION</text><text x="236" y="378">NORTH GATE, PIN ATTACHED</text>
+            <text x="166" y="396">HOSPITAL</text><text x="236" y="396">14 MIN BY ROAD, PIN ATTACHED</text>
+          </g>
+
+          <!-- the one thing that changed after this page was sent -->
+          <circle cx="156" cy="374" r="4" class="f-signal"/>
+          <path d="M148 374h-50" class="s-signal" stroke-width="1.4"/>
+          <text x="94" y="371" class="lbl lbl--signal" text-anchor="end">CHANGED</text>
+          <text x="94" y="383" class="lbl lbl--signal" text-anchor="end">AT 23:41</text>
+
+          <!-- leader labels -->
+          <g class="s-line" stroke-width="1">
+            <path d="M510 42h40"/><path d="M510 98h40"/><path d="M510 145h40"/>
+            <path d="M510 220h40"/><path d="M510 318h40"/>
+          </g>
+          <g class="lbl">
+            <text x="556" y="39">THE BLOCK</text><text x="556" y="50">EVERYONE READS</text>
+            <text x="556" y="95">ONE TIME PER</text><text x="556" y="106">DEPARTMENT</text>
+            <text x="556" y="139">SUNSET DECIDES</text><text x="556" y="150">WHAT FITS</text>
+            <text x="556" y="211">COPIED FROM</text><text x="556" y="222">THE BOARD</text><text x="556" y="233">EXACTLY</text>
+            <text x="556" y="315">CAST RUNS ON</text><text x="556" y="326">ITS OWN CLOCK</text>
+          </g>
+        </svg>
+        <figcaption>Six blocks, in the order a crew member’s thumb reaches them. Only the top third gets read on a phone at 04:30, which is why the location, the hospital and the call time live there and nowhere else.</figcaption>
+      </figure>
+
+      <h2>The top third is the only part most of the crew reads</h2>
+
+      <p>Assume a phone, one hand, no light, and a reader who will scroll once. That block has to carry the production and the day number, the date and the weekday, the unit call, the location name with a map pin rather than an address, the gate and the parking, the nearest hospital with its own pin and a drive time, sunrise and sunset, the temperature, and the two phone numbers that will actually be answered at 05:00.</p>
+
+      <p>The pin matters more here than it does in most places. In large parts of Riyadh and Jeddah a written address gets a driver to the district and no further, and a compound or a warehouse yard can have three gates with one of them locked. A pin and the words <em>north gate, by the generator</em> beat a correct postal address every time.</p>
+
+      <p>Sunrise and sunset are not trivia either. Riyadh in late December gives you roughly <span class="t">06:41</span> to <span class="t">17:25</span>, under eleven hours of light. The same city in June gives you about <span class="t">05:12</span> to <span class="t">18:42</span>. That is two and a half hours of difference in what one exterior day can hold, and it decides whether scene 23 gets shot or pushed.</p>
+
+      <h2>In summer, the heat writes the shape of the day</h2>
+
+      <p>A Gulf exterior in July does not run 05:00 to 17:00. By 11:00 you are at 45 degrees in open sun, the camera is throwing thermal warnings, and the second AC is managing heat exhaustion instead of the set. So the day splits: roughly <span class="t">04:30</span> to <span class="t">10:30</span>, a long hold, then <span class="t">16:00</span> to <span class="t">20:30</span> on the back of the light.</p>
+
+      <p>A split day puts two calls and a six hour gap on one sheet, and the gap is where the sheet lies. The crew is not resting in a hotel during those six hours. They are in a van unless you say otherwise. Write down where the hold happens, whether it is cooled, and whether food arrives in it, or a third of the unit will quietly go home and come back late.</p>
+
+      <p>Prayer times belong on the sheet for the same reason. Dhuhr and Asr fall inside almost every shooting day, Maghrib tends to arrive with the end of your light, and Friday Jumu’ah needs about an hour and a quarter plus the drive. Printing them as scheduled holds costs you nothing. Leaving them off does not make them not happen, it just hands the problem to the 1st AD at noon.</p>
+
+      <figure class="draw" tabindex="0">
+        <svg viewBox="0 0 640 262" role="img" aria-labelledby="fig2-t fig2-d">
+          <title id="fig2-t">A summer exterior day, derived backwards from the first shot</title>
+          <desc id="fig2-d">A drawn timeline from 03:00 to 21:00, to scale. A teal band marks the hours between sunrise at 05:12 and sunset at 18:42, with the hours before and after in black. A hatched block across the middle of the day marks the midday heat, when the unit holds instead of shooting. On the left, four stepped markers sit above the band at art pre-call 04:00, talent pickup 04:15, unit call 05:00 and first shot 06:30, under a red arrow pointing left to show that the three earlier times are derived from the first shot rather than chosen. On the right, a second call at 16:00 and a wrap at 20:30 bracket four and a half hours of usable light.</desc>
+
+          <defs>
+            <pattern id="heat" width="10" height="10" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+              <rect width="5" height="10" class="f-rise"/>
+              <rect x="5" width="5" height="10" class="f-ink" opacity=".55"/>
+            </pattern>
+          </defs>
+
+          <!-- the derivation runs right to left -->
+          <path d="M178 20H86" class="s-signal" stroke-width="1.5"/>
+          <path d="M84 20l9-4.5v9Z" class="f-signal"/>
+          <text x="186" y="23" class="lbl lbl--signal">EVERY TIME ON THE LEFT IS A CONSEQUENCE OF THE ONE ON THE RIGHT</text>
+
+          <!-- the four calls, stepped so no two labels share a line -->
+          <g class="s-tint" stroke-width="1.2">
+            <path d="M90 120V38M97 120V56M120 120V74M165 120V92"/>
+          </g>
+          <g class="lbl">
+            <text x="84" y="41" text-anchor="end">ART 04:00</text>
+            <text x="104" y="59">PICKUP 04:15</text>
+            <text x="126" y="77">UNIT CALL 05:00</text>
+            <text x="171" y="95" class="lbl--big">FIRST SHOT 06:30</text>
+          </g>
+
+          <!-- night, daylight, night -->
+          <rect x="60" y="120" width="560" height="34" rx="3" class="f-ink"/>
+          <rect x="128" y="120" width="420" height="34" class="f-teal" opacity=".58"/>
+          <rect x="60" y="120" width="560" height="34" rx="3" class="s-line" stroke-width="1"/>
+
+          <!-- the hold, 10:30 to 16:00 -->
+          <rect x="293" y="120" width="171" height="34" fill="url(#heat)"/>
+          <text x="378" y="142" class="lbl lbl--big" text-anchor="middle">HOLD, 45 C</text>
+
+          <!-- the back half of the day -->
+          <g class="s-tint" stroke-width="1.2"><path d="M464 120V92M604 120V74"/></g>
+          <g class="lbl">
+            <text x="470" y="95">2ND CALL 16:00</text>
+            <text x="598" y="77" text-anchor="end">WRAP 20:30</text>
+          </g>
+
+          <!-- the sun -->
+          <circle cx="128" cy="137" r="4" class="f-pale"/>
+          <circle cx="548" cy="137" r="4" class="f-pale"/>
+          <g class="lbl">
+            <text x="128" y="172" text-anchor="middle">SUNRISE 05:12</text>
+            <text x="548" y="172" text-anchor="middle">SUNSET 18:42</text>
+          </g>
+
+          <!-- the clock -->
+          <path d="M60 188h560" class="s-line" stroke-width="1"/>
+          <path d="M60 188v6M153 188v6M247 188v6M340 188v6M433 188v6M527 188v6M620 188v6" class="s-line" stroke-width="1"/>
+          <g class="lbl">
+            <text x="60" y="208" text-anchor="middle">03</text>
+            <text x="153" y="208" text-anchor="middle">06</text>
+            <text x="247" y="208" text-anchor="middle">09</text>
+            <text x="340" y="208" text-anchor="middle">12</text>
+            <text x="433" y="208" text-anchor="middle">15</text>
+            <text x="527" y="208" text-anchor="middle">18</text>
+            <text x="620" y="208" text-anchor="middle">21</text>
+          </g>
+
+          <path d="M464 230v8h140v-8" class="s-pale" stroke-width="1.2"/>
+          <text x="534" y="254" class="lbl" text-anchor="middle">4H 30M OF USABLE LIGHT LEFT</text>
+        </svg>
+        <figcaption>A July exterior in Riyadh, drawn to scale. The two windows either side of the hold come to about ten hours, the hold is not rest, and the three calls on the left exist only because somebody set the first shot at 06:30.</figcaption>
+      </figure>
+
+      <h2>The scene strip has to match the board, character for character</h2>
+
+      <p>Each row is scene number, interior or exterior, day or night, a one line synopsis, page eighths, cast numbers, set name and story day. A page is eight eighths, so 2/8 is a short scene and 7/8 is most of a page. A drama day in the region tends to land at four to five pages; a commercial day is measured in setups, often ten to fourteen, and the page count stops being the useful unit.</p>
+
+      <p>The failure mode is small and expensive. The board says 14 and 14A because an insert was added in the pink revision. The sheet, retyped by hand, says 14. The insert does not get shot, and nobody notices until the edit.</p>
+
+      <h2>Cast runs on its own clock, and that clock is contractual</h2>
+
+      <p>Every actor needs a pickup, a makeup time, a wardrobe time, an on set time and an estimated wrap. Behind those sits turnaround, the rest period between an actor’s wrap and their next call, which most agreements put at eleven hours and some at ten or twelve.</p>
+
+      <p>If yesterday wrapped at <span class="t">23:10</span>, nobody can be called before <span class="t">10:10</span>. A sheet written at 21:00 for a 05:00 call, before anyone knew what time the day would actually end, is already in breach by the time it is sent. Minors are stricter again: a limited working day, a guardian present, tutoring hours inside it, and the only sane way to schedule it is to build the day around the child first and fit the adults around them.</p>
+
+      <h2>Seven ways it breaks, all of them boring</h2>
+
+      <ol>
+        <li><strong>Version drift.</strong> <span class="t">callsheet_FINAL.pdf</span>, then <span class="t">callsheet_FINAL_2.pdf</span>, then a photo of a printout in a group chat. Three documents claim to be the sheet and two of them are wrong.</li>
+        <li><strong>The late change.</strong> The location moves at 23:41. The message reaches the camera team and not the drivers.</li>
+        <li><strong>One number moved and ten did not.</strong> Covered above, and the most common error on any sheet.</li>
+        <li><strong>Turnaround broken by yesterday.</strong> Nobody recalculated after a late wrap.</li>
+        <li><strong>One language.</strong> A unit in Saudi routinely reads Arabic, English, Urdu, Hindi and Tagalog. A sheet in one language is a sheet that part of your crew is guessing at, and they will not tell you they are guessing.</li>
+        <li><strong>No way to know who read it.</strong> You find out at 05:00, in the dark, by counting heads.</li>
+        <li><strong>Paper outlives the truth.</strong> The copy taped up at base camp is the version from before the change, and it is the one people trust because it is the one in front of them.</li>
+      </ol>
+
+      <p>Six of those seven are not craft problems. They are distribution problems wearing a craft costume.</p>
+
+      <h2>What a reissue should cost</h2>
+
+      <p>One tap. A good reissue tells the crew what changed rather than handing them a fresh forty line document, and tells the office who has opened it and who is still carrying yesterday’s.</p>
+
+      <p>That is the part of the job Klaket was built around. The sheet is generated from the schedule rather than retyped from it, so moving the first shot moves every derived time at once. It goes out in the language each crew member reads, on a link with no sign-up, and the office can see the read receipts. When the location changes at 23:41, the new sheet is with fourteen people at 23:42 and you know which of them have seen it.</p>
+
+      <h2>The test is a driver at 04:30</h2>
+
+      <p>Completeness is the wrong standard. A sheet can carry every field and still fail. The real test is whether a driver who has never worked with you before can open it on a phone, in the dark, in the language they read, and arrive at the correct gate at the correct time without calling anyone. Build the sheet for that reader and the rest of the unit is covered automatically.</p>
+
+      <p class="post__end">
+        <a class="post__back" href="../">Back to the journal</a>
+        <a class="btn" href="../../demo/">Request a demo
+          <svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </p>
+
+    </div>
+  </article>
+</main>
+
+<footer class="foot"></footer>
+
+<script src="../../vendor/gsap.min.js"></script>
+<script src="../../vendor/ScrollTrigger.min.js"></script>
+<script src="../../vendor/lenis.min.js"></script>
+<script src="../../core/data.js"></script>
+<script src="../../core/boot.js"></script>
+<script src="../../core/nav.js"></script>
+<script src="../../core/footer.js"></script>
+<script src="../blog.js"></script>
+<script src="../../core/theme.js"></script>
+
+</body>
+</html>

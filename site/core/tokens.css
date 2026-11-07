@@ -1,0 +1,166 @@
+/* Klaket landing tokens.
+   The four brand colours and nothing else (docs/brand/README.md, "Scene Identity").
+   Ink is the ground on this site: it is a film site, and the slate reads best on black.
+   A section can flip to paper by carrying .on-paper; the semantic tokens swap under it. */
+
+:root {
+  /* the four */
+  --ink: #121212;
+  --paper: #F6EBD9;
+  --teal: #0F5C57;
+  --teal-deep: #0A3F3C;
+  --signal: #F2483A;
+
+  /* teal as text needs the tint on ink: #0F5C57 on ink is 2.4:1 */
+  --teal-tint: #5FA8A1;
+  --teal-pale: #B5DDD8;
+
+  /* ink ground (the default) */
+  --bg: var(--ink);
+  --bg-deep: #0B0B0B;
+  --surface: #1C1C1C;
+  --raised: #262523;
+  --raised-2: #312F2B;
+  --text: var(--paper);
+  --muted: #A69F93;
+  --faint: #807A70;
+  --line: rgba(246, 235, 217, 0.12);
+  --line-2: rgba(246, 235, 217, 0.22);
+  --accent: var(--teal-tint);
+  --primary: var(--teal);
+  --on-primary: var(--paper);
+
+  /* type */
+  --display: 'Cairo', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --body: 'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* a 1.25 scale off 16px, clamped so one rule serves 360px to 2560px */
+  --t-xs:   clamp(0.75rem, 0.72rem + 0.15vw, 0.8125rem);
+  --t-sm:   clamp(0.875rem, 0.84rem + 0.18vw, 0.9375rem);
+  --t-base: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+  --t-lg:   clamp(1.125rem, 1.05rem + 0.37vw, 1.375rem);
+  --t-xl:   clamp(1.375rem, 1.2rem + 0.87vw, 1.875rem);
+  --t-2xl:  clamp(1.75rem, 1.4rem + 1.75vw, 2.75rem);
+  --t-3xl:  clamp(2.25rem, 1.6rem + 3.2vw, 4rem);
+  --t-4xl:  clamp(2.75rem, 1.5rem + 6.2vw, 6rem);
+  --t-5xl:  clamp(3.25rem, 1rem + 11vw, 9rem);
+
+  /* rhythm */
+  --gut: clamp(1.25rem, 4vw, 3rem);
+  --page: 1320px;
+  --narrow: 760px;
+  --sec: clamp(5rem, 11vh + 4rem, 11rem);
+  --r-sm: 6px;
+  --r: 12px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+
+  /* motion: one curve family, so every section feels like one hand made it */
+  --e-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --e-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --e-slate: cubic-bezier(0.22, 1.4, 0.36, 1); /* the clap: overshoots, then sets */
+  --d-fast: 180ms;
+  --d: 420ms;
+  --d-slow: 820ms;
+
+  /* the clapperboard's own measurements, shared by every drawing of it */
+  --stripe-angle: 45deg;
+  --slate-bar: 0.22; /* bar height as a share of the board */
+
+  color-scheme: dark;
+}
+
+.on-paper {
+  --bg: #FBF5EC;
+  --bg-deep: #F3E7D3;
+  --surface: #FFFFFF;
+  --raised: #F3E7D3;
+  --raised-2: #EADBC2;
+  --text: var(--ink);
+  --muted: #6B6865;
+  --faint: #66625E;
+  --line: rgba(18, 18, 18, 0.1);
+  --line-2: rgba(18, 18, 18, 0.18);
+  --accent: var(--teal);
+  color-scheme: light;
+}
+
+.on-teal {
+  --bg: var(--teal-deep);
+  --bg-deep: #072F2D;
+  --surface: #0F5C57;
+  --raised: #14706A;
+  --text: var(--paper);
+  --muted: #9EC4C0;
+  --faint: #83ACA8;
+  --line: rgba(246, 235, 217, 0.16);
+  --line-2: rgba(246, 235, 217, 0.28);
+  --accent: var(--teal-pale);
+}
+
+/* ===================================================================== mono
+   A second brand reading of the same identity: black and white carry it, and
+   signal red is the only colour left. It is a reduction, not a different brand,
+   so the shapes, the type and the stripes are untouched.
+
+   Two rules make every existing module follow it without being rewritten:
+   anything drawn ON --teal writes in --paper, so --teal must stay dark and
+   --paper light; and --accent is the one place colour is allowed, so it becomes
+   the red rather than a grey. Set with data-brand="mono" on <html>. */
+
+:root[data-brand='mono'] {
+  --ink: #000000;
+  --paper: #FFFFFF;
+  /* The slate body. Dark, because a real clapperboard is, but not the page's
+     own black: lit in 3D a #1F1F1F board sinks into a #0A0A0A ground. */
+  --teal: #2B2B2B;
+  --teal-deep: #121212;
+  --signal: #F2483A;
+  --teal-tint: #FFFFFF;     /* teal used as text becomes plain white */
+  --teal-pale: #D4D4D4;
+
+  --bg: #0A0A0A;
+  --bg-deep: #000000;
+  --surface: #151515;
+  --raised: #1E1E1E;
+  --raised-2: #282828;
+  --text: #FFFFFF;
+  --muted: #A8A8A8;
+  --faint: #7C7C7C;
+  --line: rgba(255, 255, 255, 0.13);
+  --line-2: rgba(255, 255, 255, 0.24);
+
+  --accent: #F2483A;        /* the one colour on the page */
+  --primary: #FFFFFF;       /* a white button on black is the strongest action */
+  --on-primary: #000000;
+}
+
+:root[data-brand='mono'] .on-paper {
+  --bg: #FFFFFF;
+  --bg-deep: #F2F2F2;
+  --surface: #FFFFFF;
+  --raised: #F2F2F2;
+  --raised-2: #E6E6E6;
+  --text: #000000;
+  --muted: #595959;
+  --faint: #6E6E6E;
+  --line: rgba(0, 0, 0, 0.12);
+  --line-2: rgba(0, 0, 0, 0.22);
+  --accent: #D93A2B;        /* #F2483A on white is 3.3:1, this shade clears AA */
+  --primary: #000000;
+  --on-primary: #FFFFFF;
+}
+
+:root[data-brand='mono'] .on-teal {
+  --bg: #151515;
+  --bg-deep: #000000;
+  --surface: #1F1F1F;
+  --raised: #282828;
+  --text: #FFFFFF;
+  --muted: #A8A8A8;
+  --faint: #7C7C7C;
+  --line: rgba(255, 255, 255, 0.16);
+  --line-2: rgba(255, 255, 255, 0.28);
+  --accent: #F2483A;
+}

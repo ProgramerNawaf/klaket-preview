@@ -1,0 +1,162 @@
+/* Base: reset, type, layout primitives and the two buttons. Every variant loads this. */
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: auto; }
+body, h1, h2, h3, h4, p, figure, blockquote, dl, dd, ul, ol { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+img, svg, video, canvas { display: block; max-width: 100%; }
+img, video { height: auto; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: var(--t-base);
+  line-height: 1.6;
+  font-feature-settings: 'kern', 'liga';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+
+/* Lenis drives the scroll; it needs the page to stop doing it natively. */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* ---- type ---- */
+h1, h2, h3, .display {
+  font-family: var(--display);
+  font-weight: 900;
+  line-height: 0.96;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+h1 { font-size: var(--t-4xl); }
+h2 { font-size: var(--t-3xl); }
+h3 { font-size: var(--t-xl); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+p { text-wrap: pretty; }
+
+.lede { font-size: var(--t-lg); line-height: 1.5; color: var(--muted); max-width: 46ch; }
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+
+/* Plex Mono carries every number the crew reads off a slate: scene, take, step, time. */
+.data {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: var(--t-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+[lang='ar'], .ar { font-family: var(--display); direction: rtl; }
+
+/* ---- layout ---- */
+.wrap { width: min(100% - var(--gut) * 2, var(--page)); margin-inline: auto; }
+.wrap-narrow { width: min(100% - var(--gut) * 2, var(--narrow)); margin-inline: auto; }
+.section { padding-block: var(--sec); position: relative; }
+.section > .wrap { position: relative; z-index: 1; }
+.stack > * + * { margin-top: var(--s, 1rem); }
+
+/* ---- buttons: one filled, one outlined, nothing else ---- */
+.btn {
+  --btn-bg: var(--primary);
+  --btn-fg: var(--on-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.9em 1.5em;
+  border-radius: var(--r-pill);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  font-weight: 600;
+  font-size: var(--t-sm);
+  letter-spacing: -0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  position: relative;
+  isolation: isolate;
+  transition: transform var(--d-fast) var(--e-out), background-color var(--d-fast) var(--e-out);
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0) scale(0.985); }
+.btn--ghost {
+  --btn-bg: transparent;
+  --btn-fg: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+.btn--ghost:hover { --btn-bg: color-mix(in srgb, var(--text) 7%, transparent); }
+
+/* The arrow leans forward on hover, the way a film leader counts down. */
+.btn svg { width: 1em; height: 1em; transition: transform var(--d) var(--e-out); }
+.btn:hover svg { transform: translateX(3px); }
+
+/* ---- focus: visible on ink and on paper, never only colour ---- */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.skip {
+  position: absolute;
+  left: var(--gut);
+  top: -4rem;
+  z-index: 200;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 0.7em 1.2em;
+  border-radius: var(--r-pill);
+  font-weight: 600;
+  transition: top var(--d) var(--e-out);
+}
+.skip:focus { top: 1rem; }
+
+/* ---- the 45 degree stripes, the one piece of the mark that repeats ---- */
+.stripes {
+  background-image: repeating-linear-gradient(
+    var(--stripe-angle),
+    var(--stripe-a, var(--paper)) 0 var(--stripe-w, 14px),
+    var(--stripe-b, var(--ink)) var(--stripe-w, 14px) calc(var(--stripe-w, 14px) * 2)
+  );
+}
+
+/* ---- reveals: one class, driven by GSAP, with a CSS fallback if JS never runs ---- */
+.reveal { opacity: 0; }
+.js-off .reveal, .no-anim .reveal { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1 !important; transform: none !important; }
+}
+
+/* Screen-reader-only text, used for the live region that announces the nav state. */
+.sr {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The one colour mark, painted with the text colour it sits in. */
+.kl-mark {
+  display: inline-block;
+  flex: none;
+  background: currentColor;
+  -webkit-mask: var(--kl-mark) center / contain no-repeat;
+  mask: var(--kl-mark) center / contain no-repeat;
+}

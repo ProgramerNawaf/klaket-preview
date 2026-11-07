@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- The brand is set before the first paint, or the page flashes the other one. -->
+<script>try{var q=new URLSearchParams(location.search).get('brand');var b=q||localStorage.getItem('klaket.brand');if(b==='mono')document.documentElement.setAttribute('data-brand','mono')}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Klaket value section: three treatments</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="../core/tokens.css">
+<link rel="stylesheet" href="../core/base.css">
+<link rel="stylesheet" href="value-wipe.css">
+<link rel="stylesheet" href="value-slate.css">
+<link rel="stylesheet" href="value-counters.css">
+<style>
+  /* Preview chrome only. Nothing in here ships with a variant. */
+  .pv-head { padding-block: clamp(2.5rem, 8vh, 5rem) clamp(1.5rem, 4vh, 2.5rem); }
+  .pv-head h1 { font-size: var(--t-2xl); }
+  .pv-head ul { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-top: 1.5rem; }
+  .pv-head a { color: var(--accent); font-size: var(--t-sm); }
+  .pv-mark {
+    position: relative;
+    z-index: 5;
+    width: min(100% - var(--gut) * 2, var(--page));
+    margin: 0 auto;
+    padding: 1rem 0 0.75rem;
+    border-top: 1px solid var(--line);
+    color: var(--faint);
+  }
+</style>
+<link rel="stylesheet" href="../core/theme.css">
+
+</head>
+<body>
+<a class="skip" href="#v2">Skip to the treatments</a>
+
+<header class="pv-head wrap">
+  <h1>Value section, three treatments</h1>
+  <ul>
+    <li><a href="#v2">V2 the slate wipe</a></li>
+    <li><a href="#v3">V3 the slate</a></li>
+    <li><a href="#v4">V4 the counters</a></li>
+  </ul>
+</header>
+
+<p class="pv-mark data" id="v2">V2 / value-wipe</p>
+<section class="vwipe"></section>
+
+<p class="pv-mark data" id="v3">V3 / value-slate</p>
+<section class="vslate"></section>
+
+<p class="pv-mark data" id="v4">V4 / value-counters</p>
+<section class="vcount section"></section>
+
+<script src="../vendor/gsap.min.js"></script>
+<script src="../vendor/ScrollTrigger.min.js"></script>
+<script src="../vendor/lenis.min.js"></script>
+<script src="../core/data.js"></script>
+<script src="../core/boot.js"></script>
+<script src="value-wipe.js"></script>
+<script src="value-slate.js"></script>
+<script src="value-counters.js"></script>
+<script src="../core/theme.js"></script>
+
+</body>
+</html>

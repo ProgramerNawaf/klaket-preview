@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- The brand is set before the first paint, or the page flashes the other one. -->
+<script>try{var q=new URLSearchParams(location.search).get('brand');var b=q||localStorage.getItem('klaket.brand');if(b==='mono')document.documentElement.setAttribute('data-brand','mono')}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Journey J1: the flythrough</title>
+
+<link rel="icon" href="../../brand/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+
+<link rel="stylesheet" href="../core/tokens.css">
+<link rel="stylesheet" href="../core/base.css">
+<link rel="stylesheet" href="journey-fly.css">
+
+<style>
+  /* Preview chrome only. None of this ships: it exists so the section can be
+     entered from above, left from below, and forced into its fallback. */
+  .pv-head { padding: clamp(3rem, 12vh, 7rem) 0 clamp(2rem, 6vh, 3rem); }
+  .pv-head h1 { font-size: var(--t-2xl); max-width: 26ch; }
+  .pv-head p { margin-top: 0.9rem; color: var(--muted); max-width: 56ch; font-size: var(--t-sm); }
+  .pv-jump { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.6rem; }
+  .pv-jump a {
+    font-family: var(--mono); font-size: var(--t-xs); letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 0.6em 1em; border-radius: var(--r-pill);
+    box-shadow: inset 0 0 0 1px var(--line-2);
+  }
+  .pv-jump a:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+  .pv-tail { padding: clamp(4rem, 14vh, 9rem) 0; border-top: 1px solid var(--line); }
+  .pv-tail p { color: var(--faint); font-size: var(--t-sm); }
+</style>
+<link rel="stylesheet" href="../core/theme.css">
+
+</head>
+<body>
+
+<a class="skip" href="#journey">Skip to the journey</a>
+
+<header class="pv-head wrap">
+  <h1>J1, the journey flythrough.</h1>
+  <p>One fixed canvas behind the page, no pinning of the 3D, six waypoints from
+     <code>KLDATA.journey</code>. Scroll down to fly it.</p>
+  <nav class="pv-jump" aria-label="Preview switches">
+    <a href="#journey">Jump to it</a>
+    <a href="?flat=1">Force the drawn fallback</a>
+    <a href="?reduced=1">Force reduced motion</a>
+    <a href="./_preview-journey.html">Back to 3D</a>
+  </nav>
+</header>
+
+<section class="jfly" id="journey" aria-labelledby="jfly-title"></section>
+
+<footer class="pv-tail wrap">
+  <p>End of the section. The canvas has stopped rendering by now.</p>
+</footer>
+
+<script src="../vendor/gsap.min.js"></script>
+<script src="../vendor/ScrollTrigger.min.js"></script>
+<script src="../vendor/lenis.min.js"></script>
+<script>
+  /* Preview switches, read before boot so they behave like the real thing:
+     ?reduced=1 is what prefers-reduced-motion does, ?flat=1 is what a machine
+     with no usable WebGL does. */
+  (function () {
+    const q = new URLSearchParams(location.search);
+    if (q.has('reduced')) {
+      const mm = window.matchMedia;
+      window.matchMedia = (s) => (s.includes('reduced-motion')
+        ? { matches: true, media: s, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} }
+        : mm.call(window, s));
+    }
+    if (q.has('flat')) {
+      const get = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (kind, ...rest) {
+        if (String(kind).startsWith('webgl')) return null;
+        return get.call(this, kind, ...rest);
+      };
+    }
+  })();
+</script>
+<script src="../core/boot.js"></script>
+<script src="../core/data.js"></script>
+<script type="module" src="journey-fly.js"></script>
+<script src="../core/theme.js"></script>
+
+</body>
+</html>

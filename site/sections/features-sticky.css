@@ -1,0 +1,186 @@
+/* F2, the sticky split. Six rows on the left, one drawing on the right that
+   changes as you pass each row. Nothing is dimmed below AA: the step-back is
+   carried by the rule, the number and the title, and every body stays readable,
+   because a reader who has scrolled past a row may still be reading it. */
+
+.fstick { position: relative; }
+
+.fstick__head { margin-bottom: clamp(2.5rem, 7vh, 4.5rem); }
+.fstick__title { max-width: 24ch; }
+
+.fstick__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
+  gap: clamp(2rem, 5vw, 5rem);
+  align-items: start;
+}
+
+/* ---- left: the six rows ---- */
+.fstick__list { padding-block: clamp(1rem, 8vh, 6rem); }
+
+.fstick__row {
+  --num: 2.25rem;              /* the number column, so the body hangs under the title */
+  --num-gap: clamp(0.75rem, 1.4vw, 1.25rem);
+  padding-block: clamp(2rem, 7vh, 4.5rem);
+  border-inline-start: 2px solid var(--line);
+  padding-inline-start: clamp(1rem, 2vw, 1.75rem);
+  transition: border-color var(--d) var(--e-out);
+}
+.fstick__row.is-on { border-inline-start-color: var(--accent); }
+
+.fstick__btn {
+  display: flex;
+  align-items: baseline;
+  gap: var(--num-gap);
+  text-align: start;
+  width: 100%;
+}
+.fstick__btn > .fstick__n { flex: none; width: var(--num); }
+.fstick__n {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: var(--t-xs);
+  letter-spacing: 0.14em;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  transition: color var(--d) var(--e-out);
+}
+.fstick__row.is-on .fstick__n { color: var(--accent); }
+
+.fstick__name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--t-xl);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--muted);
+  transition: color var(--d) var(--e-out);
+}
+.fstick__row.is-on .fstick__name { color: var(--text); }
+
+.fstick__body {
+  margin-inline-start: calc(var(--num) + var(--num-gap));
+  margin-top: 0.7rem;
+  max-width: 42ch;
+  color: var(--muted);
+  font-size: var(--t-sm);
+  line-height: 1.6;
+}
+
+/* ---- right: one sticky frame, six drawings crossfading inside it ---- */
+.fstick__vis { position: sticky; top: clamp(3.5rem, 13vh, 7rem); }
+.fstick__stack {
+  position: relative;
+  aspect-ratio: 5 / 4;
+  border-radius: var(--r-lg);
+  background: var(--bg-deep);
+  box-shadow: inset 0 0 0 1px var(--line), 0 40px 80px -40px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+}
+.fstick__shot {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(0.985);
+  transition: opacity var(--d) var(--e-out), transform var(--d-slow) var(--e-out);
+}
+.fstick__shot.is-on { opacity: 1; transform: none; }
+.fstick__shot svg { width: 100%; height: 100%; }
+
+/* The caption under the frame says which drawing is up, for anyone who cannot
+   tell the six apart at a glance. */
+.fstick__cap {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  font-family: var(--mono);
+  font-size: var(--t-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.fstick__cap b { color: var(--accent); font-weight: 500; }
+
+/* ---- the inline drawing each row carries on narrow screens ---- */
+.fstick__inline { display: none; }
+
+/* ---- the drawings: colour lives here, never in the markup. The app's own strip
+   colours (cream, yellow, blue, green) are the one place the product steps
+   outside the four, because that is the physical stripboard convention. This
+   site does not get to, so a strip keeps the shape that carries the meaning: a
+   pale wash behind a saturated leading spine. ---- */
+.fstick svg .p-deep { fill: var(--bg-deep); }
+.fstick svg .p-bg { fill: var(--bg); }
+.fstick svg .p-surface { fill: var(--surface); }
+.fstick svg .p-raised { fill: var(--raised); }
+.fstick svg .p-raised-2 { fill: var(--raised-2); }
+.fstick svg .p-paper { fill: var(--paper); }
+.fstick svg .p-ink { fill: var(--ink); }
+.fstick svg .p-teal { fill: var(--teal); }
+.fstick svg .p-teal-deep { fill: var(--teal-deep); }
+.fstick svg .p-tint { fill: var(--teal-tint); }
+.fstick svg .p-pale { fill: var(--teal-pale); }
+.fstick svg .p-signal { fill: var(--signal); }
+.fstick svg .p-text { fill: var(--text); }
+.fstick svg .p-text-2 { fill: var(--muted); }
+.fstick svg .p-faint { fill: var(--faint); }
+.fstick svg .p-accent { fill: var(--accent); }
+/* a warning in this product is never yellow: it is the text colour, outlined */
+.fstick svg .p-warn { fill: var(--paper); }
+.fstick svg .p-accent-soft { fill: color-mix(in srgb, var(--teal) 32%, transparent); }
+.fstick svg .p-strip { fill: color-mix(in srgb, var(--teal) 26%, var(--surface)); }
+.fstick svg .p-strip-2 { fill: color-mix(in srgb, var(--teal-pale) 14%, var(--surface)); }
+.fstick svg .p-break { fill: var(--raised-2); }
+/* a storyboard frame sits on near black, so a pale sketch on it reads */
+.fstick svg .p-frame { fill: color-mix(in srgb, var(--ink) 78%, var(--teal-deep)); }
+
+.fstick svg .s-tint { stroke: var(--teal-tint); }
+.fstick svg .s-pale { stroke: var(--teal-pale); }
+.fstick svg .s-teal { stroke: var(--teal); }
+.fstick svg .s-ink { stroke: var(--ink); }
+.fstick svg .s-paper { stroke: var(--paper); }
+.fstick svg .s-line { stroke: var(--line-2); }
+.fstick svg .s-warn { stroke: var(--line-2); }
+.fstick svg text { font-family: var(--mono); font-weight: 500; letter-spacing: 0.08em; }
+
+/* ---- stacked: visual, then its words, six times over.
+   Reduced motion gets the same layout at any width, because a frame that swaps
+   on scroll is the one thing this treatment does and it is the thing to drop. */
+@media (max-width: 900px) {
+  .fstick__grid { grid-template-columns: 1fr; gap: 0; }
+  .fstick__vis { display: none; }
+  .fstick__list { padding-block: 0; }
+  .fstick__row { padding-block: clamp(1.75rem, 5vh, 2.75rem); border-inline-start-color: var(--accent); }
+  .fstick__inline {
+    display: block;
+    margin-bottom: 1.25rem;
+    aspect-ratio: 5 / 4;
+    border-radius: var(--r);
+    background: var(--bg-deep);
+    box-shadow: inset 0 0 0 1px var(--line);
+    overflow: hidden;
+  }
+  .fstick__inline svg { width: 100%; height: 100%; }
+  .fstick__name { color: var(--text); }
+  .fstick__n { color: var(--accent); }
+  .fstick__body { margin-inline-start: 0; }
+}
+
+.fstick--still .fstick__grid { grid-template-columns: 1fr; gap: 0; }
+.fstick--still .fstick__vis { display: none; }
+.fstick--still .fstick__list { padding-block: 0; }
+.fstick--still .fstick__row { padding-block: clamp(1.75rem, 5vh, 2.75rem); border-inline-start-color: var(--accent); }
+.fstick--still .fstick__inline {
+  display: block;
+  margin-bottom: 1.25rem;
+  aspect-ratio: 5 / 4;
+  border-radius: var(--r);
+  background: var(--bg-deep);
+  box-shadow: inset 0 0 0 1px var(--line);
+  overflow: hidden;
+}
+.fstick--still .fstick__inline svg { width: 100%; height: 100%; }
+.fstick--still .fstick__name { color: var(--text); }
+.fstick--still .fstick__n { color: var(--accent); }
+.fstick--still .fstick__body { margin-inline-start: 0; }

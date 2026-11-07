@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- The brand is set before the first paint, or the page flashes the other one. -->
+<script>try{var q=new URLSearchParams(location.search).get('brand');var b=q||localStorage.getItem('klaket.brand');if(b==='mono')document.documentElement.setAttribute('data-brand','mono')}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Footers: Ft2 and Ft3 side by side</title>
+
+<link rel="icon" href="../../brand/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+
+<link rel="stylesheet" href="../core/tokens.css">
+<link rel="stylesheet" href="../core/base.css">
+<link rel="stylesheet" href="footer-marquee.css">
+<link rel="stylesheet" href="footer-endscene.css">
+
+<style>
+  /* Preview chrome only. Nothing here ships: a real page carries exactly one
+     footer, and this page carries two so they can be compared. */
+  .pv-head { padding: clamp(3rem, 10vh, 6rem) 0 2rem; }
+  .pv-head h1 { font-size: var(--t-2xl); }
+  .pv-head p { margin-top: 0.75rem; color: var(--muted); max-width: 54ch; }
+  .pv-jump { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+  .pv-jump a {
+    font-family: var(--mono); font-size: var(--t-xs); letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 0.6em 1em; border-radius: var(--r-pill);
+    box-shadow: inset 0 0 0 1px var(--line-2);
+  }
+  .pv-jump a:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+  .pv-mark {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.6rem var(--gut);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--mono); font-size: var(--t-xs); letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--faint);
+  }
+  .pv-mark b { color: var(--text); font-weight: 500; }
+</style>
+<link rel="stylesheet" href="../core/theme.css">
+
+</head>
+<body id="top">
+
+<a class="skip" href="#ft2">Skip to the first treatment</a>
+
+<header class="pv-head wrap">
+  <h1>Two footers, same copy.</h1>
+  <p>Ft2 and Ft3 render the call to action, the two link columns, the brand lockup, the Arabic slogan and the legal line out of <code>KLDATA.footer</code>. A variant page includes exactly one of them.</p>
+  <nav class="pv-jump" aria-label="Jump to a treatment">
+    <a href="#ft2">Ft2 marquee</a>
+    <a href="#ft3">Ft3 end scene</a>
+  </nav>
+</header>
+
+<div class="pv-mark" id="ft2"><b>Ft2</b> giant ghost marquee, then a halftone aperture reveal</div>
+<footer class="fmarq"></footer>
+
+<div class="pv-mark" id="ft3"><b>Ft3</b> pill meta chips, then a full-bleed painted end scene</div>
+<footer class="fend"></footer>
+
+<script src="../vendor/gsap.min.js"></script>
+<script src="../vendor/ScrollTrigger.min.js"></script>
+<script src="../vendor/lenis.min.js"></script>
+<script src="../core/boot.js"></script>
+<script src="../core/data.js"></script>
+<script src="footer-marquee.js"></script>
+<script src="footer-endscene.js"></script>
+<script src="../core/theme.js"></script>
+
+</body>
+</html>

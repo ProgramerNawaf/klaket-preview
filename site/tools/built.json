@@ -1,0 +1,805 @@
+[
+  {
+    "n": "01",
+    "dir": "v01-the-clap-straight-down-the-middle",
+    "title": "The clap, straight down the middle",
+    "pick": {
+      "heroes": {
+        "root": "hero-clap",
+        "file": "h1-clap",
+        "name": "The clap"
+      },
+      "value": {
+        "root": "vreel",
+        "file": "value-reel",
+        "name": "Cards through the gap"
+      },
+      "journey": {
+        "root": "jfly",
+        "file": "journey-fly",
+        "name": "3D flythrough"
+      },
+      "features": {
+        "root": "fcar",
+        "file": "features-carousel",
+        "name": "Card carousel"
+      },
+      "footer": {
+        "root": "foot",
+        "file": "footer",
+        "core": true,
+        "name": "Camera, tape, screen"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "02",
+    "dir": "v02-the-clap-typographic-and-mechanical",
+    "title": "The clap, typographic and mechanical",
+    "pick": {
+      "heroes": {
+        "root": "hero-clap",
+        "file": "h1-clap",
+        "name": "The clap"
+      },
+      "value": {
+        "root": "vslate",
+        "file": "value-slate",
+        "name": "Four fields of a slate"
+      },
+      "journey": {
+        "root": "jstrip",
+        "file": "journey-strip",
+        "name": "Horizontal film strip"
+      },
+      "features": {
+        "root": "fbento",
+        "file": "features-bento",
+        "name": "Bento with live demos"
+      },
+      "footer": {
+        "root": "fmarq",
+        "file": "footer-marquee",
+        "name": "Ghost marquee and aperture"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "03",
+    "dir": "v03-the-clap-numbers-first",
+    "title": "The clap, numbers first",
+    "pick": {
+      "heroes": {
+        "root": "hero-clap",
+        "file": "h1-clap",
+        "name": "The clap"
+      },
+      "value": {
+        "root": "vcount",
+        "file": "value-counters",
+        "name": "Numbers with proof"
+      },
+      "journey": {
+        "root": "jlens",
+        "file": "journey-lens",
+        "name": "One continuous zoom"
+      },
+      "features": {
+        "root": "fstick",
+        "file": "features-sticky",
+        "name": "Sticky split"
+      },
+      "footer": {
+        "root": "fend",
+        "file": "footer-endscene",
+        "name": "Build chips and end scene"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "04",
+    "dir": "v04-crane-in-then-zoom-all-the-way-through",
+    "title": "Crane in, then zoom all the way through",
+    "pick": {
+      "heroes": {
+        "root": "hero-crane",
+        "file": "h2-crane",
+        "name": "Crane down the set"
+      },
+      "value": {
+        "root": "vreel",
+        "file": "value-reel",
+        "name": "Cards through the gap"
+      },
+      "journey": {
+        "root": "jlens",
+        "file": "journey-lens",
+        "name": "One continuous zoom"
+      },
+      "features": {
+        "root": "fbento",
+        "file": "features-bento",
+        "name": "Bento with live demos"
+      },
+      "footer": {
+        "root": "fmarq",
+        "file": "footer-marquee",
+        "name": "Ghost marquee and aperture"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "05",
+    "dir": "v05-crane-in-wipe-fly-the-set",
+    "title": "Crane in, wipe, fly the set",
+    "pick": {
+      "heroes": {
+        "root": "hero-crane",
+        "file": "h2-crane",
+        "name": "Crane down the set"
+      },
+      "value": {
+        "root": "vwipe",
+        "file": "value-wipe",
+        "name": "The slate wipes"
+      },
+      "journey": {
+        "root": "jfly",
+        "file": "journey-fly",
+        "name": "3D flythrough"
+      },
+      "features": {
+        "root": "fstick",
+        "file": "features-sticky",
+        "name": "Sticky split"
+      },
+      "footer": {
+        "root": "foot",
+        "file": "footer",
+        "core": true,
+        "name": "Camera, tape, screen"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "06",
+    "dir": "v06-crane-in-slates-all-the-way-down",
+    "title": "Crane in, slates all the way down",
+    "pick": {
+      "heroes": {
+        "root": "hero-crane",
+        "file": "h2-crane",
+        "name": "Crane down the set"
+      },
+      "value": {
+        "root": "vslate",
+        "file": "value-slate",
+        "name": "Four fields of a slate"
+      },
+      "journey": {
+        "root": "jstack",
+        "file": "journey-stack",
+        "name": "Slates clapping into a stack"
+      },
+      "features": {
+        "root": "fcar",
+        "file": "features-carousel",
+        "name": "Card carousel"
+      },
+      "footer": {
+        "root": "fend",
+        "file": "footer-endscene",
+        "name": "Build chips and end scene"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "07",
+    "dir": "v07-a-film-in-chapters",
+    "title": "A film in chapters",
+    "pick": {
+      "heroes": {
+        "root": "hero-chapter",
+        "file": "h3-chapter",
+        "name": "Chapter card"
+      },
+      "value": {
+        "root": "vreel",
+        "file": "value-reel",
+        "name": "Cards through the gap"
+      },
+      "journey": {
+        "root": "jstack",
+        "file": "journey-stack",
+        "name": "Slates clapping into a stack"
+      },
+      "features": {
+        "root": "fstick",
+        "file": "features-sticky",
+        "name": "Sticky split"
+      },
+      "footer": {
+        "root": "fend",
+        "file": "footer-endscene",
+        "name": "Build chips and end scene"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "08",
+    "dir": "v08-chapters-wipes-and-a-strip",
+    "title": "Chapters, wipes and a strip",
+    "pick": {
+      "heroes": {
+        "root": "hero-chapter",
+        "file": "h3-chapter",
+        "name": "Chapter card"
+      },
+      "value": {
+        "root": "vwipe",
+        "file": "value-wipe",
+        "name": "The slate wipes"
+      },
+      "journey": {
+        "root": "jstrip",
+        "file": "journey-strip",
+        "name": "Horizontal film strip"
+      },
+      "features": {
+        "root": "fcar",
+        "file": "features-carousel",
+        "name": "Card carousel"
+      },
+      "footer": {
+        "root": "foot",
+        "file": "footer",
+        "core": true,
+        "name": "Camera, tape, screen"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "09",
+    "dir": "v09-chapters-with-the-numbers-up-front",
+    "title": "Chapters with the numbers up front",
+    "pick": {
+      "heroes": {
+        "root": "hero-chapter",
+        "file": "h3-chapter",
+        "name": "Chapter card"
+      },
+      "value": {
+        "root": "vcount",
+        "file": "value-counters",
+        "name": "Numbers with proof"
+      },
+      "journey": {
+        "root": "jfly",
+        "file": "journey-fly",
+        "name": "3D flythrough"
+      },
+      "features": {
+        "root": "fbento",
+        "file": "features-bento",
+        "name": "Bento with live demos"
+      },
+      "footer": {
+        "root": "fmarq",
+        "file": "footer-marquee",
+        "name": "Ghost marquee and aperture"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "10",
+    "dir": "v10-paper-ground-type-with-depth",
+    "title": "Paper ground, type with depth",
+    "pick": {
+      "heroes": {
+        "root": "hero-depth",
+        "file": "h4-depth",
+        "name": "Depth type",
+        "paper": true
+      },
+      "value": {
+        "root": "vslate",
+        "file": "value-slate",
+        "name": "Four fields of a slate"
+      },
+      "journey": {
+        "root": "jlens",
+        "file": "journey-lens",
+        "name": "One continuous zoom"
+      },
+      "features": {
+        "root": "fcar",
+        "file": "features-carousel",
+        "name": "Card carousel"
+      },
+      "footer": {
+        "root": "fend",
+        "file": "footer-endscene",
+        "name": "Build chips and end scene"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "11",
+    "dir": "v11-paper-ground-the-mess-falls-through",
+    "title": "Paper ground, the mess falls through",
+    "pick": {
+      "heroes": {
+        "root": "hero-depth",
+        "file": "h4-depth",
+        "name": "Depth type",
+        "paper": true
+      },
+      "value": {
+        "root": "vreel",
+        "file": "value-reel",
+        "name": "Cards through the gap"
+      },
+      "journey": {
+        "root": "jstrip",
+        "file": "journey-strip",
+        "name": "Horizontal film strip"
+      },
+      "features": {
+        "root": "fbento",
+        "file": "features-bento",
+        "name": "Bento with live demos"
+      },
+      "footer": {
+        "root": "foot",
+        "file": "footer",
+        "core": true,
+        "name": "Camera, tape, screen"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "12",
+    "dir": "v12-paper-ground-wiped-clean",
+    "title": "Paper ground, wiped clean",
+    "pick": {
+      "heroes": {
+        "root": "hero-depth",
+        "file": "h4-depth",
+        "name": "Depth type",
+        "paper": true
+      },
+      "value": {
+        "root": "vwipe",
+        "file": "value-wipe",
+        "name": "The slate wipes"
+      },
+      "journey": {
+        "root": "jstack",
+        "file": "journey-stack",
+        "name": "Slates clapping into a stack"
+      },
+      "features": {
+        "root": "fstick",
+        "file": "features-sticky",
+        "name": "Sticky split"
+      },
+      "footer": {
+        "root": "fmarq",
+        "file": "footer-marquee",
+        "name": "Ghost marquee and aperture"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "13",
+    "dir": "v13-tiles-assembling-then-the-set",
+    "title": "Tiles assembling, then the set",
+    "pick": {
+      "heroes": {
+        "root": "hero-mosaic",
+        "file": "h5-mosaic",
+        "name": "Mosaic"
+      },
+      "value": {
+        "root": "vcount",
+        "file": "value-counters",
+        "name": "Numbers with proof"
+      },
+      "journey": {
+        "root": "jfly",
+        "file": "journey-fly",
+        "name": "3D flythrough"
+      },
+      "features": {
+        "root": "fcar",
+        "file": "features-carousel",
+        "name": "Card carousel"
+      },
+      "footer": {
+        "root": "foot",
+        "file": "footer",
+        "core": true,
+        "name": "Camera, tape, screen"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "14",
+    "dir": "v14-tiles-assembling-slate-logic",
+    "title": "Tiles assembling, slate logic",
+    "pick": {
+      "heroes": {
+        "root": "hero-mosaic",
+        "file": "h5-mosaic",
+        "name": "Mosaic"
+      },
+      "value": {
+        "root": "vslate",
+        "file": "value-slate",
+        "name": "Four fields of a slate"
+      },
+      "journey": {
+        "root": "jstrip",
+        "file": "journey-strip",
+        "name": "Horizontal film strip"
+      },
+      "features": {
+        "root": "fstick",
+        "file": "features-sticky",
+        "name": "Sticky split"
+      },
+      "footer": {
+        "root": "fmarq",
+        "file": "footer-marquee",
+        "name": "Ghost marquee and aperture"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "15",
+    "dir": "v15-tiles-assembling-one-long-zoom",
+    "title": "Tiles assembling, one long zoom",
+    "pick": {
+      "heroes": {
+        "root": "hero-mosaic",
+        "file": "h5-mosaic",
+        "name": "Mosaic"
+      },
+      "value": {
+        "root": "vreel",
+        "file": "value-reel",
+        "name": "Cards through the gap"
+      },
+      "journey": {
+        "root": "jlens",
+        "file": "journey-lens",
+        "name": "One continuous zoom"
+      },
+      "features": {
+        "root": "fbento",
+        "file": "features-bento",
+        "name": "Bento with live demos"
+      },
+      "footer": {
+        "root": "fend",
+        "file": "footer-endscene",
+        "name": "Build chips and end scene"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "16",
+    "dir": "v16-the-quiet-one",
+    "title": "The quiet one",
+    "pick": {
+      "heroes": {
+        "root": "hero-slate",
+        "file": "h6-slate",
+        "name": "The slate fills in"
+      },
+      "value": {
+        "root": "vwipe",
+        "file": "value-wipe",
+        "name": "The slate wipes"
+      },
+      "journey": {
+        "root": "jstack",
+        "file": "journey-stack",
+        "name": "Slates clapping into a stack"
+      },
+      "features": {
+        "root": "fbento",
+        "file": "features-bento",
+        "name": "Bento with live demos"
+      },
+      "footer": {
+        "root": "foot",
+        "file": "footer",
+        "core": true,
+        "name": "Camera, tape, screen"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "17",
+    "dir": "v17-the-quiet-one-with-receipts",
+    "title": "The quiet one, with receipts",
+    "pick": {
+      "heroes": {
+        "root": "hero-slate",
+        "file": "h6-slate",
+        "name": "The slate fills in"
+      },
+      "value": {
+        "root": "vcount",
+        "file": "value-counters",
+        "name": "Numbers with proof"
+      },
+      "journey": {
+        "root": "jfly",
+        "file": "journey-fly",
+        "name": "3D flythrough"
+      },
+      "features": {
+        "root": "fstick",
+        "file": "features-sticky",
+        "name": "Sticky split"
+      },
+      "footer": {
+        "root": "fend",
+        "file": "footer-endscene",
+        "name": "Build chips and end scene"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "18",
+    "dir": "v18-the-quiet-one-mechanical",
+    "title": "The quiet one, mechanical",
+    "pick": {
+      "heroes": {
+        "root": "hero-slate",
+        "file": "h6-slate",
+        "name": "The slate fills in"
+      },
+      "value": {
+        "root": "vreel",
+        "file": "value-reel",
+        "name": "Cards through the gap"
+      },
+      "journey": {
+        "root": "jstrip",
+        "file": "journey-strip",
+        "name": "Horizontal film strip"
+      },
+      "features": {
+        "root": "fcar",
+        "file": "features-carousel",
+        "name": "Card carousel"
+      },
+      "footer": {
+        "root": "fmarq",
+        "file": "footer-marquee",
+        "name": "Ghost marquee and aperture"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "19",
+    "dir": "v19-projected-then-zoomed",
+    "title": "Projected, then zoomed",
+    "pick": {
+      "heroes": {
+        "root": "hero-projector",
+        "file": "h7-projector",
+        "name": "Projector"
+      },
+      "value": {
+        "root": "vslate",
+        "file": "value-slate",
+        "name": "Four fields of a slate"
+      },
+      "journey": {
+        "root": "jlens",
+        "file": "journey-lens",
+        "name": "One continuous zoom"
+      },
+      "features": {
+        "root": "fstick",
+        "file": "features-sticky",
+        "name": "Sticky split"
+      },
+      "footer": {
+        "root": "foot",
+        "file": "footer",
+        "core": true,
+        "name": "Camera, tape, screen"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "20",
+    "dir": "v20-projected-then-flown",
+    "title": "Projected, then flown",
+    "pick": {
+      "heroes": {
+        "root": "hero-projector",
+        "file": "h7-projector",
+        "name": "Projector"
+      },
+      "value": {
+        "root": "vwipe",
+        "file": "value-wipe",
+        "name": "The slate wipes"
+      },
+      "journey": {
+        "root": "jfly",
+        "file": "journey-fly",
+        "name": "3D flythrough"
+      },
+      "features": {
+        "root": "fcar",
+        "file": "features-carousel",
+        "name": "Card carousel"
+      },
+      "footer": {
+        "root": "fend",
+        "file": "footer-endscene",
+        "name": "Build chips and end scene"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "21",
+    "dir": "v21-projected-stacked-counted",
+    "title": "Projected, stacked, counted",
+    "pick": {
+      "heroes": {
+        "root": "hero-projector",
+        "file": "h7-projector",
+        "name": "Projector"
+      },
+      "value": {
+        "root": "vcount",
+        "file": "value-counters",
+        "name": "Numbers with proof"
+      },
+      "journey": {
+        "root": "jstack",
+        "file": "journey-stack",
+        "name": "Slates clapping into a stack"
+      },
+      "features": {
+        "root": "fbento",
+        "file": "features-bento",
+        "name": "Bento with live demos"
+      },
+      "footer": {
+        "root": "fmarq",
+        "file": "footer-marquee",
+        "name": "Ghost marquee and aperture"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "22",
+    "dir": "v22-film-rushing-at-you-then-the-set",
+    "title": "Film rushing at you, then the set",
+    "pick": {
+      "heroes": {
+        "root": "hero-runway",
+        "file": "h8-runway",
+        "name": "Film strip runway"
+      },
+      "value": {
+        "root": "vreel",
+        "file": "value-reel",
+        "name": "Cards through the gap"
+      },
+      "journey": {
+        "root": "jfly",
+        "file": "journey-fly",
+        "name": "3D flythrough"
+      },
+      "features": {
+        "root": "fbento",
+        "file": "features-bento",
+        "name": "Bento with live demos"
+      },
+      "footer": {
+        "root": "fend",
+        "file": "footer-endscene",
+        "name": "Build chips and end scene"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "23",
+    "dir": "v23-film-rushing-at-you-all-mechanical",
+    "title": "Film rushing at you, all mechanical",
+    "pick": {
+      "heroes": {
+        "root": "hero-runway",
+        "file": "h8-runway",
+        "name": "Film strip runway"
+      },
+      "value": {
+        "root": "vcount",
+        "file": "value-counters",
+        "name": "Numbers with proof"
+      },
+      "journey": {
+        "root": "jstrip",
+        "file": "journey-strip",
+        "name": "Horizontal film strip"
+      },
+      "features": {
+        "root": "fcar",
+        "file": "features-carousel",
+        "name": "Card carousel"
+      },
+      "footer": {
+        "root": "foot",
+        "file": "footer",
+        "core": true,
+        "name": "Camera, tape, screen"
+      }
+    },
+    "missing": []
+  },
+  {
+    "n": "24",
+    "dir": "v24-film-rushing-at-you-then-through-the-lens",
+    "title": "Film rushing at you, then through the lens",
+    "pick": {
+      "heroes": {
+        "root": "hero-runway",
+        "file": "h8-runway",
+        "name": "Film strip runway"
+      },
+      "value": {
+        "root": "vwipe",
+        "file": "value-wipe",
+        "name": "The slate wipes"
+      },
+      "journey": {
+        "root": "jlens",
+        "file": "journey-lens",
+        "name": "One continuous zoom"
+      },
+      "features": {
+        "root": "fstick",
+        "file": "features-sticky",
+        "name": "Sticky split"
+      },
+      "footer": {
+        "root": "fmarq",
+        "file": "footer-marquee",
+        "name": "Ghost marquee and aperture"
+      }
+    },
+    "missing": []
+  }
+]

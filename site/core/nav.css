@@ -1,0 +1,169 @@
+/* The island: a floating pill that morphs into a card.
+   Collapsed it is [mark] [Menu] [Request Demo]. Open it is a nav list beside a
+   still that changes with the item under the cursor, and the bar stays put. */
+
+.island {
+  position: fixed;
+  z-index: 90;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - var(--gut));
+}
+.island[data-dock='top']    { top: clamp(0.75rem, 2vh, 1.5rem); }
+.island[data-dock='bottom'] { bottom: clamp(0.75rem, 2vh, 1.5rem); }
+
+.island__shell {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow:
+    0 1px 0 0 rgba(246, 235, 217, 0.08) inset,
+    0 18px 50px -12px rgba(0, 0, 0, 0.7);
+  will-change: width, border-radius;
+}
+.island[data-dock='bottom'] .island__shell { flex-direction: column-reverse; }
+
+/* ---- the bar ---- */
+.island__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  flex: none;
+}
+
+.island__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: var(--t-sm);
+  letter-spacing: 0.02em;
+  margin-inline-end: 0.5rem;
+}
+.island__brand svg { width: 22px; height: 22px; flex: none; }
+
+.island__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--r-pill);
+  font-size: var(--t-sm);
+  font-weight: 500;
+  color: var(--muted);
+  transition: color var(--d-fast) var(--e-out), background-color var(--d-fast) var(--e-out);
+}
+.island__toggle:hover { color: var(--text); background: color-mix(in srgb, var(--text) 7%, transparent); }
+
+/* Two bars that become the open slate's stick when the menu opens. */
+.island__icon { width: 14px; height: 10px; position: relative; flex: none; }
+.island__icon i {
+  position: absolute;
+  left: 0; right: 0;
+  height: 1.5px;
+  background: currentColor;
+  border-radius: 1px;
+  transition: transform var(--d) var(--e-slate);
+  transform-origin: 2px 50%;
+}
+.island__icon i:first-child { top: 1px; }
+.island__icon i:last-child  { bottom: 1px; }
+.island.is-open .island__icon i:first-child { transform: rotate(-22deg) translateY(-1px); }
+.island.is-open .island__icon i:last-child  { transform: rotate(0deg); }
+
+.island__cta { padding: 0.72em 1.15em; font-size: var(--t-sm); }
+
+/* ---- the panel ---- */
+.island__panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: 1rem;
+  padding: 1rem;
+  align-items: stretch;
+}
+.island--ready .island__panel { height: 0; overflow: hidden; padding-block: 0; }
+
+.island__list { display: flex; flex-direction: column; justify-content: center; gap: 0.1rem; }
+
+.island__link {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--t-xl);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+  padding: 0.12em 0;
+  transition: color var(--d-fast) var(--e-out);
+}
+.island__link:hover, .island__link:focus-visible, .island__link.is-active { color: var(--text); }
+
+.island__minor {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 1rem;
+}
+.island__minor a { font-size: var(--t-sm); color: var(--muted); }
+.island__minor a:hover { color: var(--text); }
+
+/* ---- the still ---- */
+.island__still {
+  position: relative;
+  border-radius: var(--r);
+  overflow: hidden;
+  background: var(--bg-deep);
+  min-height: 190px;
+  isolation: isolate;
+}
+.island__still figure {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  transform: scale(1.04);
+  transition: opacity var(--d) var(--e-out), transform var(--d-slow) var(--e-out);
+}
+.island__still figure.is-on { opacity: 1; transform: scale(1); }
+.island__still svg { width: 100%; height: 100%; }
+
+.island__caption {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  padding: 1.6rem 0.9rem 0.8rem;
+  background: linear-gradient(to top, rgba(11, 11, 11, 0.92), transparent);
+  font-size: var(--t-xs);
+  color: var(--muted);
+}
+.island__caption b { font-family: var(--mono); font-weight: 500; color: var(--faint); letter-spacing: 0.1em; }
+
+/* ---- small screens: the still goes on top, the list under it ---- */
+@media (max-width: 720px) {
+  .island { width: calc(100vw - var(--gut)); }
+  .island__panel { grid-template-columns: 1fr; }
+  .island__still { min-height: 150px; order: -1; }
+  .island__link { font-size: var(--t-lg); }
+  .island__brand span { display: none; }
+}
+@media (max-width: 420px) {
+  .island__toggle-label { display: none; }
+  .island__toggle { padding: 0.6rem 0.75rem; }
+}
+
+/* After 40px of scroll the island tightens, so it reads as chrome, not content. */
+.island.is-stuck .island__shell { box-shadow: 0 22px 60px -14px rgba(0, 0, 0, 0.8); }
+
+/* No JS: the panel is simply open, and the toggle is pointless so it goes. */
+.island:not(.island--ready) .island__toggle { display: none; }

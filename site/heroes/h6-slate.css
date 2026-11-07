@@ -1,0 +1,104 @@
+/* H6, the slate.
+   No canvas, no WebGL, no images: a clapperboard drawn once in SVG, the fields
+   chalked in, the stick shut. The board owes its size to the viewport, and the
+   type inside it owes its size to the board, so the two never fight.
+   Two drawings of the same board exist (wide and portrait) because a six field
+   board scaled down to 360px makes 22px labels into 8px labels. The JS picks. */
+
+.hero-slate {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding-block: clamp(4rem, 9vh, 7rem);
+  text-align: center;
+}
+
+.hslate__inner {
+  display: grid;
+  justify-items: center;
+  gap: clamp(1.25rem, 3.4vh, 2.5rem);
+  width: min(100% - var(--gut) * 2, 980px);
+  margin-inline: auto;
+}
+
+/* The board. overflow stays visible so the lifted stick costs no layout: a shut
+   board is the resting state and it should not reserve a hole above itself. */
+.hslate__board {
+  width: min(100%, var(--board-w, 560px));
+  overflow: visible;
+}
+.hslate__board svg { width: 100%; height: auto; overflow: visible; }
+
+.hslate__face { fill: var(--teal); }
+.hslate__edge { fill: var(--teal-deep); }
+.hslate__stripe-a { fill: var(--paper); }
+.hslate__stripe-b { fill: var(--ink); }
+
+.hslate__label {
+  font-family: var(--mono);
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  fill: var(--paper);
+  fill-opacity: 0.52;
+}
+.hslate__value {
+  font-family: var(--mono);
+  font-weight: 500;
+  fill: var(--paper);
+}
+.hslate__rule { fill: var(--paper); fill-opacity: 0.24; }
+.hslate__caret { fill: var(--paper); opacity: 0; }
+
+/* ---- the copy ---- */
+
+.hslate__copy { display: grid; justify-items: center; gap: clamp(0.5rem, 1.4vh, 0.9rem); }
+
+.hero-slate h1 {
+  font-size: clamp(2rem, 8vw, 3.5rem);
+  max-width: 22ch;
+}
+.hslate__ar {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.0625rem, 3.4vw, 1.5rem);
+  line-height: 1.5;
+  color: var(--accent);
+}
+.hero-slate .lede { margin-inline: auto; max-width: 54ch; font-size: var(--t-base); }
+
+.hslate__cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: clamp(0.5rem, 1.6vh, 1rem);
+}
+/* The second action stays a real control and still reads as the quieter one. */
+.hslate__cta .btn--ghost { --btn-fg: var(--muted); }
+.hslate__cta .btn--ghost:hover { --btn-fg: var(--text); }
+
+/* The clap flash. One frame of overexposure, nothing more. */
+.hslate__flash {
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* The board is bound by the viewport in both directions: a board sized only by
+   width pushes the headline off the bottom of a short laptop screen. 1.56 and
+   0.94 are the two drawings' own aspect ratios. */
+@media (min-width: 760px) {
+  .hslate__board { --board-w: min(clamp(380px, 50vw, 620px), calc(40svh * 1.56)); }
+  .hero-slate .lede { font-size: var(--t-lg); }
+}
+@media (max-width: 759px) {
+  .hslate__board { --board-w: min(78vw, 400px, calc(40svh * 0.94)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hslate__flash { display: none; }
+}

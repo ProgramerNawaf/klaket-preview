@@ -1,0 +1,91 @@
+/* The slate.
+   Four claims, laid out as the four fields of a real clapperboard: PRODUCTION,
+   SCENE, TAKE, DIRECTOR, the mono label above the line and the claim under it.
+   Nothing is drawn here except the board, and the board is only two striped
+   bars and a ruled grid. The stick stays open while the fields fill in, and
+   claps shut on the fourth, which is the only movement on the screen. */
+
+.vslate { position: relative; }
+
+.vslate__pin {
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.vslate__board {
+  --bar: clamp(26px, 3.4vh, 44px);
+  width: min(100% - var(--gut) * 2, 1060px);
+  margin-top: clamp(3rem, 15vh, 9.5rem);
+  background: var(--bg-deep);
+  box-shadow: 0 0 0 1px var(--line-2), 0 50px 120px -50px rgba(0, 0, 0, 0.95);
+  will-change: transform;
+}
+
+/* ---- the clap: a fixed bar, and a stick hinged at its left end ----
+   The stick swings out above the board, so the board is pushed down inside the
+   pin by about as much as the open stick rises. */
+.vslate__clap { position: relative; height: calc(var(--bar) * 2); }
+.vslate__stick, .vslate__anvil {
+  position: absolute;
+  left: 0; right: 0;
+  height: var(--bar);
+  --stripe-a: var(--paper);
+  --stripe-b: var(--ink);
+  --stripe-w: clamp(11px, 1.3vw, 17px);
+}
+.vslate__anvil { bottom: 0; }
+/* Mirrored stripes, the way the stick and the bar of a real board chevron
+   against each other when it is closed. */
+.vslate__stick { top: 0; --stripe-angle: -45deg; transform-origin: 1% 100%; }
+
+/* ---- the four fields ---- */
+.vslate__fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+}
+.vslate__field {
+  background: var(--bg-deep);
+  padding: clamp(1.25rem, 3.2vh, 2.25rem) clamp(1.25rem, 2.6vw, 2.25rem) clamp(1.5rem, 3.6vh, 2.5rem);
+  min-width: 0;
+}
+.vslate__tag { display: block; color: var(--faint); transition: color var(--d) var(--e-out); }
+.vslate__hair {
+  display: block;
+  height: 1px;
+  margin: 0.7rem 0 clamp(0.8rem, 2vh, 1.2rem);
+  background: var(--line-2);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+}
+.vslate__field h3 { font-size: var(--t-lg); font-weight: 900; }
+.vslate__field p { margin-top: 0.6rem; color: var(--muted); font-size: var(--t-sm); line-height: 1.5; max-width: 42ch; }
+
+/* When the board claps, the labels stop being faint: the take is recorded. */
+.vslate.is-clapped .vslate__tag { color: var(--accent); }
+
+@media (max-width: 760px) {
+  /* A phone cannot hold four claims open at 100vh, so the board behaves like a
+     board: one field is being written at a time and the rest keep their label. */
+  .vslate__fields { grid-template-columns: 1fr; }
+  .vslate__field { padding-block: clamp(0.7rem, 1.6vh, 1rem); }
+  .vslate__claim {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows var(--d-slow) var(--e-out), opacity var(--d) var(--e-out);
+  }
+  .vslate__claim-in { overflow: hidden; }
+  .vslate__field.is-on .vslate__claim { grid-template-rows: 1fr; opacity: 1; }
+  .vslate__hair { margin-bottom: 0; }
+  .vslate__field.is-on .vslate__hair { margin-bottom: clamp(0.7rem, 1.6vh, 1rem); }
+}
+
+/* ---- the still version: the board, closed, all four fields readable ---- */
+.vslate--still .vslate__pin { height: auto; padding-block: var(--sec); }
+.vslate--still .vslate__board { margin-top: 0; }
+.vslate--still .vslate__hair { transform: none; }
+.vslate--still .vslate__claim { grid-template-rows: 1fr; opacity: 1; }

@@ -1,0 +1,160 @@
+/* Footer Ft2, after eclipse.space. Three bands, read top to bottom: the ask in a
+   soft panel, the slogan set so large it cannot fit the screen, then a plate
+   where a round aperture opens onto a lit set and its edge breaks into halftone
+   dots. The nav sits on that plate, on a scrim, so the type never fights the art. */
+
+.fmarq {
+  position: relative;
+  overflow: hidden;              /* the giant type is wider than the page on purpose */
+  background: var(--bg-deep);
+  padding-top: clamp(3rem, 8vh, 6rem);
+}
+
+/* ---- band a: the ask ---- */
+.fmarq__panel {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  padding: clamp(1.75rem, 4.5vw, 3.25rem);
+  border-radius: var(--r-lg);
+  background:
+    radial-gradient(90% 140% at 0% 0%, color-mix(in srgb, var(--teal) 30%, transparent), transparent 64%),
+    var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.fmarq__cta-title { font-size: var(--t-2xl); }
+.fmarq__cta-sub { margin-top: 0.8rem; color: var(--muted); font-size: var(--t-sm); max-width: 44ch; }
+
+/* ---- band b: the ghost marquee ---- */
+.fmarq__band {
+  margin-top: clamp(2.5rem, 7vh, 5rem);
+  overflow: clip;                /* clip, not hidden: no scroll container, no page overflow */
+  width: 100%;
+  -webkit-mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+}
+.fmarq__track { display: flex; width: max-content; will-change: transform; }
+.fmarq__word {
+  flex: none;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(4rem, 19vw, 16rem);
+  line-height: 0.84;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+  padding-inline-end: 0.2em;
+  color: color-mix(in srgb, var(--paper) 7%, transparent);
+  -webkit-text-stroke: 1px color-mix(in srgb, var(--paper) 10%, transparent);
+}
+
+/* ---- band c: the aperture plate ---- */
+.fmarq__plate {
+  --ap-w: clamp(260px, 56vw, 700px);
+  position: relative;
+  overflow: clip;
+  margin-top: clamp(1.5rem, 4vh, 3rem);
+  background:
+    radial-gradient(62% 58% at 50% 34%, color-mix(in srgb, var(--teal) 20%, transparent), transparent 72%),
+    var(--ink);
+  border-top: 1px solid var(--line);
+}
+/* The horizon of the drawn set, carried out to both page edges, so the aperture
+   reads as a hole cut in a wider image rather than as a badge. */
+.fmarq__plate::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(var(--ap-w) * 0.56);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-2) 22%, var(--line-2) 78%, transparent);
+  pointer-events: none;
+}
+/* The scrim that buys the nav its contrast back. It starts low enough that the
+   aperture still reads as a circle rather than as a dome. */
+.fmarq__plate::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: calc(100% - var(--ap-w) * 0.56);
+  /* The ramp is measured against the aperture, not against the plate: the plate
+     is twice as tall at 390px, and a percentage ramp would stretch with it and
+     leave the first line of the nav sitting on bare art. */
+  background: linear-gradient(to bottom, transparent, var(--ink) calc(var(--ap-w) * 0.28));
+  pointer-events: none;
+}
+
+.fmarq__ap {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: var(--ap-w);
+  max-width: 100%;
+  aspect-ratio: 1;
+}
+.fmarq__ap svg { width: 100%; height: 100%; }
+
+/* The drawn set, coloured from the tokens so the SVG carries no colour of its own. */
+.fmarq__ap .a-sky    { fill: var(--teal-deep); }
+.fmarq__ap .a-wall   { fill: var(--teal); }
+.fmarq__ap .a-floor  { fill: var(--ink); }
+.fmarq__ap .a-rig    { fill: none; stroke: var(--teal-tint); stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; }
+.fmarq__ap .a-solid  { fill: var(--bg-deep); }
+.fmarq__ap .a-glow   { fill: var(--paper); }
+.fmarq__ap .a-tally  { fill: var(--signal); }
+.fmarq__ap .a-beam   { fill: url(#fmarq-beam); }
+.fmarq__ap .g-near   { stop-color: var(--paper); }
+.fmarq__ap .g-far    { stop-color: var(--paper); }
+
+/* ---- the nav over the plate ---- */
+/* The nav starts at a fixed share of the aperture rather than at a fixed height,
+   so it clears the art the same way at 390px as it does at 2560px. */
+.fmarq__over {
+  position: relative;
+  z-index: 1;
+  padding-block: calc(var(--ap-w) * 0.84 + clamp(1rem, 3vh, 2rem)) clamp(1.25rem, 3.5vh, 2rem);
+}
+.fmarq__cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) repeat(2, minmax(0, 1fr));
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+.fmarq__brand { display: block; width: fit-content; }
+.fmarq__brand img { width: clamp(104px, 11vw, 132px); height: auto; }
+.fmarq__ar { display: inline-block; margin-top: 1rem; color: var(--paper); font-size: var(--t-sm); opacity: 0.86; }
+.fmarq__col h4 {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: var(--t-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.9rem;
+}
+.fmarq__col li + li { margin-top: 0.5rem; }
+.fmarq__col a { color: var(--paper); font-size: var(--t-sm); transition: opacity var(--d-fast) var(--e-out); opacity: 0.78; }
+.fmarq__col a:hover { opacity: 1; }
+.fmarq__legal {
+  margin-top: clamp(2rem, 5vh, 3rem);
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.5rem;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: var(--t-xs);
+}
+
+@media (max-width: 760px) {
+  .fmarq__panel { grid-template-columns: minmax(0, 1fr); }
+  .fmarq__panel .btn { justify-self: start; }
+}
+@media (max-width: 600px) {
+  .fmarq__cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fmarq__brand-cell { grid-column: 1 / -1; }
+}

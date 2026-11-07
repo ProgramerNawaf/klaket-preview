@@ -1,0 +1,67 @@
+/* The counters.
+   Four figures, one line of proof under each, divided by hairlines the way a
+   stat block divides them. Every figure here is true by construction, which is
+   why the mono line names what is being counted: these are not results.
+   Each figure takes one of the four colours and the signal is used once, on the
+   last one, because "one version" is the claim the whole section rests on. */
+
+.vcount { position: relative; }
+.vcount__title { font-size: var(--t-3xl); max-width: 22ch; }
+
+.vcount__row {
+  margin-top: clamp(2.5rem, 7vh, 4.5rem);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+}
+.vcount__cell {
+  padding: clamp(1.5rem, 4vh, 2.5rem) clamp(1rem, 2vw, 1.75rem) clamp(1.5rem, 4vh, 2.25rem) 0;
+  border-inline-start: 1px solid var(--line);
+  min-width: 0;
+}
+.vcount__cell:first-child { border-inline-start: 0; padding-inline-start: 0; }
+.vcount__cell:not(:first-child) { padding-inline-start: clamp(1rem, 2vw, 1.75rem); }
+
+.vcount__n {
+  display: block;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: var(--t-5xl);
+  line-height: 0.82;
+  letter-spacing: -0.05em;
+  /* Tabular figures and a fixed box: a digit that changes width mid-count
+     shoves the line under it sideways, which is the one thing a counter must
+     never do. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  min-width: 1ch;
+  color: var(--tone, var(--text));
+}
+.vcount__cell:nth-child(1) { --tone: var(--text); }
+.vcount__cell:nth-child(2) { --tone: var(--teal-tint); }
+.vcount__cell:nth-child(3) { --tone: var(--teal-pale); }
+.vcount__cell:nth-child(4) { --tone: var(--signal); }
+
+.vcount__unit {
+  display: block;
+  margin-top: clamp(0.9rem, 2.4vh, 1.4rem);
+  color: var(--muted);
+}
+.vcount__line {
+  margin-top: 0.6rem;
+  color: var(--faint);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  max-width: 28ch;
+}
+
+@media (max-width: 860px) {
+  .vcount__row { grid-template-columns: 1fr 1fr; }
+  .vcount__n { font-size: var(--t-4xl); }
+  /* On two columns the hairlines have to run both ways or the grid reads as
+     four unrelated blocks. */
+  .vcount__cell { border-inline-start: 1px solid var(--line); padding-inline-start: clamp(1rem, 4vw, 1.75rem); }
+  .vcount__cell:nth-child(odd) { border-inline-start: 0; padding-inline-start: 0; }
+  .vcount__cell:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  .vcount__line { max-width: none; }
+}

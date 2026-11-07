@@ -1,0 +1,60 @@
+/* Hero 1: the clap.
+   An ink void, one clapperboard, and the headline landing on the impact. The
+   board is the only thing lit, so the eye goes to it and then to the words. */
+
+.hero-clap { position: relative; min-height: 100svh; display: grid; align-items: center; overflow: hidden; background: var(--bg-deep); }
+/* The board gets its own half of the screen rather than floating over the words.
+   Giving the canvas a column is what keeps the two from ever colliding. */
+.hero-clap__stage { position: absolute; inset: 0; z-index: 0; }
+@media (min-width: 901px) { .hero-clap__stage { inset: 0 0 0 48%; } }
+.hero-clap__stage canvas { width: 100%; height: 100%; display: block; }
+
+/* A single frame of white on the clap, gone in 120ms. */
+.hero-clap__flash { position: absolute; inset: 0; z-index: 1; background: var(--paper); opacity: 0; pointer-events: none; mix-blend-mode: screen; }
+
+.hero-clap__copy {
+  position: relative;
+  z-index: 2;
+  width: min(100% - var(--gut) * 2, var(--page));
+  margin-inline: auto;
+  padding-block: clamp(6rem, 14vh, 9rem) clamp(3rem, 8vh, 5rem);
+}
+/* The copy box spans the page so the text starts on the page's own left margin.
+   Centring the box instead walks the words into the board's column. */
+.hero-clap__copy > * { max-width: min(40rem, 44vw); }
+@media (max-width: 900px) { .hero-clap__copy > * { max-width: 44rem; } }
+
+/* The copy sits in half the width, so the headline is sized for that half, not
+   for the page: at full --t-4xl it breaks into four lines and stops reading. */
+.hero-clap h1 { font-size: clamp(2.5rem, 1.1rem + 4.6vw, 4.5rem); }
+.hero-clap h1 .w { display: inline-block; will-change: transform, opacity; }
+.hero-clap__ar {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--t-xl);
+  color: var(--accent);
+  margin-top: 0.7rem;
+  letter-spacing: 0;
+  /* The sentence is laid out right to left, but the block stays on the English
+     margin, or it drifts across the page and lands on the board. */
+  text-align: left;
+}
+html[dir='rtl'] .hero-clap__ar { text-align: right; }
+.hero-clap__lede { margin-top: clamp(1.25rem, 3vh, 1.75rem); }
+.hero-clap__cta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.85rem; margin-top: clamp(1.75rem, 4vh, 2.5rem); }
+
+/* The slate is a picture, not a decoration: on a phone it goes above the words. */
+@media (max-width: 900px) {
+  .hero-clap { align-items: end; }
+  .hero-clap__stage { inset: 0 0 42% 0; }
+  .hero-clap__copy { padding-bottom: clamp(3rem, 9vh, 5rem); }
+  .hero-clap h1 { font-size: var(--t-3xl); }
+}
+
+/* Without WebGL the board is drawn flat, and it still claps on load in CSS. */
+.hero-clap__flat { position: absolute; inset: 0; display: grid; place-items: center; z-index: 0; }
+.hero-clap__flat svg { width: min(62vw, 560px); height: auto; opacity: 0.9; }
+.hero-clap__flat .stick { transform-origin: 6% 72%; animation: clapShut 1.1s var(--e-slate) 0.5s both; }
+@keyframes clapShut { from { transform: rotate(-30deg); } to { transform: rotate(0deg); } }
+@media (prefers-reduced-motion: reduce) { .hero-clap__flat .stick { animation: none; transform: none; } }
+@media (min-width: 901px) { .hero-clap__flat { justify-items: end; padding-inline-end: 4vw; } }

@@ -1,0 +1,116 @@
+/* H8, the runway.
+   A length of film comes down the rail at the camera, slows, and one frame sets
+   itself down where this stylesheet says it should. The empty `.hrun__slot` is
+   that instruction: the renderer measures it and parks the frame on it, so the
+   3D and the layout can never disagree. The copy sits beside the frame on a wide
+   screen and under it on a narrow one, and never on top of it. */
+
+.hero-runway {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  padding-block: clamp(3.5rem, 9vh, 6rem);
+  background:
+    radial-gradient(90% 70% at 62% 44%, color-mix(in srgb, var(--teal-deep) 30%, transparent) 0%, transparent 60%),
+    var(--bg-deep);
+}
+
+.hrun__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.hrun__vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(130% 100% at 50% 50%, transparent 46%, color-mix(in srgb, var(--ink) 82%, transparent) 100%);
+}
+
+.hrun__stage {
+  position: relative;
+  z-index: 2;
+  width: min(100% - var(--gut) * 2, var(--page));
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(1.5rem, 4vh, 2.75rem);
+}
+
+/* The frame's parking space. Empty by design: it exists to be measured. */
+.hrun__slot {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  width: 100%;
+}
+.hrun__still {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+.hrun__still svg { width: 100%; height: 100%; }
+.hero-runway.is-still .hrun__canvas { display: none; }
+.hero-runway.is-still .hrun__still { display: block; }
+
+.hrun__copy { display: grid; gap: clamp(0.5rem, 1.4vh, 0.9rem); justify-items: center; text-align: center; }
+
+.hero-runway h1 {
+  font-size: clamp(2rem, 7.6vw, 3.5rem);
+  max-width: 20ch;
+}
+.hrun__ar {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.0625rem, 3.4vw, 1.5rem);
+  line-height: 1.5;
+  color: var(--accent);
+}
+.hero-runway .lede { max-width: 48ch; }
+
+.hrun__cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: clamp(0.5rem, 1.6vh, 1rem);
+}
+.hrun__cta .btn--ghost { --btn-fg: var(--muted); }
+.hrun__cta .btn--ghost:hover { --btn-fg: var(--text); }
+
+/* ---- the still: one frame at rest with the strip trailing off behind it ---- */
+.hrun__card { fill: var(--surface); }
+.hrun__perf { fill: var(--ink); }
+.hrun__bar { fill: var(--teal); }
+.hrun__ghost { fill: var(--surface); fill-opacity: 0.5; }
+.hrun__row { fill: var(--paper); fill-opacity: 0.14; }
+.hrun__mono {
+  font-family: var(--mono);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  fill: var(--paper);
+}
+.hrun__mono--dim { fill: var(--paper); fill-opacity: 0.55; }
+.hrun__live { fill: var(--signal); }
+
+@media (min-width: 900px) {
+  .hrun__stage {
+    grid-template-columns: minmax(280px, 0.86fr) minmax(0, 1fr);
+    gap: clamp(2rem, 5vw, 4.5rem);
+  }
+  .hrun__copy { justify-items: start; text-align: start; order: -1; }
+  .hrun__cta { justify-content: flex-start; }
+  .hero-runway .lede { margin-inline: 0; }
+}
+@media (max-width: 899px) {
+  .hrun__slot { max-height: 40svh; width: min(100%, calc(40svh * 1.6)); margin-inline: auto; }
+}
+
+/* The perforations in the still. The live strip punches its own. */
+.hrun__hole { fill: var(--ink); fill-opacity: 0.62; }

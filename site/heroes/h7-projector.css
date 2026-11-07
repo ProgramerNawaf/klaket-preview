@@ -1,0 +1,121 @@
+/* H7, the projector.
+   A dark room, a beam, and a screen. The screen is the only thing that matters:
+   it is a real HTML box, sized by this stylesheet, and the 3D beam is aimed at
+   whatever this box measures. CSS owns the layout, the renderer follows it, so
+   the light lands on the headline at every width without a magic number. */
+
+.hero-projector {
+  position: relative;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(110% 80% at 50% 40%, color-mix(in srgb, var(--teal-deep) 26%, transparent) 0%, transparent 62%),
+    var(--bg-deep);
+}
+
+.hproj__canvas,
+.hproj__still {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+.hproj__still { display: none; }
+.hero-projector.is-still .hproj__canvas { display: none; }
+.hero-projector.is-still .hproj__still { display: block; }
+
+/* The room falls away at the edges, so the lit box is the only place to look. */
+.hproj__vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(125% 100% at 50% 50%, transparent 48%, color-mix(in srgb, var(--ink) 86%, transparent) 100%);
+}
+
+.hproj__screen {
+  position: relative;
+  z-index: 2;
+  width: min(86vw, 960px);
+  min-height: min(74svh, 580px);
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: clamp(0.5rem, 1.4vh, 0.9rem);
+  padding: clamp(1.5rem, 5vw, 3.5rem);
+  text-align: center;
+}
+
+.hero-projector h1 {
+  font-size: clamp(2rem, 7.6vw, 3.5rem);
+  max-width: 22ch;
+  text-shadow: 0 2px 30px color-mix(in srgb, var(--ink) 70%, transparent);
+}
+.hproj__ar {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.0625rem, 3.4vw, 1.5rem);
+  line-height: 1.5;
+  color: var(--accent);
+}
+.hero-projector .lede {
+  margin-inline: auto;
+  max-width: 52ch;
+  color: color-mix(in srgb, var(--paper) 76%, transparent);
+}
+
+.hproj__cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: clamp(0.5rem, 1.8vh, 1.1rem);
+}
+.hproj__cta .btn--ghost { --btn-fg: color-mix(in srgb, var(--paper) 72%, transparent); box-shadow: inset 0 0 0 1px var(--line-2); }
+.hproj__cta .btn--ghost:hover { --btn-fg: var(--text); }
+
+/* ---- the still ----
+   The same composition as the live room, built out of the same numbers: the lit
+   panel is the size of the screen box, the beam is a wedge from the corner of
+   the hero to the middle of it, and the projector sits where the mesh sits. */
+.hproj__still-glow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(86vw, 960px);
+  height: min(74svh, 580px);
+  background: radial-gradient(58% 58% at 50% 48%, color-mix(in srgb, var(--paper) 20%, transparent) 0%, color-mix(in srgb, var(--paper) 6%, transparent) 55%, transparent 78%);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.hproj__still-beam {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(9% 94%, 13% 86%, 50% 22%, 84% 34%, 84% 70%, 50% 80%);
+  background:
+    radial-gradient(2px 2px at 30% 62%, color-mix(in srgb, var(--paper) 40%, transparent) 50%, transparent 51%),
+    radial-gradient(2px 2px at 38% 48%, color-mix(in srgb, var(--paper) 34%, transparent) 50%, transparent 51%),
+    radial-gradient(3px 3px at 46% 70%, color-mix(in srgb, var(--paper) 28%, transparent) 50%, transparent 51%),
+    radial-gradient(2px 2px at 55% 40%, color-mix(in srgb, var(--paper) 30%, transparent) 50%, transparent 51%),
+    radial-gradient(2px 2px at 64% 66%, color-mix(in srgb, var(--paper) 24%, transparent) 50%, transparent 51%),
+    linear-gradient(64deg, color-mix(in srgb, var(--paper) 17%, transparent) 0%, color-mix(in srgb, var(--teal-tint) 5%, transparent) 42%, transparent 66%);
+}
+.hproj__still-proj {
+  position: absolute;
+  left: clamp(0.5rem, 6vw, 5rem);
+  bottom: 0;
+  width: clamp(104px, 13vw, 190px);
+  height: auto;
+}
+.hproj__body { fill: var(--surface); stroke: var(--teal-tint); stroke-width: 3; }
+.hproj__dark { fill: var(--ink); }
+.hproj__reel { fill: none; stroke: var(--teal-tint); stroke-width: 3; }
+.hproj__led { fill: var(--signal); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-projector h1 { text-shadow: none; }
+}

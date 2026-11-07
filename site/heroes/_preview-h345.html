@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- The brand is set before the first paint, or the page flashes the other one. -->
+<script>try{var q=new URLSearchParams(location.search).get('brand');var b=q||localStorage.getItem('klaket.brand');if(b==='mono')document.documentElement.setAttribute('data-brand','mono')}catch(e){}</script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Heroes: H3, H4, H5 in sequence</title>
+
+<link rel="icon" href="../../brand/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+
+<link rel="stylesheet" href="../core/tokens.css">
+<link rel="stylesheet" href="../core/base.css">
+<link rel="stylesheet" href="h3-chapter.css">
+<link rel="stylesheet" href="h4-depth.css">
+<link rel="stylesheet" href="h5-mosaic.css">
+
+<style>
+  /* Preview chrome only. Nothing here ships: it exists so the three treatments
+     can be told apart and jumped between while choosing one. A shipped variant
+     carries exactly one hero, and therefore exactly one h1. */
+  .pv-head { padding: clamp(3rem, 10vh, 6rem) 0 2rem; }
+  .pv-head p:first-child {
+    font-family: var(--display); font-weight: 900; font-size: var(--t-2xl);
+    line-height: 0.96; letter-spacing: -0.03em;
+  }
+  .pv-head p + p { margin-top: 0.75rem; color: var(--muted); max-width: 54ch; }
+  .pv-jump { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.5rem; }
+  .pv-jump a {
+    font-family: var(--mono); font-size: var(--t-xs); letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 0.6em 1em; border-radius: var(--r-pill);
+    box-shadow: inset 0 0 0 1px var(--line-2);
+  }
+  .pv-jump a:hover { background: color-mix(in srgb, var(--text) 8%, transparent); }
+  .pv-mark {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.6rem var(--gut);
+    background: color-mix(in srgb, var(--ink) 88%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(246, 235, 217, 0.12);
+    font-family: var(--mono); font-size: var(--t-xs); letter-spacing: 0.12em; text-transform: uppercase;
+    color: #807A70;
+  }
+  .pv-mark b { color: #F6EBD9; font-weight: 500; }
+</style>
+<link rel="stylesheet" href="../core/theme.css">
+
+</head>
+<body>
+
+<a class="skip" href="#h3">Skip to the first hero</a>
+
+<header class="pv-head wrap">
+  <p>Three heroes, same copy.</p>
+  <p>H3, H4 and H5 render from <code>KLDATA.hero</code>. A variant page includes exactly one of them, and that one owns the page's only h1.</p>
+  <nav class="pv-jump" aria-label="Jump to a hero">
+    <a href="#h3">H3 chapter card</a>
+    <a href="#h4">H4 depth cut</a>
+    <a href="#h5">H5 mosaic</a>
+  </nav>
+</header>
+
+<div class="pv-mark" id="h3"><b>H3</b> chapter card, drawn set, sound toggle, skip intro</div>
+<section class="hero-chapter"></section>
+
+<div class="pv-mark" id="h4"><b>H4</b> depth cut, type across the board, paper ground</div>
+<section class="hero-depth on-paper"></section>
+
+<div class="pv-mark" id="h5"><b>H5</b> mosaic, tiles turn into the board</div>
+<section class="hero-mosaic"></section>
+
+<div style="height:60vh"></div>
+
+<script src="../vendor/gsap.min.js"></script>
+<script src="../vendor/ScrollTrigger.min.js"></script>
+<script src="../vendor/lenis.min.js"></script>
+<script src="../core/boot.js"></script>
+<script src="../core/data.js"></script>
+<script src="h3-chapter.js"></script>
+<script src="h4-depth.js"></script>
+<script src="h5-mosaic.js"></script>
+<script src="../core/theme.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,35 @@
+/* Questions. A plain disclosure list: the answer opens on a height tween and the
+   rule under each row thickens while it is open, so the page never jumps. */
+.faq__list { border-top: 1px solid var(--line); }
+.faq__item { border-bottom: 1px solid var(--line); }
+.faq__q {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  width: 100%;
+  text-align: start;
+  padding: clamp(1.1rem, 2.4vh, 1.6rem) 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--t-lg);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  color: var(--text);
+  transition: color var(--d-fast) var(--e-out);
+}
+.faq__q:hover { color: var(--accent); }
+.faq__n { font-family: var(--mono); font-size: var(--t-xs); color: var(--faint); font-weight: 500; flex: none; width: 2.2em; letter-spacing: 0.1em; }
+
+/* The marker is the clapperboard's stick: closed it lies flat, open it lifts. */
+.faq__mark { margin-inline-start: auto; width: 16px; height: 16px; flex: none; position: relative; align-self: center; }
+.faq__mark i {
+  position: absolute; inset: 50% 0 auto 0; height: 1.5px; background: currentColor; border-radius: 1px;
+  transition: transform var(--d) var(--e-slate);
+}
+.faq__mark i:last-child { transform: rotate(90deg); }
+.faq__item.is-open .faq__mark i:last-child { transform: rotate(0deg); }
+
+.faq__a { overflow: hidden; height: 0; }
+.faq__a > div { padding: 0 0 clamp(1.1rem, 2.4vh, 1.6rem) calc(2.2em + 1rem); max-width: 68ch; color: var(--muted); }
+.faq:not(.faq--ready) .faq__a { height: auto; }
+@media (max-width: 560px) { .faq__a > div { padding-inline-start: 0; } }

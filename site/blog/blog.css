@@ -1,0 +1,242 @@
+/* The journal: the index and the posts.
+   Editorial, not a feed. One measure, one rule between entries, and the date and
+   the reading time set in Plex Mono because they are data, the same as a scene
+   number. Nothing here carries a label above a heading. */
+
+/* The island is fixed, so every journal page starts below where it sits. */
+.jmain { padding-top: clamp(6.5rem, 13vh, 9.5rem); }
+
+/* ---- the index head ---- */
+.jhead { padding-bottom: clamp(2.5rem, 7vh, 4.5rem); }
+.jhead h1 { font-size: var(--t-3xl); max-width: 24ch; }
+.jhead .lede { margin-top: 1.25rem; max-width: 52ch; }
+.jhead__ar {
+  margin-top: 1.5rem;
+  font-size: var(--t-lg);
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ---- the list ---- */
+.jlist { padding-bottom: clamp(4rem, 12vh, 8rem); }
+.jlist__ol { border-top: 1px solid var(--line); }
+
+.jentry {
+  position: relative;
+  display: grid;
+  grid-template-columns: 3.25rem minmax(0, 1fr) 1.5rem;
+  gap: 0 clamp(1rem, 3vw, 2rem);
+  align-items: start;
+  padding-block: clamp(1.75rem, 4.5vh, 2.75rem);
+  border-bottom: 1px solid var(--line);
+  transition: background-color var(--d) var(--e-out);
+}
+.jentry:hover { background: color-mix(in srgb, var(--text) 3.5%, transparent); }
+
+/* The whole entry is one hit area, but only the title is the link, so the
+   accessible name stays the title and nothing else. */
+.jentry__link::after { content: ''; position: absolute; inset: 0; }
+
+.jentry__n {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: var(--t-xs);
+  letter-spacing: 0.1em;
+  color: var(--faint);
+  padding-top: 0.45rem;
+  font-variant-numeric: tabular-nums;
+}
+.jentry__title {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: var(--t-xl);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.jentry__link { transition: color var(--d-fast) var(--e-out); }
+.jentry:hover .jentry__link { color: var(--accent); }
+.jentry__stand { color: var(--muted); margin-top: 0.6rem; max-width: 56ch; }
+.jentry__meta {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+  align-items: baseline;
+}
+.jentry__meta .data { color: var(--faint); }
+.jentry__arrow {
+  width: 1.5rem;
+  color: var(--faint);
+  padding-top: 0.6rem;
+  transition: transform var(--d) var(--e-out), color var(--d-fast) var(--e-out);
+}
+.jentry:hover .jentry__arrow { transform: translateX(4px); color: var(--accent); }
+
+@media (max-width: 620px) {
+  .jentry { grid-template-columns: 2.5rem minmax(0, 1fr); }
+  .jentry__arrow { display: none; }
+}
+
+/* ---- a post ---- */
+.post__head { padding-bottom: clamp(2rem, 5vh, 3rem); }
+.post__head h1 { font-size: var(--t-2xl); max-width: 30ch; }
+.post__stand {
+  font-size: var(--t-lg);
+  line-height: 1.5;
+  color: var(--muted);
+  margin-top: 1.25rem;
+  max-width: 54ch;
+}
+.post__by {
+  margin-top: clamp(1.5rem, 4vh, 2.25rem);
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+  align-items: baseline;
+}
+.post__author { font-weight: 600; font-size: var(--t-sm); }
+
+/* ---- prose ---- */
+.prose { padding-bottom: clamp(3rem, 8vh, 5rem); }
+.prose > p,
+.prose > ul,
+.prose > ol,
+.prose > .pull { max-width: 66ch; }
+.prose > p { margin-top: 1.15em; }
+.prose > p:first-child { margin-top: 0; }
+
+.prose h2 {
+  font-size: var(--t-xl);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin-top: clamp(2.5rem, 6vh, 3.5rem);
+  max-width: 44ch;
+}
+.prose h2 + p { margin-top: 0.8em; }
+
+.prose a:not(.btn) {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.prose a:not(.btn):hover { text-decoration-color: var(--accent); }
+.prose strong { font-weight: 600; color: var(--text); }
+
+.prose ul, .prose ol { margin-top: 1.15em; }
+.prose li { position: relative; padding-left: 1.6rem; }
+.prose li + li { margin-top: 0.6em; }
+.prose ul > li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0.72em;
+  width: 0.7rem; height: 1px;
+  background: var(--accent);
+}
+.prose ol { counter-reset: p-step; }
+.prose ol > li { counter-increment: p-step; padding-left: 2.1rem; }
+.prose ol > li::before {
+  content: counter(p-step, decimal-leading-zero);
+  position: absolute;
+  left: 0; top: 0.1em;
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: var(--t-xs);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* One line per post gets to be loud. More than one and neither is. */
+.pull {
+  margin-top: clamp(2rem, 5vh, 3rem);
+  padding-left: clamp(1rem, 3vw, 1.75rem);
+  border-left: 2px solid var(--primary);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--t-lg);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+/* A time and a figure both read better in mono inside running text. */
+.prose .t { font-family: var(--mono); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* ---- drawn figures ----
+   No photographs anywhere in the journal: every picture is drawn here in the four
+   colours, so it stays sharp, costs one request and never goes stale. */
+.draw {
+  margin-top: clamp(2rem, 5vh, 3rem);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--bg-deep);
+  padding: clamp(1rem, 3vw, 1.75rem);
+  overflow: hidden;
+}
+.draw svg { width: 100%; height: auto; }
+.draw figcaption {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: var(--t-sm);
+  max-width: 62ch;
+}
+
+/* Fills and strokes by name, so no drawing carries a hex of its own. */
+.draw .f-teal   { fill: var(--teal); }
+.draw .f-deep   { fill: var(--teal-deep); }
+.draw .f-tint   { fill: var(--teal-tint); }
+.draw .f-pale   { fill: var(--teal-pale); }
+.draw .f-paper  { fill: var(--paper); }
+.draw .f-ink    { fill: var(--ink); }
+.draw .f-surf   { fill: var(--surface); }
+.draw .f-rise   { fill: var(--raised); }
+.draw .f-signal { fill: var(--signal); }
+.draw .s-tint   { fill: none; stroke: var(--teal-tint); }
+.draw .s-pale   { fill: none; stroke: var(--teal-pale); }
+.draw .s-line   { fill: none; stroke: var(--line-2); }
+.draw .s-signal { fill: none; stroke: var(--signal); }
+.draw .lbl {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  fill: var(--muted);
+}
+/* Size first, then colour: a label is often both, and the colour has to win. */
+.draw .lbl--big { font-size: 10px; fill: var(--text); letter-spacing: 0.04em; }
+.draw .lbl--on-paper { fill: var(--ink); fill-opacity: 0.62; }
+.draw .lbl--cream { fill: var(--paper); fill-opacity: 0.9; }
+.draw .lbl--ink { fill: var(--ink); fill-opacity: 1; }
+/* Teal as a label: the full teal only on paper, the tint whenever it sits on ink. */
+.draw .lbl--teal { fill: var(--teal); fill-opacity: 1; }
+.draw .lbl--tint { fill: var(--teal-tint); fill-opacity: 1; }
+.draw .lbl--signal { fill: var(--signal); fill-opacity: 1; }
+
+/* A drawing 640 units wide stops being readable somewhere under 560px of screen,
+   and a diagram nobody can read is worse than no diagram. Below that it keeps its
+   size and the figure pans instead, which is why the figures carry a tabindex. */
+@media (max-width: 620px) {
+  .draw { overflow-x: auto; overscroll-behavior-x: contain; }
+  .draw svg { min-width: 520px; }
+  .draw figcaption { position: sticky; left: 0; }
+}
+
+/* ---- the foot of a post ---- */
+.prose > .post__end {
+  margin-top: clamp(2.5rem, 6vh, 4rem);
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+.post__back { color: var(--muted); font-size: var(--t-sm); transition: color var(--d-fast) var(--e-out); }
+.post__back:hover { color: var(--text); }

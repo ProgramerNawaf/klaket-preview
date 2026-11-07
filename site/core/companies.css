@@ -1,0 +1,43 @@
+/* Where the crew has shipped. A marquee of names set big: hovering one stops the
+   roll and brings that name forward while the rest fall back. */
+
+.companies { padding-block: clamp(2.5rem, 6vh, 4.5rem); position: relative; overflow: hidden; }
+.companies__label {
+  text-align: center;
+  margin-bottom: clamp(1.25rem, 3vh, 2rem);
+}
+.companies__viewport {
+  position: relative;
+  overflow: hidden;
+  /* The row fades out at both ends instead of being cut, so nothing looks clipped. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+}
+.companies__track {
+  display: flex;
+  align-items: center;
+  gap: clamp(2.5rem, 6vw, 5.5rem);
+  width: max-content;
+  will-change: transform;
+}
+.companies__name {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(1.75rem, 1rem + 3.2vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  color: var(--text);
+  opacity: 0.42;
+  cursor: default;
+  transition: opacity var(--d) var(--e-out), color var(--d) var(--e-out);
+}
+/* Once one name is under the cursor, every other name steps back. */
+.companies.is-focusing .companies__name { opacity: 0.12; }
+.companies.is-focusing .companies__name.is-focus { opacity: 1; color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) {
+  .companies__track { flex-wrap: wrap; width: auto; justify-content: center; row-gap: 1rem; }
+  .companies__viewport { -webkit-mask-image: none; mask-image: none; }
+  .companies__track > :nth-child(n + 9) { display: none; }  /* the duplicate half */
+}

@@ -1,0 +1,251 @@
+/* J3, the strip.
+   The journey as a length of film: one perforated frame per step, travelling
+   sideways through a gate while the section is pinned. The active frame is lit
+   and full size, the rest sit dim either side of it.
+   With no JS the same markup is a plain horizontal scroller with scroll snap,
+   which is why the track owns its own overflow by default. */
+
+.jstrip {
+  position: relative;
+  --jfw: clamp(238px, 30vw, 360px);
+  --jfh: min(64vh, 486px);
+  --jfg: clamp(14px, 2vw, 30px);
+}
+
+.jstrip__pin {
+  position: relative;
+  height: 100vh;
+  min-height: 560px;
+  overflow: hidden;              /* the strip is wider than the page, by design */
+  display: grid;
+  /* minmax(0,1fr), not 1fr: the track is wider than the page on purpose, and a
+     column sized to its content would drag the title off centre with it. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  align-items: center;
+}
+
+/* The frames do not stop at the edge of the screen, they fade out of the light. */
+.jstrip__pin::before, .jstrip__pin::after {
+  content: '';
+  position: absolute;
+  z-index: 3;
+  top: 0; bottom: 0;
+  width: clamp(28px, 11vw, 200px);
+  pointer-events: none;
+}
+.jstrip__pin::before { left: 0; background: linear-gradient(90deg, var(--bg) 12%, transparent); }
+.jstrip__pin::after { right: 0; background: linear-gradient(270deg, var(--bg) 12%, transparent); }
+
+.jstrip__title {
+  grid-row: 1;
+  grid-column: 1;
+  position: relative;
+  z-index: 4;
+  width: min(100% - var(--gut) * 2, 22ch);
+  margin: clamp(2rem, 7vh, 4.5rem) auto clamp(1rem, 3vh, 2rem);
+  text-align: center;
+  font-size: var(--t-2xl);
+}
+
+/* The gate: the one place the film is in focus. It sits in the strip row rather
+   than the pin, so it lines up with the frames and not with the title above. */
+.jstrip__gate {
+  grid-row: 2;
+  grid-column: 1;
+  justify-self: center;
+  align-self: center;
+  position: relative;
+  z-index: 3;
+  width: calc(var(--jfw) + 20px);
+  height: calc(var(--jfh) + 20px);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  pointer-events: none;
+}
+.jstrip__gate::before, .jstrip__gate::after {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  border: 1px solid var(--line-2);
+}
+.jstrip__gate::before { left: -1px; top: -1px; border-width: 1px 0 0 1px; }
+.jstrip__gate::after { right: -1px; bottom: -1px; border-width: 0 1px 1px 0; }
+
+/* The one red on this screen: the tally, running while the gate is on screen. */
+.jstrip__tally {
+  position: absolute;
+  right: 0;
+  top: -20px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--signal);
+  opacity: 0.35;
+  pointer-events: none;
+}
+.jstrip.is-live .jstrip__tally { animation: jstrip-tally 1.7s var(--e-in-out) infinite; }
+@keyframes jstrip-tally { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+/* ---- the track: a scroll container until JS takes it over ---- */
+.jstrip__track {
+  grid-row: 2;
+  grid-column: 1;
+  /* No justify-self here, deliberately. A grid item aligned to start is sized to
+     its own content, and a box the width of its content has nothing to scroll:
+     overflow-x would have nothing to clip, the snap points would be unreachable
+     and the pin's overflow would simply crop steps 03 to 06 off the screen. The
+     track has to be stretched to the column to be a scrollport. */
+  display: flex;
+  align-items: center;
+  gap: var(--jfg);
+  height: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  padding-inline: max(var(--gut), calc(50% - var(--jfw) / 2));
+  scrollbar-width: none;
+}
+.jstrip__track::-webkit-scrollbar { display: none; }
+/* Once JS drives it the track is no longer a scrollport but one long strip that
+   is moved by a transform, so here it is sized to its content and pinned to the
+   left edge of the column, which is the origin the travel is measured from. */
+.jstrip__track.is-js {
+  overflow: visible;
+  scroll-snap-type: none;
+  padding-inline: 0;
+  width: max-content;
+  justify-self: start;
+  will-change: transform;
+}
+
+.jfr {
+  flex: none;
+  width: var(--jfw);
+  scroll-snap-align: center;
+  position: relative;
+}
+
+/* One frame of film: the base, the two perforated rails, the picture between. */
+.jfr__film {
+  position: relative;
+  height: var(--jfh);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line), 0 30px 70px -30px rgba(0, 0, 0, 0.9);
+  padding: 30px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  opacity: 0.4;
+  transform: scale(0.88);
+  transform-origin: 50% 50%;
+  transition: opacity var(--d) var(--e-out), transform var(--d) var(--e-out),
+              box-shadow var(--d) var(--e-out);
+}
+.jfr.is-on .jfr__film {
+  opacity: 1;
+  transform: scale(1);
+  box-shadow: 0 0 0 1px var(--line-2), 0 0 0 1px var(--accent) inset, 0 30px 70px -26px rgba(0, 0, 0, 0.95);
+}
+
+.jfr__rail {
+  position: absolute;
+  left: 0; right: 0;
+  height: 22px;
+  background:
+    repeating-linear-gradient(90deg,
+      transparent 0 7px,
+      var(--bg-deep) 7px 19px,
+      transparent 19px 26px);
+}
+.jfr__rail--t { top: 4px; }
+.jfr__rail--b { bottom: 4px; }
+
+.jfr__pic { flex: none; border-radius: 6px; overflow: hidden; background: var(--bg-deep); }
+.jfr__pic svg { width: 100%; height: auto; }
+
+.jfr__t {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: var(--t-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.jfr__n { color: var(--faint); flex: none; }
+.jfr.is-on .jfr__n { color: var(--accent); }
+.jfr__b {
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--muted);
+  overflow: hidden;
+}
+.jfr__jump { position: absolute; inset: 0; border-radius: 10px; }
+
+/* SVG fills stay in the stylesheet so the four colours stay in the tokens. */
+.jstrip .f-deep { fill: var(--bg-deep); }
+.jstrip .f-ink { fill: var(--ink); }
+.jstrip .f-surf { fill: var(--surface); }
+.jstrip .f-raised { fill: var(--raised-2); }
+.jstrip .f-paper { fill: var(--paper); }
+.jstrip .f-teal { fill: var(--teal); }
+.jstrip .f-tint { fill: var(--teal-tint); }
+
+/* The mid tone a still uses as a block on its own black picture: the tagged
+   pills, the scheduled strips, the filled part of a bar. Teal carries that in
+   colour. In mono --teal is #2B2B2B and the picture under it is black, so the
+   block stops being a tone at all and lands within three points of the empty
+   track beside it, which turns a half full bar into an empty one. There the
+   grey ramp carries it, in the same order of lightness, so each drawing still
+   says what it said. f-teal is left alone: every remaining use of it is drawn
+   on a paper card, where it is a dark mark on a light ground in both brands. */
+.jstrip .f-mid { fill: var(--teal); }
+.jstrip .f-mid-2 { fill: var(--teal-deep); }
+:root[data-brand='mono'] .jstrip .f-mid { fill: var(--muted); }
+:root[data-brand='mono'] .jstrip .f-mid-2 { fill: var(--faint); }
+.jstrip .s-tint { fill: none; stroke: var(--teal-tint); stroke-linecap: round; stroke-linejoin: round; }
+.jstrip .o-55 { opacity: 0.55; }
+.jstrip .o-30 { opacity: 0.3; }
+
+@media (max-width: 760px) {
+  .jstrip { --jfw: clamp(228px, 74vw, 300px); --jfh: min(64vh, 440px); }
+  .jstrip__title { font-size: var(--t-xl); margin-top: clamp(1.5rem, 5vh, 3rem); }
+  .jfr__t { font-size: var(--t-base); }
+  .jfr__b { font-size: var(--t-xs); }
+}
+
+/* ---- no GSAP: the reader pushes the strip themselves ----
+   The track keeps its own overflow and its snap points, so all six frames are
+   lit rather than dimmed. The accent ring is left off: it means "this frame is
+   in the gate under the scrub", and with nothing being scrubbed six rings would
+   say six frames are active at once. Scroll snap puts one in the gate instead. */
+.jstrip.is-free .jfr__film { opacity: 1; transform: none; }
+.jstrip.is-free .jfr__n { color: var(--accent); }
+
+/* ---- reduced motion: the six frames laid out as a readable grid ---- */
+.jstrip.is-still .jstrip__pin {
+  height: auto;
+  min-height: 0;
+  display: block;
+  padding-block: var(--sec);
+  overflow: visible;
+}
+.jstrip.is-still .jstrip__pin::before,
+.jstrip.is-still .jstrip__pin::after,
+.jstrip.is-still .jstrip__gate { display: none; }
+.jstrip.is-still .jstrip__title { margin-bottom: clamp(2rem, 6vh, 3.5rem); }
+.jstrip.is-still .jstrip__track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: clamp(1rem, 2.5vw, 2rem);
+  width: min(100% - var(--gut) * 2, var(--page));
+  margin-inline: auto;
+  padding: 0;
+  overflow: visible;
+  height: auto;
+}
+.jstrip.is-still .jfr { width: auto; }
+.jstrip.is-still .jfr__film { height: auto; opacity: 1; transform: none; }
+.jstrip.is-still .jfr__n { color: var(--accent); }
+.jstrip.is-still .jfr__jump { display: none; }

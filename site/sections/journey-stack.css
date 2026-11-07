@@ -1,0 +1,146 @@
+/* J4, the stack.
+   Six shot slates. Each step arrives as a board with its stick open, the stick
+   shuts with a snap, and the board settles onto the pile at a slight angle. By
+   the sixth clap you are looking at a stack of six, and then the stack fans out
+   so all six read at once.
+   The stripes come from .stripes in base.css, so the board here is drawn with
+   the same bar as every other clapperboard on the site. */
+
+.jstack {
+  position: relative;
+  --sw: clamp(252px, 27vw, 368px);
+  --stick: clamp(19px, 2.2vw, 26px);
+}
+
+.jstack__pin {
+  position: relative;
+  height: 100vh;
+  min-height: 580px;
+  overflow: hidden;
+}
+
+.jstack__title {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: clamp(2rem, 7vh, 4.5rem);
+  transform: translateX(-50%);
+  width: min(100% - var(--gut) * 2, 22ch);
+  text-align: center;
+  font-size: var(--t-2xl);
+  pointer-events: none;
+}
+
+/* The one red on this screen: the tally on the frame, not on the boards, so a
+   fanned stack of six does not turn into six red lights. */
+.jstack__tally {
+  position: absolute;
+  z-index: 4;
+  right: var(--gut);
+  top: clamp(2rem, 7vh, 4.5rem);
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--signal);
+  opacity: 0.35;
+}
+.jstack.is-live .jstack__tally { animation: jstack-tally 1.7s var(--e-in-out) infinite; }
+@keyframes jstack-tally { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+.jstack__pile { position: absolute; inset: 0; }
+
+.slate {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: var(--sw);
+  will-change: transform, opacity;
+}
+
+.slate__board { position: relative; padding-top: var(--stick); }
+
+/* The stick hinges at its left end, which is where a real one is pinned. */
+.slate__stick {
+  position: absolute;
+  left: 0; top: 0;
+  width: 100%;
+  height: var(--stick);
+  border-radius: 3px 3px 0 0;
+  transform-origin: 0% 100%;
+  --stripe-w: clamp(9px, 1.1vw, 13px);
+  box-shadow: 0 2px 10px -2px rgba(0, 0, 0, 0.8);
+}
+
+.slate__body {
+  background: var(--ink);
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 0 0 1px var(--line-2), 0 34px 70px -28px rgba(0, 0, 0, 0.95);
+  overflow: hidden;
+}
+.slate__bar {
+  display: block;
+  height: var(--stick);
+  --stripe-w: clamp(9px, 1.1vw, 13px);
+  opacity: 0.45;                 /* the bar under the stick reads as the shadow side */
+}
+
+.slate__face { padding: clamp(0.9rem, 1.6vw, 1.3rem); }
+.slate__t {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: var(--t-lg);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--paper);
+}
+.slate__n { color: var(--teal-tint); flex: none; }
+.slate__b {
+  margin-top: 0.5rem;
+  font-size: var(--t-sm);
+  line-height: 1.5;
+  color: var(--muted);
+}
+.slate__fields {
+  display: flex;
+  gap: clamp(0.75rem, 2vw, 1.5rem);
+  margin-top: clamp(0.75rem, 1.6vh, 1.1rem);
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+.slate__field { color: var(--faint); }
+.slate__field b { color: var(--paper); font-weight: 500; margin-inline-start: 0.5em; }
+.slate__jump { position: absolute; inset: 0; border-radius: 4px; }
+
+@media (max-width: 760px) {
+  .jstack { --sw: min(84vw, 320px); }
+  .jstack__title { font-size: var(--t-xl); top: clamp(1.5rem, 5vh, 3rem); }
+  .jstack__tally { top: clamp(1.5rem, 5vh, 3rem); }
+  .slate__t { font-size: var(--t-base); }
+  .slate__b { font-size: var(--t-xs); }
+  .slate { top: 54%; }
+}
+
+/* ---- reduced motion: six boards, sticks shut, in order ---- */
+.jstack.is-still .jstack__pin {
+  height: auto;
+  min-height: 0;
+  padding-block: var(--sec);
+  overflow: visible;
+}
+.jstack.is-still .jstack__title {
+  position: static;
+  transform: none;
+  margin: 0 auto clamp(2rem, 6vh, 3.5rem);
+}
+.jstack.is-still .jstack__tally { display: none; }   /* nothing is rolling, so nothing is lit */
+.jstack.is-still .jstack__pile {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: clamp(1rem, 2.5vw, 2rem);
+  width: min(100% - var(--gut) * 2, var(--page));
+  margin-inline: auto;
+}
+.jstack.is-still .slate { position: static; width: auto; }
+.jstack.is-still .slate__jump { display: none; }

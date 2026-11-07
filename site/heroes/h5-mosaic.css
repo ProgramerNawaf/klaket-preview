@@ -1,0 +1,155 @@
+/* H5, the mosaic.
+   After aralesk.es. The viewport is a grid of production stills. On load every
+   tile turns over, and the far side of all of them together is one clapperboard:
+   each back face holds the same drawing, sized to the whole grid and shifted by
+   the tile's own column and row, so the board is cut by the grid rather than
+   drawn into it. Scroll turns the grid back into pieces.
+   Each still is drawn here, so the whole wall costs no requests. */
+
+.hero-mosaic {
+  position: relative;
+  min-height: 100svh;
+  overflow: clip;
+  isolation: isolate;
+  display: grid;
+  background: var(--bg-deep);
+
+  --cols: 6;
+  --rows: 4;
+}
+
+/* ---- the wall ---- */
+
+.hm__grid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  grid-template-rows: repeat(var(--rows), 1fr);
+  gap: 2px;
+  perspective: 1400px;
+  background: var(--ink);
+}
+
+.hm__tile {
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.hm__face,
+.hm__back {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.hm__back { transform: rotateY(180deg); background: var(--bg-deep); }
+
+.hm__face svg { width: 100%; height: 100%; }
+
+/* The back faces share one drawing: full grid size, shifted into place.
+   base.css caps every svg at max-width 100%, which would pin the drawing to one
+   tile and defeat the whole trick, so this one opts out. */
+.hm__board {
+  position: absolute;
+  max-width: none;
+  width: calc(var(--cols) * 100%);
+  height: calc(var(--rows) * 100%);
+  left: calc(var(--c) * -100%);
+  top: calc(var(--r) * -100%);
+}
+
+/* ---- the drawn stills ---- */
+
+.hm-ink    { fill: var(--ink); }
+.hm-deep   { fill: var(--bg-deep); }
+.hm-paper  { fill: var(--paper); }
+.hm-teal   { fill: var(--teal); }
+.hm-tealD  { fill: var(--teal-deep); }
+.hm-tint   { fill: var(--teal-tint); }
+.hm-signal { fill: var(--signal); }
+.hm-line   { stroke: var(--teal-tint); fill: none; stroke-width: 2; }
+.hm-rule   { fill: var(--ink); opacity: 0.32; }
+.hm-soft   { fill: var(--paper); opacity: 0.2; }
+
+/* ---- the board the tiles become ---- */
+
+.hm__board .b-body  { fill: var(--teal); }
+.hm__board .b-edge  { fill: var(--teal-deep); }
+.hm__board .b-label { fill: var(--paper); opacity: 0.55; }
+.hm__board .b-value { fill: var(--paper); }
+.hm__board .b-rule  { stroke: var(--paper); stroke-opacity: 0.3; stroke-width: 2; }
+.hm__board .b-stripe-a { fill: var(--paper); }
+.hm__board .b-stripe-b { fill: var(--ink); }
+
+/* ---- the words, which never depend on the picture behind them ---- */
+
+.hm__veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  /* Enough to hold the type against a paper tile, not so much that the board
+     the wall just became stops being visible. */
+  background:
+    radial-gradient(ellipse 70% 56% at 50% 50%, color-mix(in srgb, var(--ink) 26%, transparent) 0%, transparent 74%),
+    linear-gradient(to bottom, color-mix(in srgb, var(--ink) 52%, transparent) 0%, transparent 30%, color-mix(in srgb, var(--ink) 78%, transparent) 100%);
+}
+
+.hm__plate {
+  position: relative;
+  z-index: 2;
+  align-self: center;
+  justify-self: center;
+  width: min(100% - var(--gut) * 2, 820px);
+  padding-block: clamp(1.5rem, 4svh, 2.75rem);
+  text-align: center;
+}
+
+.hm__title {
+  font-size: clamp(2rem, 5.6vw, 4.5rem);
+  color: var(--paper);
+  text-shadow: 0 2px 30px color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+.hm__ar {
+  margin-top: clamp(0.5rem, 1.6vh, 0.9rem);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.1rem, 2.3vw, 1.8rem);
+  line-height: 1.5;
+  color: var(--teal-pale);
+}
+
+.hm__lede {
+  margin: clamp(0.9rem, 2.4vh, 1.5rem) auto 0;
+  max-width: 56ch;
+  font-size: var(--t-base);
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--paper) 78%, transparent);
+}
+
+.hm__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: clamp(1.2rem, 3vh, 2rem);
+}
+.hm__ctas .btn { --btn-bg: var(--paper); --btn-fg: var(--ink); }
+.hm__ctas .btn--ghost {
+  --btn-bg: transparent;
+  --btn-fg: color-mix(in srgb, var(--paper) 74%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--paper) 26%, transparent);
+}
+.hm__ctas .btn--ghost:hover { --btn-fg: var(--paper); }
+
+@media (max-width: 1100px) { .hero-mosaic { --cols: 4; --rows: 5; } }
+@media (max-width: 640px)  { .hero-mosaic { --cols: 3; --rows: 6; } }
+
+/* Reduced motion, and the moment before GSAP has run: the wall is already the
+   board and the words are already there. Nothing to wait for. */
+.hero-mosaic.is-still .hm__tile { transform: rotateY(180deg); }

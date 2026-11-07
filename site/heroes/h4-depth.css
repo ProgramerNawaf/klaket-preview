@@ -1,0 +1,191 @@
+/* H4, the depth cut.
+   After easyseller.it. One object, one line of type, and the whole effect is that
+   the type disappears behind the striped bar and comes back in front of the body.
+   Three layers do it: body, type, bar. The type is drawn twice, ink everywhere and
+   paper inside the board, because ink on teal is not readable and a hero that is
+   not readable is not a hero. Both copies sit in one box and inherit one set of
+   type rules, so they can never lay out differently.
+   Paper ground, teal the only accent, no signal red on this screen. */
+
+.hero-depth {
+  position: relative;
+  min-height: 100svh;
+  overflow: clip;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(0.75rem, 2.5svh, 1.75rem);
+  padding: clamp(2.5rem, 7svh, 5rem) var(--gut) clamp(2.5rem, 6svh, 4rem);
+  background: var(--bg);
+
+  /* The board's own measurements. JS replaces --cut and --body-h with the
+     measured cap line and the height that lands the board just under the type. */
+  --bw: clamp(132px, 13vw, 196px);
+  --bar-h: clamp(26px, 2.8vw, 42px);
+  --body-h: 180px;
+  --cut: 46%;
+  --bx: 58%;   /* off centre, so the type crosses the board where the board is quiet */
+}
+
+.hd__cross {
+  position: relative;
+  width: min(100%, var(--page));
+  margin-inline: auto;
+  display: grid;
+  place-items: center;
+  padding-top: clamp(5rem, 17svh, 10rem);    /* room for the streaks to rise into */
+  padding-bottom: clamp(2.75rem, 7svh, 5rem); /* only the board's overhang */
+}
+
+/* ---- the board ---- */
+
+/* Centred by layout, never by a transform: the clips are cut from offsetLeft,
+   and a transform moves the paint without moving the offset. */
+.hd__board,
+.hd__bar,
+.hd__streaks {
+  position: absolute;
+  left: calc(var(--bx) - var(--bw) / 2);
+  width: var(--bw);
+  pointer-events: none;
+}
+
+.hd__board {
+  top: var(--cut);
+  height: var(--body-h);
+  z-index: 1;
+  background: var(--teal);
+  border-radius: 0 0 3px 3px;
+}
+
+/* The fields a crew fills in, drawn flat so the board reads as a board. */
+.hd__fields {
+  position: absolute;
+  /* Low on the board, so the fields read as the board's own content rather than
+     as marks behind the headline that crosses its top. */
+  inset: auto 11% 12%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10% 9%;
+  align-content: end;
+}
+.hd__field { border-bottom: 1px solid color-mix(in srgb, var(--paper) 40%, transparent); }
+.hd__field::before {
+  content: '';
+  display: block;
+  height: 5px;
+  width: var(--fw, 60%);
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--paper) 62%, transparent);
+  margin-bottom: 7px;
+}
+.hd__field:first-child { grid-column: 1 / -1; }
+
+.hd__bar {
+  top: calc(var(--cut) - var(--bar-h));
+  height: var(--bar-h);
+  z-index: 3;
+  --stripe-w: clamp(9px, 1.1vw, 15px);
+  --stripe-a: var(--paper);
+  --stripe-b: var(--ink);
+  box-shadow: 0 2px 0 0 color-mix(in srgb, var(--ink) 24%, transparent);
+}
+
+/* ---- the streaks: the board's top edge, stretched straight up ---- */
+
+.hd__streaks {
+  top: 0;
+  height: max(0px, calc(var(--cut) - var(--bar-h)));
+  z-index: 0;
+  overflow: hidden;
+  /* A mask reads alpha and nothing else, so the colour here is only a carrier.
+     It is still a token, so no hex lives outside tokens.css. */
+  -webkit-mask-image: linear-gradient(to top, var(--ink) 0%, color-mix(in srgb, var(--ink) 50%, transparent) 38%, transparent 100%);
+  mask-image: linear-gradient(to top, var(--ink) 0%, color-mix(in srgb, var(--ink) 50%, transparent) 38%, transparent 100%);
+}
+.hd__streak {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transform-origin: 50% 100%;
+}
+
+/* ---- the type: one box, two passes ---- */
+
+.hd__type {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 18ch);
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(2.1rem, 6.4vw, 5.25rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  text-align: center;
+}
+/* Both passes take every metric from the wrapper, including the wrap rule, so
+   they can never break into different lines. */
+.hd__title,
+.hd__echo {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-wrap: balance;
+}
+.hd__title span,
+.hd__echo span { display: block; }
+.hd__title { color: var(--text); }
+.hd__echo {
+  position: absolute;
+  inset: 0;
+  color: var(--paper);
+  pointer-events: none;
+  clip-path: inset(100% 0 0 0);   /* nothing at all until JS has measured */
+}
+
+/* ---- what is said under the picture ---- */
+
+.hd__foot {
+  position: relative;
+  z-index: 4;
+  width: min(100%, var(--page));
+  margin-inline: auto;
+  display: grid;
+  gap: clamp(0.9rem, 2.4vh, 1.4rem);
+  justify-items: center;
+  text-align: center;
+}
+
+.hd__ar {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.15rem, 2.4vw, 1.75rem);
+  line-height: 1.5;
+  color: var(--accent);
+}
+
+.hd__lede {
+  max-width: 58ch;
+  font-size: var(--t-base);
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.hd__ctas { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.75rem; }
+
+/* Narrow: the board shrinks, the streaks shorten, and the type gets the full
+   width so each half of the headline still holds one line. */
+@media (max-width: 680px) {
+  .hero-depth {
+    --bw: clamp(84px, 23vw, 128px);
+    --bar-h: clamp(18px, 4.4vw, 26px);
+    --bx: 60%;
+  }
+  .hd__cross { padding-top: clamp(3.25rem, 12svh, 5.5rem); padding-bottom: clamp(2rem, 6svh, 3.5rem); }
+  .hd__type { width: 100%; }
+}
+
+@media (max-height: 700px) {
+  .hd__cross { padding-top: clamp(2.75rem, 11svh, 6rem); }
+}
