@@ -20,10 +20,26 @@
     };
   }
 
+  /* The apps themselves, drawn as their own marks rather than as emoji. The
+     point of the pile is that a crew recognises every one of these at a
+     glance, and a system emoji renders differently on every machine. Keyed by
+     the app name in the data, so a channel without a real app (a sticky note,
+     a stack of prints) falls back to its emoji. */
+  const LOGO = {
+    WhatsApp: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#25D366"/><path fill="#fff" d="M12.02 5.6a6.4 6.4 0 0 0-5.47 9.72l-.83 3.04 3.13-.82a6.4 6.4 0 1 0 3.17-11.94zm0 1.5a4.9 4.9 0 1 1-2.49 9.12l-.3-.18-1.57.41.42-1.54-.2-.31A4.9 4.9 0 0 1 12.02 7.1z"/><path fill="#fff" d="M9.93 9.36c-.13-.3-.27-.31-.4-.31h-.35c-.12 0-.31.04-.47.22-.16.18-.62.6-.62 1.46 0 .87.64 1.7.72 1.82.09.12 1.24 1.98 3.05 2.7 1.5.59 1.81.47 2.14.44.32-.03 1.04-.42 1.19-.84.15-.42.15-.77.1-.85-.04-.07-.16-.11-.34-.2-.18-.09-1.04-.51-1.2-.57-.17-.06-.29-.09-.4.09-.12.18-.46.57-.57.69-.1.12-.2.13-.38.04a4.85 4.85 0 0 1-1.43-.88 5.4 5.4 0 0 1-1-1.24c-.1-.18-.01-.28.08-.36.08-.09.18-.22.27-.32.08-.11.11-.18.17-.3.06-.12.03-.23-.02-.32-.04-.09-.39-.97-.54-1.32z"/></svg>`,
+    Gmail: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#fff"/><path fill="#4285F4" d="M3.4 18.2h2.9v-7.1L3.4 8.9z"/><path fill="#34A853" d="M17.7 18.2h2.9V8.9l-2.9 2.2z"/><path fill="#FBBC04" d="M6.3 11.1v7.1h11.4v-7.1L12 15.4z"/><path fill="#EA4335" d="M3.4 8.9 12 15.4l8.6-6.5V7.4c0-1-1.2-1.6-2-1l-6.6 5-6.6-5c-.8-.6-2 0-2 1z"/></svg>`,
+    Excel: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#107C41"/><path fill="#fff" d="M8.1 6.9h2.7l1.2 2.5 1.2-2.5h2.7l-2.6 5 2.7 5.1h-2.7L12 14.4l-1.3 2.6H8l2.7-5.1z"/></svg>`,
+    PDF: `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#F3EFE6" d="M6 2.4h8.2L19.6 8v13.1c0 .8-.7 1.5-1.5 1.5H6c-.8 0-1.5-.7-1.5-1.5V3.9c0-.8.7-1.5 1.5-1.5z"/><path fill="#CFC7B6" d="M14.2 2.4 19.6 8h-5.4z"/><rect x="2.7" y="12.4" width="14.4" height="6.7" rx="1.6" fill="#E2231A"/><text x="9.9" y="17.2" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="5" font-weight="700" fill="#fff">PDF</text></svg>`,
+    'Missed call': `<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#34C759"/><path fill="#fff" d="M9.1 6.6c-.4-.5-1.1-.6-1.6-.2l-1.2 1c-.6.5-.8 1.3-.6 2a13.2 13.2 0 0 0 8.9 8.9c.7.2 1.5 0 2-.6l1-1.2c.4-.5.3-1.2-.2-1.6l-2.3-1.7c-.4-.3-1-.3-1.4.1l-.9.9a9.9 9.9 0 0 1-3.2-3.2l.9-.9c.4-.4.4-1 .1-1.4z"/></svg>`,
+    'Voice note': `<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#141416"/><rect x=".5" y=".5" width="23" height="23" rx="5.5" fill="none" stroke="rgba(246,235,217,.22)"/><rect x="10.4" y="5.2" width="3.2" height="8.2" rx="1.6" fill="#FF3B30"/><path fill="none" stroke="#FF3B30" stroke-width="1.5" stroke-linecap="round" d="M7.6 11.6a4.4 4.4 0 0 0 8.8 0M12 16v2.6"/></svg>`,
+    'Sticky note': `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#E2231A" d="M13.8 2.9 21 10.1l-1.7 1.7a2.6 2.6 0 0 1-2.8.6l-3.2 3.2-1.5 4.4-1.6-1.6-3.1 3.1-1-1 3.1-3.1-1.6-1.6 4.4-1.5 3.2-3.2a2.6 2.6 0 0 1 .6-2.8z"/></svg>`,
+    Printed: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#4A4A4A"/><path fill="#F3EFE6" d="M8 4.6h8v3.2H8z"/><rect x="4.4" y="8.6" width="15.2" height="7.2" rx="1.6" fill="#D9D4C8"/><circle cx="17" cy="11.2" r=".9" fill="#34C759"/><path fill="#F3EFE6" d="M8 13.4h8v6H8z"/><path stroke="#A9A295" stroke-width=".9" stroke-linecap="round" d="M9.6 15.4h4.8M9.6 17.2h3.2"/></svg>`,
+  };
+
   function cardHTML(c, note) {
     return `<div class="vm__card${note ? ' vm__card--note' : ''}">
       <div class="vm__top">
-        <span class="vm__icon" aria-hidden="true">${c.icon}</span>
+        <span class="vm__icon" aria-hidden="true">${LOGO[c.app] || c.icon}</span>
         <span class="vm__app">${c.app}</span>
         <span class="vm__time">${c.time}</span>
       </div>
@@ -123,12 +139,21 @@
 
     /* Lay the pile out badly on purpose, around the words rather than over them. */
     const rnd = seeded(20261108);
-    const spots = [[6, 12], [62, 8], [20, 62], [68, 58], [2, 36], [78, 30], [40, 4], [44, 74]];
+    /* Left values stay under SPOT_MAX: a card is about a fifth of the pin wide,
+       and a spot past that pushes it off the right edge instead of into the
+       pile. On a narrow screen a card is nearly half the pin, so the whole
+       spread is squeezed by how much room a card actually leaves, rather than
+       clamped, which would stack the right-hand cards on one another. */
+    const SPOT_MAX = 69;
+    const spots = [[4, 12], [58, 13], [14, 60], [62, 55], [4, 35], [SPOT_MAX, 34], [36, 7], [40, 73]];
+    const pinW = pin.offsetWidth || window.innerWidth;
+    const room = 100 - (cards[0].offsetWidth / pinW) * 100 - 3;
+    const squeeze = Math.min(1, room / SPOT_MAX);
     cards.forEach((c, i) => {
       const [sx, sy] = spots[i % spots.length];
       g.set(c, {
-        left: (sx + (rnd() - 0.5) * 7) + '%',
-        top: (sy + (rnd() - 0.5) * 9) + '%',
+        left: Math.min(room, Math.max(0, sx * squeeze + (rnd() - 0.5) * 5)) + '%',
+        top: (sy + (rnd() - 0.5) * 7) + '%',
         rotation: (rnd() - 0.5) * 22,
         zIndex: Math.floor(rnd() * 8),
       });

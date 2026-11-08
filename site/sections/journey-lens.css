@@ -146,11 +146,72 @@
 }
 .jlens__step.is-on .jlens__step-b { opacity: 1; }
 
+/* ---- the scene beside each step --------------------------------------
+   The landing is the same window it always was; what is new is that each step
+   has its drawing next to it, and the drawing assembles when the step is
+   arrived at. The scenes are the strip's, so there is one set of them, and all
+   six are drawn once and crossfaded: nothing is built or measured while the
+   scroll is being scrubbed. */
+.jlens__ui--scenic .jlens__scenes {
+  position: absolute;
+  top: clamp(0.9rem, 2.2vh, 1.6rem);
+  inset-inline: auto clamp(0.9rem, 2.2vh, 1.6rem);
+  width: calc(46% - clamp(1.8rem, 4.4vh, 3.2rem));
+  aspect-ratio: 3 / 2;
+}
+.jlens__scene {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.4s var(--e-out), transform 0.6s var(--e-out);
+}
+.jlens__scene.is-on { opacity: 1; transform: none; }
+.jlens__scene svg { display: block; width: 100%; height: 100%; border-radius: var(--r-sm); }
+
+/* The parts arrive in order, so the picture builds rather than appears. The
+   ground is exempt: fading that in is a flash, not an assembly. */
+.jlens__scene svg > *:not(.f-deep) { opacity: 0; transition: opacity 0.4s var(--e-out); }
+.jlens__scene.is-on svg > *:not(.f-deep) { opacity: 1; }
+.jlens__scene.is-on svg > *:nth-child(2)  { transition-delay: 0.06s; }
+.jlens__scene.is-on svg > *:nth-child(3)  { transition-delay: 0.12s; }
+.jlens__scene.is-on svg > *:nth-child(4)  { transition-delay: 0.18s; }
+.jlens__scene.is-on svg > *:nth-child(5)  { transition-delay: 0.24s; }
+.jlens__scene.is-on svg > *:nth-child(6)  { transition-delay: 0.30s; }
+.jlens__scene.is-on svg > *:nth-child(7)  { transition-delay: 0.36s; }
+.jlens__scene.is-on svg > *:nth-child(8)  { transition-delay: 0.42s; }
+.jlens__scene.is-on svg > *:nth-child(n+9) { transition-delay: 0.48s; }
+
+/* Two fills the strip's drawings use that the lens had no name for. */
+.jlens .f-mid { fill: var(--teal); }
+.jlens .f-mid-2 { fill: var(--teal-deep); }
+:root[data-brand='mono'] .jlens .f-mid { fill: var(--muted); }
+:root[data-brand='mono'] .jlens .f-mid-2 { fill: var(--faint); }
+
+/* With a picture in the upper half, the body sits under it rather than in the
+   middle of a column that is no longer empty. */
+.jlens__ui--scenic .jlens__step-b {
+  top: auto;
+  transform: none;
+  bottom: clamp(0.9rem, 2.2vh, 1.6rem);
+}
+
 @media (max-width: 860px) {
   .jlens__title { font-size: var(--t-xl); top: clamp(1.5rem, 6vh, 3rem); }
   .jlens__ui { height: min(76%, 560px); }
   .jlens__panel { padding: 0.9rem; }
   .jlens__steps { width: 100%; height: auto; flex: none; }
+  .jlens__ui--scenic .jlens__panel { display: flex; flex-direction: column; gap: 0.6rem; }
+  .jlens__ui--scenic .jlens__scenes {
+    position: relative;
+    inset: auto;
+    order: -1;
+    flex: none;
+    width: 100%;
+    aspect-ratio: 16 / 6;
+  }
+  .jlens__ui--scenic .jlens__steps { flex: 1; min-height: 0; }
   .jlens__step { min-height: 2.6rem; }
   .jlens__step-t { padding: 0.35rem 0.55rem; }
   .jlens__step-t { font-size: var(--t-xs); font-family: var(--body); text-transform: none; letter-spacing: -0.01em; }
@@ -187,6 +248,17 @@
   pointer-events: auto;
   box-shadow: 0 0 0 1px var(--line);
 }
+.jlens.is-still .jlens__scenes {
+  position: static;
+  inset: auto;
+  width: min(100% - var(--gut) * 2, var(--page));
+  aspect-ratio: auto;
+  margin: clamp(1rem, 3vh, 2rem) auto 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+}
+.jlens.is-still .jlens__scene { position: static; inset: auto; opacity: 1; transform: none; }
 .jlens.is-still .jlens__steps { width: 100%; height: auto; gap: 1px; }
 .jlens.is-still .jlens__step {
   display: block;

@@ -44,7 +44,7 @@ window.KLDATA = {
     mess: {
       channels: [
         { icon: '💬', app: 'WhatsApp',   who: 'Line Producer', time: '23:41',     body: 'Location moved to the north gate. Tell the camera team.' },
-        { icon: '✉️', app: 'Email',      who: 'Client',        time: '08:02',     body: 'Approved the treatment, but scene 4 is out. Latest deck attached (v7-FINAL-2).' },
+        { icon: '✉️', app: 'Gmail',      who: 'Client',        time: '08:02',     body: 'Approved the treatment, but scene 4 is out. Latest deck attached (v7-FINAL-2).' },
         { icon: '📊', app: 'Excel',      who: 'schedule_v11.xlsx', time: 'Yesterday', body: 'Day 2, 6 scenes, 14 crew, call 05:30. Last edited by someone.' },
         { icon: '📄', app: 'PDF',        who: 'callsheet_FINAL.pdf', time: 'Mon',  body: 'Printed before the location changed.' },
         { icon: '📞', app: 'Missed call', who: 'Director',     time: '23:58',     body: 'Twice. No voicemail.' },

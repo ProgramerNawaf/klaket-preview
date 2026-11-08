@@ -30,30 +30,33 @@
 .vm__pile { position: absolute; inset: 0; z-index: 2; }
 .vm__card {
   position: absolute;
-  width: clamp(190px, 21vw, 268px);
+  width: clamp(236px, 25vw, 320px);
   background: var(--surface);
-  border-radius: 12px;
-  padding: .7rem .8rem .8rem;
+  border-radius: 14px;
+  padding: .85rem .95rem .95rem;
   box-shadow: 0 1px 0 0 rgba(246,235,217,.07) inset, 0 22px 50px -22px rgba(0,0,0,.9);
   will-change: transform, opacity;
 }
-.vm__top { display: flex; align-items: center; gap: .45rem; margin-bottom: .45rem; }
-.vm__icon { font-size: 1rem; line-height: 1; filter: saturate(.85); }
-.vm__app { font-family: var(--mono); font-size: .625rem; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
-.vm__time { margin-inline-start: auto; font-size: .625rem; color: var(--faint); font-family: var(--mono); }
-.vm__who { font-weight: 600; font-size: .8125rem; margin-bottom: .15rem; }
-.vm__body { font-size: .78rem; color: var(--muted); line-height: 1.45; }
+.vm__top { display: flex; align-items: center; gap: .55rem; margin-bottom: .55rem; }
+/* The app's own mark, at the size a phone draws it. No desaturation: the
+   whole point of the pile is that the crew recognises every logo in it. */
+.vm__icon { flex: none; width: 1.55rem; height: 1.55rem; line-height: 0; }
+.vm__icon svg { display: block; width: 100%; height: 100%; }
+.vm__app { font-family: var(--mono); font-size: .6875rem; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.vm__time { margin-inline-start: auto; font-size: .6875rem; color: var(--faint); font-family: var(--mono); }
+.vm__who { font-weight: 600; font-size: .9375rem; margin-bottom: .2rem; }
+.vm__body { font-size: .875rem; color: var(--muted); line-height: 1.5; }
 
 .vm__card--note {
   background: #E8D9A8;
   color: var(--ink);
-  width: clamp(130px, 13vw, 172px);
+  width: clamp(158px, 16vw, 208px);
   border-radius: 2px;
   box-shadow: 0 16px 34px -16px rgba(0,0,0,.85);
 }
 .vm__card--note .vm__app, .vm__card--note .vm__time { color: rgba(18,18,18,.5); }
-.vm__card--note .vm__who { color: rgba(18,18,18,.75); font-size: .7rem; }
-.vm__card--note .vm__body { color: var(--ink); font-family: var(--mono); font-size: .8rem; }
+.vm__card--note .vm__who { color: rgba(18,18,18,.75); font-size: .8rem; }
+.vm__card--note .vm__body { color: var(--ink); font-family: var(--mono); font-size: .9rem; }
 
 /* ---- the paper that keeps falling ---- */
 .vm__fall { position: absolute; inset: -12% 0 -12% 0; z-index: 1; pointer-events: none; }
@@ -120,16 +123,18 @@
 @media (max-width: 900px) { .vm__world--kept .vm__head { top: 9%; } }
 @media (max-height: 680px) { .vm__world--kept .vm__head { top: 6%; } }
 @media (max-width: 760px) {
-  .vm__card { width: clamp(150px, 46vw, 210px); padding: .55rem .6rem .65rem; }
-  .vm__card--note { width: clamp(110px, 32vw, 140px); }
-  .vm__body { font-size: .72rem; }
+  .vm__card { width: clamp(168px, 50vw, 232px); padding: .65rem .7rem .75rem; }
+  .vm__card--note { width: clamp(128px, 36vw, 164px); }
+  .vm__icon { width: 1.3rem; height: 1.3rem; }
+  .vm__who { font-size: .85rem; }
+  .vm__body { font-size: .8rem; }
 }
 
 /* Reduced motion keeps the argument and drops the choreography. */
 .vmess.is-still .vm__pin { height: auto; padding-block: var(--sec); --x: 0%; }
 .vmess.is-still .vm__world { position: static; clip-path: none; }
 .vmess.is-still .vm__fall, .vmess.is-still .vm__bar, .vmess.is-still .vm__flash { display: none; }
-.vmess.is-still .vm__pile { position: static; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.vmess.is-still .vm__pile { position: static; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .vmess.is-still .vm__card { position: static; width: auto; }
 .vmess.is-still .vm__head { position: static; transform: none; margin-block: 2rem; }
 

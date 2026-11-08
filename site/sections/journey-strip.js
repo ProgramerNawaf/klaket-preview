@@ -107,6 +107,11 @@
       <path d="M212 24 L226 38 L252 12" class="s-tint" stroke-width="5"/>`,
   ];
 
+  /* The lens lands on these too, so they are published rather than copied.
+     A page that wants them includes this file; with no .jstrip on it the
+     build below returns and only the drawings are left behind. */
+  window.KLJOURNEY = Object.assign(window.KLJOURNEY || {}, { STILLS: STILLS });
+
   function build() {
     const root = document.querySelector('.jstrip');
     const D = window.KLDATA;

@@ -47,6 +47,15 @@ function page(row, i) {
   const heroPaper = pick.heroes.paper ? ' on-paper' : '';
   /* A hero can ask for a variation of itself rather than a whole second file. */
   const heroAttrs = pick.heroes.attrs ? ' ' + pick.heroes.attrs : '';
+  /* So can a journey, but per variant rather than per module: several variants
+     share one journey file and only one of them may want the variation. */
+  const journeyAttrs = opts.journeyAttrs ? ' ' + opts.journeyAttrs : '';
+  /* A variant can pull in a file none of its five slots name, for the case
+     where one section borrows a drawing or a helper from another. Listed in
+     load order and emitted before the slot scripts, which is what a section
+     publishing something for a later one needs. */
+  const extraJs = (opts.js || []).map((f) => ({ src: `../${f}`, mod: isModule(f) }));
+  (opts.js || []).forEach((f) => { if (!exists(f)) missing.push(f); });
   const desc = 'Klaket is the production platform for film crews. Brief, script breakdown, scheduling, call sheets and wrap, in one place the whole crew understands.';
 
   const html = `<!doctype html>
@@ -84,7 +93,7 @@ ${css.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
 <main id="main">
   <section class="${pick.heroes.root}${heroPaper}" id="top"${heroAttrs}></section>${strip}
   <section class="${pick.value.root}" id="value"></section>
-  <section class="${pick.journey.root}" id="journey"></section>
+  <section class="${pick.journey.root}" id="journey"${journeyAttrs}></section>
   <section class="${pick.features.root} section" id="features"></section>
   <section class="faq section" id="faq"></section>${strip}
 </main>
@@ -100,7 +109,7 @@ ${css.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
 <script src="../core/companies.js"></script>
 <script src="../core/faq.js"></script>
 <script src="../core/theme.js"></script>
-${js.map((s) => `<script${s.mod ? ' type="module"' : ''} src="${s.src}"></script>`).join('\n')}
+${[...extraJs, ...js].map((s) => `<script${s.mod ? ' type="module"' : ''} src="${s.src}"></script>`).join('\n')}
 </body>
 </html>
 `;

@@ -11,6 +11,8 @@
   const ZOOM_END = 0.52;   // share of the scroll spent getting through the glass
   const STEP_FROM = 0.55;
   const SPAN = (0.985 - STEP_FROM) / 6;
+  const SCREENS = 6.4;     // how long the pin holds, in screens of scroll
+
 
   const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
@@ -167,6 +169,44 @@
     <circle cx="800" cy="450" r="430" class="s-tint" stroke-width="5" opacity=".55"/>
     <g class="jlens__blades">${blades(190)}</g>`);
 
+  /* ---- the same glass, with something in it to fly past ----------------
+     The band between the pupil and the edge of the element is 240 units of
+     flat teal, and a flat field scaled up shows no motion whatsoever: for the
+     length of the push into the glass the only thing that moved was the pupil,
+     which is why the push did not read as a push. These rings are the coating,
+     and they are what the eye measures the movement against. Faint, and spaced
+     unevenly, so they read as a lens and not as a target. */
+  function coating() {
+    const rs = [412, 384, 352, 316, 286, 252, 224];
+    const ring = (r, i) => `<circle cx="800" cy="450" r="${r}" class="s-tint" stroke-width="${i % 2 ? 2 : 3.5}" opacity="${(0.1 + (i % 3) * 0.05).toFixed(2)}"/>`;
+    /* Two speculars, off-axis and on opposite sides, so the glass is lit from
+       somewhere rather than evenly filled. */
+    const arc = (r, a0, a1, w, o) =>
+      `<path d="M${(800 + Math.cos(a0) * r).toFixed(1)} ${(450 + Math.sin(a0) * r).toFixed(1)}
+        A ${r} ${r} 0 0 1 ${(800 + Math.cos(a1) * r).toFixed(1)} ${(450 + Math.sin(a1) * r).toFixed(1)}"
+        class="s-tint" stroke-width="${w}" opacity="${o}"/>`;
+    return rs.map(ring).join('')
+      + arc(334, -2.55, -1.55, 10, 0.3)
+      + arc(268, 0.55, 1.5, 7, 0.2);
+  }
+
+  /* The pupil is the darkest thing on the screen and it is the thing being
+     pushed into, so it cannot be an empty hole either. Three faint rings keep
+     the middle moving until the footage covers it. */
+  function pupilRings() {
+    return [152, 118, 88]
+      .map((r, i) => `<circle cx="800" cy="450" r="${r}" class="s-tint" stroke-width="2" opacity="${(0.11 - i * 0.03).toFixed(2)}"/>`)
+      .join('');
+  }
+
+  const GLASS_RICH = svg(`
+    <rect width="1600" height="900" class="f-deepteal"/>
+    <circle cx="800" cy="450" r="430" class="f-teal"/>
+    <ellipse cx="688" cy="318" rx="196" ry="78" transform="rotate(-34 688 318)" class="f-tint o-16"/>
+    ${coating()}
+    <circle cx="800" cy="450" r="430" class="s-tint" stroke-width="5" opacity=".55"/>
+    <g class="jlens__blades">${blades(190)}${pupilRings()}</g>`);
+
   /* The value section before this one ends on the same frame this one opens on,
      so it borrows the markup rather than keeping a second drawing of the same
      camera. One source, one camera, no seam at the handover. */
@@ -181,6 +221,13 @@
     const g = window.KL && KL.gsap;
     const still = !g || KL.reduced;
 
+    /* Opt-in per page with data-scenes: glass with a coating on it to fly past,
+       and a drawn scene beside each step that assembles as it is scrolled to.
+       Only a page carrying the attribute gets it, so the six other treatments
+       that share this section are untouched. */
+    const scenic = root.hasAttribute('data-scenes');
+    const STILLS = (window.KLJOURNEY && window.KLJOURNEY.STILLS) || null;
+
     /* The row is the button when there is a scroll to drive, and plain text when
        there is not: a focusable control that cannot do anything is worse than no
        control at all. */
@@ -193,23 +240,40 @@
         <p class="jlens__step-b">${s.body}</p>
       </li>`).join('');
 
+    /* One scene per step, all six drawn once and crossfaded, so nothing is
+       built or measured while the scroll is being scrubbed. The drawings are
+       the strip's, shared rather than copied. */
+    const scenes = scenic && STILLS
+      ? `<div class="jlens__scenes" aria-hidden="true">${J.steps.map((s, i) => `
+          <figure class="jlens__scene" data-i="${i}">
+            <svg viewBox="0 0 300 200" aria-hidden="true">
+              <rect width="300" height="200" class="f-deep"/>${STILLS[i % STILLS.length]}
+            </svg>
+          </figure>`).join('')}</div>`
+      : '';
+
+    const landing = `<div class="jlens__ui${scenes ? ' jlens__ui--scenic' : ''}">
+          <div class="jlens__bar">
+            <span class="jlens__traffic" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span class="data">KLAKET</span>
+            <span class="data jlens__bar-meta" aria-hidden="true">01 / 06</span>
+          </div>
+          <div class="jlens__panel">
+            <ol class="jlens__steps">${steps}</ol>
+            ${scenes}
+          </div>
+        </div>`;
+
     root.innerHTML = `
       <div class="jlens__pin">
         <div class="jlens__well" aria-hidden="true">
           <div class="jlens__stage" data-i="0">${SET}</div>
           <div class="jlens__stage" data-i="1">${CAMERA}</div>
           <div class="jlens__stage" data-i="2">${BARREL}</div>
-          <div class="jlens__stage" data-i="3">${GLASS}</div>
+          <div class="jlens__stage" data-i="3">${scenic ? GLASS_RICH : GLASS}</div>
         </div>
         <h2 class="jlens__title" id="jlens-title">${J.title}</h2>
-        <div class="jlens__ui">
-          <div class="jlens__bar">
-            <span class="jlens__traffic" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="data">KLAKET</span>
-            <span class="data jlens__bar-meta" aria-hidden="true">01 / 06</span>
-          </div>
-          <div class="jlens__panel"><ol class="jlens__steps">${steps}</ol></div>
-        </div>
+        ${landing}
       </div>`;
 
     const stages = [...root.querySelectorAll('.jlens__stage')];
@@ -217,12 +281,15 @@
     const title = root.querySelector('.jlens__title');
     const meta = root.querySelector('.jlens__bar-meta');
     const items = [...root.querySelectorAll('.jlens__step')];
+    const sceneEls = [...root.querySelectorAll('.jlens__scene')];
     const bladeG = root.querySelector('.jlens__blades');
 
     if (still) {
-      /* Still version: the set as a drawing, then the six steps as a list. */
+      /* Still version: the set as a drawing, then the six steps as a list,
+         each with its own scene already assembled next to it. */
       root.classList.add('is-still');
       items[0].classList.add('is-on');
+      sceneEls.forEach((el) => el.classList.add('is-on'));
       return;
     }
 
@@ -235,6 +302,10 @@
         if (j === i) el.setAttribute('aria-current', 'step');
         else el.removeAttribute('aria-current');
       });
+      /* The scene is not scrubbed. It plays on arrival, in its own time, so a
+         step reached at any scroll speed assembles at the same speed, and a
+         scroll held still does not leave a drawing half built. */
+      sceneEls.forEach((el, j) => el.classList.toggle('is-on', j === i));
       meta.textContent = items[i].querySelector('.jlens__step-n').textContent + ' / 06';
     }
 
@@ -281,7 +352,7 @@
       scrollTrigger: {
         trigger: root,
         start: 'top top',
-        end: () => '+=' + window.innerHeight * 6.4,
+        end: () => '+=' + window.innerHeight * SCREENS,
         pin: root.querySelector('.jlens__pin'),
         scrub: 0.5,
         invalidateOnRefresh: true,
