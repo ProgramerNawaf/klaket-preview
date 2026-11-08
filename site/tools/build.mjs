@@ -39,6 +39,8 @@ function page(row, i) {
   });
 
   const heroPaper = pick.heroes.paper ? ' on-paper' : '';
+  /* A hero can ask for a variation of itself rather than a whole second file. */
+  const heroAttrs = pick.heroes.attrs ? ' ' + pick.heroes.attrs : '';
   const desc = 'Klaket is the production platform for film crews. Brief, script breakdown, scheduling, call sheets and wrap, in one place the whole crew understands.';
 
   const html = `<!doctype html>
@@ -74,7 +76,7 @@ ${css.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
 <nav class="island" data-dock="top" aria-label="Main"></nav>
 
 <main id="main">
-  <section class="${pick.heroes.root}${heroPaper}" id="top"></section>
+  <section class="${pick.heroes.root}${heroPaper}" id="top"${heroAttrs}></section>
   <section class="companies" aria-label="Where the team has worked"></section>
   <section class="${pick.value.root}" id="value"></section>
   <section class="${pick.journey.root}" id="journey"></section>

@@ -153,3 +153,37 @@
 /* Reduced motion, and the moment before GSAP has run: the wall is already the
    board and the words are already there. Nothing to wait for. */
 .hero-mosaic.is-still .hm__tile { transform: rotateY(180deg); }
+
+/* ---- data-clap="scroll" --------------------------------------------------
+   The wall's top bar gets a stick that shuts as you scroll out of the hero,
+   and the impact takes a single frame of white. Only this mode draws them. */
+.hm__stick {
+  position: absolute;
+  z-index: 3;
+  transform-origin: 0 100%;
+  border-radius: 3px;
+  background-color: var(--ink);
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--paper) 0 var(--stripe-w, 14px),
+    var(--ink) var(--stripe-w, 14px) calc(var(--stripe-w, 14px) * 2)
+  );
+  box-shadow: 0 10px 26px -10px rgba(0, 0, 0, .8);
+  will-change: transform;
+  pointer-events: none;
+}
+.hm__flash {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: var(--paper);
+  opacity: 0;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+/* No JS and no motion: the board is simply shut, which is the finished state. */
+.hero-mosaic.is-still .hm__stick { transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .hm__stick { transform: none !important; }
+  .hm__flash { display: none; }
+}

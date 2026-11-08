@@ -77,8 +77,10 @@
      The board is cut to the words, not to a fixed rectangle: its body is the
      headline block plus a margin, so the type always lands on teal and never on
      the stripes, at any viewport. */
-  function boardSvg(cols, rows, aspect, plate, uid) {
-    /* The viewBox carries the wall's own aspect, so nothing is stretched. */
+  /* The board's measurements, in the wall's own 1000-wide space. Shared, because
+     the stick that claps onto the bar has to land on the same pixels the bar is
+     drawn at, and two copies of this arithmetic would drift apart. */
+  function boardGeom(aspect, plate) {
     const AW = 1000;
     const AH = Math.round(AW / aspect);
     const k = AW / plate.gridW;
@@ -96,6 +98,13 @@
     const bodyTop = Math.max(barH + AH * 0.025, wanted);
     const y = bodyTop - barH;
     const bh = bodyBottom - y;
+    return { AW, AH, k, x, bw, y, bh, barH, bodyBottom };
+  }
+
+  function boardSvg(cols, rows, aspect, plate, uid) {
+    const G = boardGeom(aspect, plate);
+    const AW = G.AW, AH = G.AH, x = G.x, bw = G.bw, y = G.y, bh = G.bh;
+    const barH = G.barH, bodyBottom = G.bodyBottom;
 
     /* The 45 degree stripes, clipped to the bar. The period is capped against the
        board's width as well as the bar's height, or a tall narrow board gets
@@ -136,8 +145,13 @@
     if (!root || !D) return;
     const H = D.hero;
 
+    /* data-clap="scroll" turns the wall into a board that claps as you leave it.
+       Without it the hero behaves exactly as it always has. */
+    const CLAP = root.dataset.clap === 'scroll';
+
     root.innerHTML = `
       <div class="hm__grid" aria-hidden="true"></div>
+      ${CLAP ? '<div class="hm__stick" aria-hidden="true"></div><div class="hm__flash" aria-hidden="true"></div>' : ''}
       <div class="hm__veil" aria-hidden="true"></div>
       <div class="hm__plate">
         <h1 class="hm__title">${H.slogan}</h1>
@@ -151,6 +165,8 @@
 
     const grid = root.querySelector('.hm__grid');
     const plate = root.querySelector('.hm__plate');
+    const stick = root.querySelector('.hm__stick');
+    const flash = root.querySelector('.hm__flash');
     const g = window.KL && KL.gsap;
     const still = !g || (window.KL && KL.reduced);
 
@@ -195,6 +211,17 @@
       }
       grid.innerHTML = html;
       tiles = [...grid.children];
+
+      /* Lay the stick along the bar it has to shut onto, in grid pixels. */
+      if (stick) {
+        const G = boardGeom(aspect, box);
+        const px = (v) => (v / G.k) + 'px';
+        stick.style.left = px(G.x);
+        stick.style.width = px(G.bw);
+        stick.style.top = px(G.y);
+        stick.style.height = px(G.barH);
+        stick.style.setProperty('--stripe-w', px(Math.min(G.barH * 0.62, G.bw * 0.055)));
+      }
       return true;
     }
 
@@ -227,26 +254,52 @@
         g.set(plate, { opacity: 1, y: 0 });
       }
 
-      /* Scrolling takes the wall apart again, outward from the middle. */
+      /* Scrolling takes the wall apart again, outward from the middle. In clap
+         mode the stick shuts first and the wall only lets go on the impact, so
+         leaving the hero reads as the take starting rather than as a transition. */
+      /* The clap has to be watched, so in clap mode the hero is held while the
+         stick comes down. Without the pin the board is already leaving the
+         screen by the time it shuts and the whole point is missed. */
       tl = g.timeline({
-        scrollTrigger: { trigger: root, start: 'top top', end: 'bottom top', scrub: 0.6 },
+        scrollTrigger: CLAP
+          ? { trigger: root, start: 'top top', end: () => '+=' + window.innerHeight * 1.5,
+              pin: true, scrub: 0.6, invalidateOnRefresh: true, anticipatePin: 1 }
+          : { trigger: root, start: 'top top', end: 'bottom top', scrub: 0.6 },
       });
+
+      const SHUT = CLAP ? 0.42 : 0;
+      if (CLAP) {
+        g.set(stick, { rotation: -20, opacity: 1 });
+        g.set(flash, { opacity: 0 });
+        tl.to(stick, { rotation: 0, duration: SHUT, ease: 'power3.in' }, 0)
+          .to(flash, { opacity: 0.62, duration: 0.012, ease: 'none' }, SHUT)
+          .to(flash, { opacity: 0, duration: 0.09, ease: 'power2.out' }, SHUT + 0.012);
+      }
+
       tl.to(tiles, {
         x: (i, el) => ((+el.dataset.c) - (cols - 1) / 2) / cols * 420,
         y: (i, el) => ((+el.dataset.r) - (rows - 1) / 2) / rows * 460,
         opacity: 0.05,
         ease: 'none',
-        duration: 1,
-      }, 0);
-      tl.to(plate, { y: -60, opacity: 0, ease: 'none', duration: 0.7 }, 0);
+        duration: 1 - SHUT,
+      }, SHUT);
+      tl.to(plate, { y: -60, opacity: 0, ease: 'none', duration: 0.7 - SHUT * 0.4 }, SHUT);
     }
 
     animate(true);
 
+    /* A pin added here lengthens the page, and every trigger further down was
+       measured against the page as it was a moment ago. Without this they keep
+       their old numbers and the sections below end up with dead gaps in them. */
+    function remeasure() {
+      if (CLAP) requestAnimationFrame(() => KL.ScrollTrigger.refresh());
+    }
+    remeasure();
+
     /* The display face changes how wide the words are, and the board is cut to
        the words, so the wall is cut again once the face has landed. */
     if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => { if (wall()) animate(true); });
+      document.fonts.ready.then(() => { if (wall()) animate(true); remeasure(); });
     }
 
     /* A rebuild has to replace the tiles the timelines were holding. */

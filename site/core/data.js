@@ -37,6 +37,25 @@ window.KLDATA = {
       { app: 'PDF',      who: 'callsheet_FINAL.pdf', time: 'Mon', body: 'Printed before the location changed.' },
     ],
     resolved: { app: 'Klaket', who: 'Call sheet · Day 2', time: 'Now', body: 'North gate. Call 05:30. Sent to 14 crew, read by 14.' },
+
+    /* The messy reading of the same argument. Eight channels rather than four,
+       each with the icon people actually recognise it by, plus the scraps of
+       paper a production leaves behind. */
+    mess: {
+      channels: [
+        { icon: '💬', app: 'WhatsApp',   who: 'Line Producer', time: '23:41',     body: 'Location moved to the north gate. Tell the camera team.' },
+        { icon: '✉️', app: 'Email',      who: 'Client',        time: '08:02',     body: 'Approved the treatment, but scene 4 is out. Latest deck attached (v7-FINAL-2).' },
+        { icon: '📊', app: 'Excel',      who: 'schedule_v11.xlsx', time: 'Yesterday', body: 'Day 2, 6 scenes, 14 crew, call 05:30. Last edited by someone.' },
+        { icon: '📄', app: 'PDF',        who: 'callsheet_FINAL.pdf', time: 'Mon',  body: 'Printed before the location changed.' },
+        { icon: '📞', app: 'Missed call', who: 'Director',     time: '23:58',     body: 'Twice. No voicemail.' },
+        { icon: '🎙️', app: 'Voice note', who: '1st AD',        time: '00:14',     body: '0:47. Nobody has listened to it.' },
+        { icon: '📌', app: 'Sticky note', who: 'On the monitor', time: 'Somewhere', body: 'NORTH GATE!! tell cam' },
+        { icon: '🖨️', app: 'Printed',    who: '14 copies',     time: '05:05',     body: 'All of them say the old location.' },
+      ],
+      /* What falls out of the pile while nobody is looking. */
+      scraps: ['Scene 4 is out', 'Call 05:30', 'North gate', 'v7-FINAL-2', 'Ask the AD', 'Print 14 copies', 'Day 2', 'Tell camera', 'Which version?'],
+      phases: ['SCATTERED', 'CAUGHT', 'SHOT'],
+    },
     pillars: [
       { title: 'One thread the crew already reads', body: 'The call sheet, the schedule and the brief live in the same place, in Arabic and English, and the crew gets them where they already look.' },
       { title: 'The breakdown writes itself', body: 'Drop in a script and Klaket pulls the scenes, cast, props, locations and the day count, then hands you the list to correct rather than to build.' },

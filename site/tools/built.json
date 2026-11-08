@@ -801,5 +801,40 @@
       }
     },
     "missing": []
+  },
+  {
+    "n": "25",
+    "dir": "v25-the-wall-claps-the-pile-falls-the-camera-rolls",
+    "title": "The wall claps, the pile falls, the camera rolls",
+    "pick": {
+      "heroes": {
+        "root": "hero-mosaic",
+        "file": "h5-mosaic",
+        "name": "Mosaic that claps on scroll",
+        "attrs": "data-clap=\"scroll\""
+      },
+      "value": {
+        "root": "vmess",
+        "file": "value-mess",
+        "name": "The pile, with the paper falling"
+      },
+      "journey": {
+        "root": "jlens",
+        "file": "journey-lens",
+        "name": "One continuous zoom"
+      },
+      "features": {
+        "root": "fcar",
+        "file": "features-carousel",
+        "name": "Card carousel"
+      },
+      "footer": {
+        "root": "foot",
+        "file": "footer",
+        "core": true,
+        "name": "Camera, tape, screen"
+      }
+    },
+    "missing": []
   }
 ]
