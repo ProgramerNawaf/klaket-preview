@@ -32,25 +32,22 @@
     </div>`;
   }
 
-  /* The camera the screen goes into, front on, drawn in the four colours. */
-  const CAMERA = `
-    <svg viewBox="0 0 400 300" aria-hidden="true">
-      <rect x="18" y="86" width="364" height="186" rx="16" fill="var(--surface)" stroke="var(--teal-tint)" stroke-width="3"/>
-      <rect x="112" y="98" width="176" height="162" rx="10" fill="var(--bg-deep)" stroke="var(--teal-tint)" stroke-width="3"/>
-      <circle cx="200" cy="179" r="66" fill="none" stroke="var(--muted)" stroke-width="2.5" opacity=".55"/>
-      <circle cx="200" cy="179" r="48" fill="none" stroke="var(--muted)" stroke-width="2" opacity=".4"/>
-      <circle cx="200" cy="179" r="30" fill="var(--teal-deep)"/>
-      <circle cx="200" cy="179" r="14" fill="var(--teal)"/>
-      <circle cx="188" cy="166" r="5" fill="var(--teal-tint)" opacity=".65"/>
-      <rect x="46" y="110" width="52" height="30" rx="5" fill="var(--raised)"/>
-      <rect x="46" y="158" width="24" height="24" rx="5" fill="var(--raised)"/>
-      <rect x="78" y="158" width="24" height="24" rx="5" fill="var(--raised)"/>
-      <rect x="304" y="196" width="60" height="22" rx="8" fill="var(--raised)"/>
-      <circle cx="334" cy="134" r="11" fill="var(--signal)"/>
-      <rect x="96" y="48" width="112" height="14" rx="6" fill="var(--raised)"/>
-      <rect x="128" y="62" width="6" height="26" fill="var(--raised)"/>
-      <rect x="186" y="62" width="6" height="26" fill="var(--raised)"/>
-      <rect x="232" y="40" width="90" height="46" rx="9" fill="var(--raised)"/>
+  /* A camera of our own, used only when this section runs on a page without the
+     journey below it. On v25 the journey's own opening frame is borrowed
+     instead, so there is one camera rather than two that nearly match. */
+  const FALLBACK_SET = `
+    <svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <rect width="1600" height="900" class="f-deep"/>
+      <rect y="580" width="1600" height="320" class="f-ink"/>
+      <g transform="translate(800 520) scale(1.6) translate(-200 -150)">
+        <rect x="18" y="86" width="364" height="186" rx="16" class="f-surf"/>
+        <rect x="18" y="86" width="364" height="186" rx="16" class="s-tint" stroke-width="3"/>
+        <rect x="112" y="98" width="176" height="162" rx="10" class="f-deep"/>
+        <circle cx="200" cy="179" r="48" class="s-faint" stroke-width="2"/>
+        <circle cx="200" cy="179" r="30" class="f-deepteal"/>
+        <circle cx="200" cy="179" r="14" class="f-teal"/>
+        <circle cx="334" cy="134" r="11" class="f-signal"/>
+      </g>
     </svg>`;
 
   function build() {
@@ -76,7 +73,15 @@
         </div>
 
         <div class="vm__world vm__world--kept">
-          <div class="vm__cam" aria-hidden="true">${CAMERA}</div>
+          <div class="vm__frame" aria-hidden="true"><div class="vm__frame-in">${
+            (window.KLJOURNEY && window.KLJOURNEY.SET) || FALLBACK_SET
+          }${
+            /* The journey's opening frame is its set with its camera stage
+               nested dead centre at a fifth, so the frame is reproduced the
+               same way rather than approximated with the set alone. */
+            window.KLJOURNEY && window.KLJOURNEY.CAMERA
+              ? `<div class="vm__frame-cam">${window.KLJOURNEY.CAMERA}</div>` : ''
+          }</div></div>
           <p class="vm__head">
             <span class="vm__line">${V.answer[0]}</span>
             <span class="vm__line">${V.answer[1]}</span>
@@ -95,7 +100,8 @@
     const pin = root.querySelector('.vm__pin');
     const cards = [...root.querySelectorAll('.vm__pile .vm__card')];
     const scraps = [...root.querySelectorAll('.vm__scrap')];
-    const cam = root.querySelector('.vm__cam');
+    const frame = root.querySelector('.vm__frame');
+    const frameIn = root.querySelector('.vm__frame-in');
     const keptHead = root.querySelector('.vm__world--kept .vm__head');
     const flash = root.querySelector('.vm__flash');
     const phases = [...root.querySelectorAll('.vm__phase')];
@@ -130,12 +136,18 @@
       });
     });
 
-    /* One proxy drives the edge, and the clips follow it. */
-    const edge = { x: 112 };
-    const setEdge = () => pin.style.setProperty('--x', edge.x + '%');
-    setEdge();
+    /* The edge and the window are both derived from scroll progress rather than
+       driven by proxy tweens. A pinned element's inline styles can be restored
+       on a refresh, which silently puts the edge back to its CSS default and
+       leaves the mess covering the answer. Deriving them means any scroll
+       position, including one jumped straight to, paints the right frame. */
+    const EDGE_FROM = 0.3, EDGE_TO = 0.68;
+    const WIN_FROM = 0.8, WIN_TO = 1.0;
+    const clamp01 = (n) => Math.min(1, Math.max(0, n));
+    /* The same shape as power2.inOut, written out so it needs no tween. */
+    const inOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
-    g.set(cam, { scale: 0.84, opacity: 0 });
+
 
     const tl = g.timeline({
       scrollTrigger: {
@@ -147,9 +159,11 @@
         invalidateOnRefresh: true,
         onUpdate: (self) => {
           const p = self.progress;
+          paint(p);
           const i = p < 0.3 ? 0 : p < 0.68 ? 1 : 2;
           phases.forEach((el, j) => el.classList.toggle('is-on', j === i));
         },
+        onRefresh: (self) => paint(self.progress),
       },
     });
 
@@ -162,24 +176,47 @@
       duration: 0.3,
     }, 0);
 
-    /* The edge crosses, right to left. */
-    tl.fromTo(edge, { x: 112 }, { x: -9, ease: 'none', duration: 0.38, onUpdate: setEdge }, 0.3);
-
     /* A single frame of white as the edge passes the middle of the screen. */
     tl.to(flash, { opacity: 0.6, duration: 0.01, ease: 'none' }, 0.49)
       .to(flash, { opacity: 0, duration: 0.07, ease: 'power2.out' }, 0.5);
 
-    /* The answer settles, the camera comes up under it, then the screen goes
-       into the lens. The words leave first so nothing is left to read through. */
-    tl.fromTo(cam, { scale: 0.84, opacity: 0 },
-      { scale: 1, opacity: 1, duration: 0.12, ease: 'power3.out' }, 0.58)
-      .to(keptHead, { opacity: 0, y: -22, duration: 0.09, ease: 'power2.in' }, 0.76)
-      /* Scaled about the lens, which is already on the middle of the screen, so
-         this is a push in rather than a thing growing in a corner. */
-      .to(cam, { scale: 7.5, duration: 0.2, ease: 'power2.in' }, 0.8)
-      /* The phase row has said what it had to say, and the camera is coming up
-         through where it sits. */
-      .to(phaseRow, { opacity: 0, duration: 0.07, ease: 'power2.in' }, 0.74);
+    /* The window onto the journey's frame. It opens from a small rectangle held
+       on the camera at the middle of that frame to the whole screen, while the
+       drawing scales back to 1. The last frame of this section is therefore the
+       first frame of the next one, and there is nothing to cut between them. */
+    const FRAME_W = () => Math.min(pin.offsetWidth * 0.62, 460);
+    const FRAME_H = () => FRAME_W() * 0.62;
+    /* The camera is a fifth of the borrowed frame, so to sit it inside a window
+       of FRAME_W the drawing has to be scaled by that window's share of a fifth.
+       At the end both the window and the scale reach their own 1, which is the
+       frame the journey opens on. */
+    const START_S = () => Math.max(1, 5 * FRAME_W() / pin.offsetWidth);
+
+    function paint(p) {
+      const ex = 112 + (-9 - 112) * clamp01((p - EDGE_FROM) / (EDGE_TO - EDGE_FROM));
+      pin.style.setProperty('--x', ex + '%');
+
+      /* The words and the phase row are faded here for the same reason: a
+         scrubbed tween's inline opacity can be restored on a refresh and leave
+         them ghosting over the frame. */
+      keptHead.style.opacity = String(1 - clamp01((p - 0.78) / 0.09));
+      phaseRow.style.opacity = String(1 - clamp01((p - 0.74) / 0.07));
+
+      const t = 1 - inOut(clamp01((p - WIN_FROM) / (WIN_TO - WIN_FROM)));
+      const w = pin.offsetWidth, h = pin.offsetHeight;
+      const ix = Math.max(0, (w - FRAME_W()) / 2) * t;
+      const iy = Math.max(0, (h - FRAME_H()) / 2) * t;
+      frame.style.clipPath = `inset(${iy}px ${ix}px round ${(14 * t).toFixed(1)}px)`;
+      frameIn.style.transform = `scale(${(1 + (START_S() - 1) * t).toFixed(4)})`;
+    }
+    paint(0);
+    window.addEventListener('resize', () => paint(tl.scrollTrigger ? tl.scrollTrigger.progress : 0));
+
+    tl.to(frame, { opacity: 1, duration: 0.08, ease: 'power2.out' }, 0.58)
+      .to(keptHead, { y: -22, duration: 0.09, ease: 'power2.in' }, 0.78)
+      /* The window opens and the drawing lets go at the same rate, so the
+         camera never appears to move: the frame around it just leaves. */
+      ;
 
     window.addEventListener('pagehide', () => {
       falls.forEach((f) => f.kill());

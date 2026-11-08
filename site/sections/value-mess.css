@@ -94,19 +94,49 @@
   opacity: .82;
 }
 
-/* ---- the camera the screen goes into ----
-   The lens sits 60% down the drawing, so the camera is placed and scaled about
-   that point. Put the lens on the middle of the screen and a plain scale reads
-   as going into it, with no travel to disguise. */
-.vm__cam {
-  position: absolute; z-index: 3;
-  left: 50%; top: 50%;
-  width: clamp(170px, 21vw, 300px);
-  translate: -50% -60%;
-  transform-origin: 50% 60%;
-  will-change: transform, opacity;
+/* ---- the frame the screen opens into ----
+   This is the journey's own opening frame, borrowed whole. It starts as a small
+   window held on the camera at the middle of that frame, and opens to full
+   bleed while the drawing scales back to 1. At the end it is pixel for pixel
+   the frame the journey begins on, so the two sections share one camera and
+   there is nothing to cut between them. */
+.vm__frame {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  will-change: clip-path;
+  opacity: 0;
 }
-.vm__cam svg { width: 100%; height: auto; display: block; }
+.vm__frame-in {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+.vm__frame svg { width: 100%; height: 100%; display: block; }
+/* A fifth, dead centre: the hole the set leaves for it. */
+.vm__frame-cam {
+  position: absolute;
+  inset: 0;
+  transform: scale(0.2);
+  transform-origin: 50% 50%;
+}
+
+/* The borrowed markup paints itself with these class names, so the same
+   vocabulary has to exist here. Same tokens, different section. */
+.vmess .f-deep { fill: var(--bg-deep); }
+.vmess .f-ink { fill: var(--ink); }
+.vmess .f-surf { fill: var(--surface); }
+.vmess .f-raised { fill: var(--raised); }
+.vmess .f-paper { fill: var(--paper); }
+.vmess .f-teal { fill: var(--teal); }
+.vmess .f-deepteal { fill: var(--teal-deep); }
+.vmess .f-tint { fill: var(--teal-tint); }
+.vmess .f-signal { fill: var(--signal); }
+.vmess .s-tint { fill: none; stroke: var(--teal-tint); stroke-linejoin: round; stroke-linecap: round; }
+.vmess .s-faint { fill: none; stroke: var(--line-2); }
+.vmess .o-55 { opacity: .55; }
+.vmess .o-16 { opacity: .16; }
 
 /* ---- the edge itself ---- */
 .vm__bar {
@@ -130,16 +160,8 @@
 .vm__phase.is-on { color: var(--text); }
 .vm__phase.is-on i { opacity: 1; }
 
-@media (max-width: 900px) {
-  .vm__world--kept .vm__head { top: 9%; }
-  .vm__cam { width: clamp(150px, 46vw, 250px); }
-}
-/* A short window leaves no room for both, so the words tuck up and the camera
-   gives way rather than the two landing on each other. */
-@media (max-height: 680px) {
-  .vm__world--kept .vm__head { top: 6%; }
-  .vm__cam { width: clamp(140px, 17vw, 220px); }
-}
+@media (max-width: 900px) { .vm__world--kept .vm__head { top: 9%; } }
+@media (max-height: 680px) { .vm__world--kept .vm__head { top: 6%; } }
 @media (max-width: 760px) {
   .vm__card { width: clamp(150px, 46vw, 210px); padding: .55rem .6rem .65rem; }
   .vm__card--note { width: clamp(110px, 32vw, 140px); }
@@ -149,7 +171,7 @@
 /* Reduced motion keeps the argument and drops the choreography. */
 .vmess.is-still .vm__pin { height: auto; padding-block: var(--sec); --x: 0%; }
 .vmess.is-still .vm__world { position: static; clip-path: none; }
-.vmess.is-still .vm__fall, .vmess.is-still .vm__bar, .vmess.is-still .vm__flash, .vmess.is-still .vm__cam { display: none; }
+.vmess.is-still .vm__fall, .vmess.is-still .vm__bar, .vmess.is-still .vm__flash, .vmess.is-still .vm__frame { display: none; }
 .vmess.is-still .vm__pile { position: static; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .vmess.is-still .vm__card { position: static; width: auto; }
 .vmess.is-still .vm__head { position: static; transform: none; margin-block: 2rem; }

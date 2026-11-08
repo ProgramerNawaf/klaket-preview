@@ -167,6 +167,11 @@
     <circle cx="800" cy="450" r="430" class="s-tint" stroke-width="5" opacity=".55"/>
     <g class="jlens__blades">${blades(190)}</g>`);
 
+  /* The value section before this one ends on the same frame this one opens on,
+     so it borrows the markup rather than keeping a second drawing of the same
+     camera. One source, one camera, no seam at the handover. */
+  window.KLJOURNEY = Object.assign(window.KLJOURNEY || {}, { SET: SET, CAMERA: CAMERA });
+
   function build() {
     const root = document.querySelector('.jlens');
     const D = window.KLDATA;
