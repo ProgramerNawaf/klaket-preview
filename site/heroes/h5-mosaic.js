@@ -263,7 +263,13 @@
       tl = g.timeline({
         scrollTrigger: CLAP
           ? { trigger: root, start: 'top top', end: () => '+=' + window.innerHeight * 1.5,
-              pin: true, scrub: 0.6, invalidateOnRefresh: true, anticipatePin: 1 }
+              pin: true, scrub: 0.6, invalidateOnRefresh: true, anticipatePin: 1,
+              /* This pin is rebuilt once the display face lands, which is after
+                 the sections below have already measured themselves. Without a
+                 priority they keep starts that ignore this pin's spacer and the
+                 hero ends up drawn on top of the screen after it. Higher means
+                 measured first, and this is the first thing on the page. */
+              refreshPriority: 10 }
           : { trigger: root, start: 'top top', end: 'bottom top', scrub: 0.6 },
       });
 
@@ -276,14 +282,24 @@
           .to(flash, { opacity: 0, duration: 0.09, ease: 'power2.out' }, SHUT + 0.012);
       }
 
-      tl.to(tiles, {
-        x: (i, el) => ((+el.dataset.c) - (cols - 1) / 2) / cols * 420,
-        y: (i, el) => ((+el.dataset.r) - (rows - 1) / 2) / rows * 460,
-        opacity: 0.05,
-        ease: 'none',
-        duration: 1 - SHUT,
-      }, SHUT);
-      tl.to(plate, { y: -60, opacity: 0, ease: 'none', duration: 0.7 - SHUT * 0.4 }, SHUT);
+      if (CLAP) {
+        /* Once the board has shut there is nothing left to say here, so the
+           hero just goes dark and scrolls away. Flinging the wall apart on the
+           way out fights the screen underneath, which is already waiting. */
+        /* Gone, not faint. The screen underneath is already there, and a hero
+           left at eight percent reads as two pages printed on top of each other. */
+        const OUT = (1 - SHUT) * 0.62;
+        tl.to([grid, plate, stick], { opacity: 0, ease: 'power2.in', duration: OUT }, SHUT);
+      } else {
+        tl.to(tiles, {
+          x: (i, el) => ((+el.dataset.c) - (cols - 1) / 2) / cols * 420,
+          y: (i, el) => ((+el.dataset.r) - (rows - 1) / 2) / rows * 460,
+          opacity: 0.05,
+          ease: 'none',
+          duration: 1,
+        }, 0);
+        tl.to(plate, { y: -60, opacity: 0, ease: 'none', duration: 0.7 }, 0);
+      }
     }
 
     animate(true);

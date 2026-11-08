@@ -78,6 +78,9 @@
 }
 .vm__line { display: block; font-family: var(--display); font-weight: 900; font-size: var(--t-2xl); line-height: 1.03; letter-spacing: -.03em; }
 .vm__world--kept .vm__line { color: var(--accent); }
+/* The answer sits in the upper half so the lens can hold the middle. Both are
+   centred on the same axis, so the push does not slide sideways. */
+.vm__world--kept .vm__head { top: 11%; transform: none; }
 /* The journey's own sentence, on the same screen as the answer rather than on
    a screen of its own. */
 .vm__next {
@@ -91,13 +94,16 @@
   opacity: .82;
 }
 
-/* ---- the camera the screen goes into ---- */
+/* ---- the camera the screen goes into ----
+   The lens sits 60% down the drawing, so the camera is placed and scaled about
+   that point. Put the lens on the middle of the screen and a plain scale reads
+   as going into it, with no travel to disguise. */
 .vm__cam {
   position: absolute; z-index: 3;
-  left: 50%; bottom: -4%;
-  width: clamp(230px, 30vw, 420px);
-  transform: translateX(-50%);
-  transform-origin: 50% 42%;
+  left: 50%; top: 50%;
+  width: clamp(170px, 21vw, 300px);
+  translate: -50% -60%;
+  transform-origin: 50% 60%;
   will-change: transform, opacity;
 }
 .vm__cam svg { width: 100%; height: auto; display: block; }
@@ -124,6 +130,16 @@
 .vm__phase.is-on { color: var(--text); }
 .vm__phase.is-on i { opacity: 1; }
 
+@media (max-width: 900px) {
+  .vm__world--kept .vm__head { top: 9%; }
+  .vm__cam { width: clamp(150px, 46vw, 250px); }
+}
+/* A short window leaves no room for both, so the words tuck up and the camera
+   gives way rather than the two landing on each other. */
+@media (max-height: 680px) {
+  .vm__world--kept .vm__head { top: 6%; }
+  .vm__cam { width: clamp(140px, 17vw, 220px); }
+}
 @media (max-width: 760px) {
   .vm__card { width: clamp(150px, 46vw, 210px); padding: .55rem .6rem .65rem; }
   .vm__card--note { width: clamp(110px, 32vw, 140px); }

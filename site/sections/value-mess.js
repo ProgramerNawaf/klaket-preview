@@ -135,7 +135,7 @@
     const setEdge = () => pin.style.setProperty('--x', edge.x + '%');
     setEdge();
 
-    g.set(cam, { scale: 0.82, opacity: 0, yPercent: 10 });
+    g.set(cam, { scale: 0.84, opacity: 0 });
 
     const tl = g.timeline({
       scrollTrigger: {
@@ -169,15 +169,17 @@
     tl.to(flash, { opacity: 0.6, duration: 0.01, ease: 'none' }, 0.49)
       .to(flash, { opacity: 0, duration: 0.07, ease: 'power2.out' }, 0.5);
 
-    /* The answer settles, then the screen goes into the lens. The words leave on
-       the push so the camera is the only thing left. */
-    tl.fromTo(cam, { scale: 0.82, opacity: 0, yPercent: 10 },
-      { scale: 1, opacity: 1, yPercent: 0, duration: 0.12, ease: 'power3.out' }, 0.6)
-      .to(cam, { scale: 4.6, yPercent: -26, duration: 0.26, ease: 'power2.in' }, 0.74)
-      .to(keptHead, { opacity: 0, y: -26, duration: 0.12, ease: 'power2.in' }, 0.78)
+    /* The answer settles, the camera comes up under it, then the screen goes
+       into the lens. The words leave first so nothing is left to read through. */
+    tl.fromTo(cam, { scale: 0.84, opacity: 0 },
+      { scale: 1, opacity: 1, duration: 0.12, ease: 'power3.out' }, 0.58)
+      .to(keptHead, { opacity: 0, y: -22, duration: 0.09, ease: 'power2.in' }, 0.76)
+      /* Scaled about the lens, which is already on the middle of the screen, so
+         this is a push in rather than a thing growing in a corner. */
+      .to(cam, { scale: 7.5, duration: 0.2, ease: 'power2.in' }, 0.8)
       /* The phase row has said what it had to say, and the camera is coming up
          through where it sits. */
-      .to(phaseRow, { opacity: 0, duration: 0.08, ease: 'power2.in' }, 0.74);
+      .to(phaseRow, { opacity: 0, duration: 0.07, ease: 'power2.in' }, 0.74);
 
     window.addEventListener('pagehide', () => {
       falls.forEach((f) => f.kill());
