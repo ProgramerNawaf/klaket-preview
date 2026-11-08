@@ -76,15 +76,6 @@
         </div>
 
         <div class="vm__world vm__world--kept">
-          <div class="vm__kept">
-            <div class="vm__top">
-              <span class="vm__icon" aria-hidden="true">🎬</span>
-              <span class="vm__app">${V.resolved.app}</span>
-              <span class="vm__time">${V.resolved.time}</span>
-            </div>
-            <p class="vm__who">${V.resolved.who}</p>
-            <p class="vm__body">${V.resolved.body}</p>
-          </div>
           <div class="vm__cam" aria-hidden="true">${CAMERA}</div>
           <p class="vm__head">
             <span class="vm__line">${V.answer[0]}</span>
@@ -105,7 +96,6 @@
     const cards = [...root.querySelectorAll('.vm__pile .vm__card')];
     const scraps = [...root.querySelectorAll('.vm__scrap')];
     const cam = root.querySelector('.vm__cam');
-    const kept = root.querySelector('.vm__kept');
     const keptHead = root.querySelector('.vm__world--kept .vm__head');
     const flash = root.querySelector('.vm__flash');
     const phases = [...root.querySelectorAll('.vm__phase')];
@@ -179,12 +169,12 @@
     tl.to(flash, { opacity: 0.6, duration: 0.01, ease: 'none' }, 0.49)
       .to(flash, { opacity: 0, duration: 0.07, ease: 'power2.out' }, 0.5);
 
-    /* The answer settles, then the screen goes into the lens. The words and the
-       card leave on the push so the camera is the only thing left. */
+    /* The answer settles, then the screen goes into the lens. The words leave on
+       the push so the camera is the only thing left. */
     tl.fromTo(cam, { scale: 0.82, opacity: 0, yPercent: 10 },
       { scale: 1, opacity: 1, yPercent: 0, duration: 0.12, ease: 'power3.out' }, 0.6)
       .to(cam, { scale: 4.6, yPercent: -26, duration: 0.26, ease: 'power2.in' }, 0.74)
-      .to([keptHead, kept], { opacity: 0, y: -26, duration: 0.12, ease: 'power2.in' }, 0.78)
+      .to(keptHead, { opacity: 0, y: -26, duration: 0.12, ease: 'power2.in' }, 0.78)
       /* The phase row has said what it had to say, and the camera is coming up
          through where it sits. */
       .to(phaseRow, { opacity: 0, duration: 0.08, ease: 'power2.in' }, 0.74);
