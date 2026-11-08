@@ -84,40 +84,21 @@ window.KLDATA = {
   },
 
   /* -------------------------------------------------------------- agents
-     The four that actually run on the platform, in the order a production
-     meets them. Checked against supabase/migrations/20261027090000_briefing_agents.sql
-     (agent in 'brief', 'creative', 'script', 'treatment') and docs/agents/README.md,
-     so none of this describes something that is not there. */
-  agents: [
-    {
-      n: '01',
-      name: 'Brief',
-      ar: 'البريف',
-      line: 'Reads the meeting, the email thread and the notes, and writes the brief back as fields, deliverables and stakeholders.',
-      does: 'It flags what the client said twice and meant differently, and what nobody asked.',
-    },
-    {
-      n: '02',
-      name: 'Creative',
-      ar: 'الأفكار',
-      line: 'Three routes out of one brief: safe, bold and wildcard, each written knowing the ones before it.',
-      does: 'Then it says which one it would make, and why.',
-    },
-    {
-      n: '03',
-      name: 'Script',
-      ar: 'السكربت',
-      line: 'Turns the chosen idea into scenes with durations, the cutdowns, and a visual blueprint for the look.',
-      does: 'With the checks a producer would run anyway, run first.',
-    },
-    {
-      n: '04',
-      name: 'Treatment',
-      ar: 'المعالجة',
-      line: 'Writes the treatment deck page by page in Arabic and English, and paints a frame for every page.',
-      does: 'Look, light, casting, wardrobe, locations and a palette, as boards.',
-    },
-  ],
+     The chain a production actually runs through. Every node is real: the four
+     queued agents are the ones the schema allows (agent in 'brief', 'creative',
+     'script', 'treatment'), the client's pick is concept_sets.selected_concept_id,
+     and the budget is the ai function's own 'budget' action. */
+  agents: {
+    title: 'The whole crew, in one conversation.',
+    steps: [
+      { icon: 'inbox',  label: 'Briefing agent' },
+      { icon: 'bulb',   label: 'Creative agent' },
+      { icon: 'check',  label: 'Client approves', human: true },
+      { icon: 'script', label: 'Script agent', live: true },
+      { icon: 'slate',  label: 'Director\u2019s treatment' },
+      { icon: 'chart',  label: 'Budgeting agent' },
+    ],
+  },
 
   /* ------------------------------------------------------------- journey
      Six waypoints. The camera flies the 3D set between them. */

@@ -94,49 +94,6 @@
   opacity: .82;
 }
 
-/* ---- the frame the screen opens into ----
-   This is the journey's own opening frame, borrowed whole. It starts as a small
-   window held on the camera at the middle of that frame, and opens to full
-   bleed while the drawing scales back to 1. At the end it is pixel for pixel
-   the frame the journey begins on, so the two sections share one camera and
-   there is nothing to cut between them. */
-.vm__frame {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  will-change: clip-path;
-  opacity: 0;
-}
-.vm__frame-in {
-  position: absolute;
-  inset: 0;
-  transform-origin: 50% 50%;
-  will-change: transform;
-}
-.vm__frame svg { width: 100%; height: 100%; display: block; }
-/* A fifth, dead centre: the hole the set leaves for it. */
-.vm__frame-cam {
-  position: absolute;
-  inset: 0;
-  transform: scale(0.2);
-  transform-origin: 50% 50%;
-}
-
-/* The borrowed markup paints itself with these class names, so the same
-   vocabulary has to exist here. Same tokens, different section. */
-.vmess .f-deep { fill: var(--bg-deep); }
-.vmess .f-ink { fill: var(--ink); }
-.vmess .f-surf { fill: var(--surface); }
-.vmess .f-raised { fill: var(--raised); }
-.vmess .f-paper { fill: var(--paper); }
-.vmess .f-teal { fill: var(--teal); }
-.vmess .f-deepteal { fill: var(--teal-deep); }
-.vmess .f-tint { fill: var(--teal-tint); }
-.vmess .f-signal { fill: var(--signal); }
-.vmess .s-tint { fill: none; stroke: var(--teal-tint); stroke-linejoin: round; stroke-linecap: round; }
-.vmess .s-faint { fill: none; stroke: var(--line-2); }
-.vmess .o-55 { opacity: .55; }
-.vmess .o-16 { opacity: .16; }
 
 /* ---- the edge itself ---- */
 .vm__bar {
@@ -171,76 +128,133 @@
 /* Reduced motion keeps the argument and drops the choreography. */
 .vmess.is-still .vm__pin { height: auto; padding-block: var(--sec); --x: 0%; }
 .vmess.is-still .vm__world { position: static; clip-path: none; }
-.vmess.is-still .vm__fall, .vmess.is-still .vm__bar, .vmess.is-still .vm__flash, .vmess.is-still .vm__frame { display: none; }
+.vmess.is-still .vm__fall, .vmess.is-still .vm__bar, .vmess.is-still .vm__flash { display: none; }
 .vmess.is-still .vm__pile { position: static; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .vmess.is-still .vm__card { position: static; width: auto; }
 .vmess.is-still .vm__head { position: static; transform: none; margin-block: 2rem; }
 
-/* ---- the agents on the stage ---------------------------------------------
-   They stand where the camera stood, at the middle of the borrowed frame, and
-   each one shows what it actually produces rather than an icon for it. */
-.vm__agents {
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  width: min(62%, 720px);
-  translate: -50% -50%;
-  opacity: 0;
+
+/* ---- what is behind the edge -------------------------------------------
+   The mess is ink; Klaket is teal. The side the clapperboard reveals is the
+   brand's own ground, with the chain drawn on it once and left alone. */
+.vm__world--kept { background: var(--teal-deep); }
+.vm__world--kept .vm__line { color: var(--paper); }
+.vm__world--kept .vm__head {
+  top: clamp(2.5rem, 11vh, 6rem);
+  transform: none;
   z-index: 4;
 }
-.vm__agent {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  transition: opacity .25s var(--e-out);
-}
-.vm__agent:first-child { position: relative; }
-.vm__agent svg { width: 100%; height: auto; display: block; }
-.vm__agent g, .vm__agent rect, .vm__agent path { transition: none; }
 
-/* The pass the machine leaves behind it, the same signature the journey uses. */
-.vm__sweep {
-  position: absolute;
-  top: -4%; bottom: -4%;
-  left: 0;
-  width: 18%;
-  opacity: 0;
-  pointer-events: none;
-  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 55%, transparent), transparent);
-  filter: blur(6px);
-}
-
-/* Labels inside the drawings. */
-.vmess .a-mini { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; fill: var(--faint); }
-.vmess .a-num  { font-family: var(--mono); font-size: 13px; fill: var(--accent); }
-.vmess .a-big  { font-family: var(--display); font-weight: 900; font-size: 22px; fill: var(--text); }
-.vmess .s-paper { stroke: var(--paper); fill: none; }
-.vmess .a-flags, .vmess .a-pick, .vmess .a-total { opacity: 0; }
-
-/* ---- who is on the stage ---- */
-.vm__agent-copy {
+.vm__chain {
   position: absolute;
   left: 50%;
-  bottom: clamp(2rem, 7vh, 4.5rem);
-  translate: -50% 0;
-  z-index: 5;
-  width: min(100% - var(--gut) * 2, 52ch);
+  top: 56%;
+  translate: -50% -50%;
+  z-index: 4;
+  width: min(100% - var(--gut) * 2, 1060px);
+  opacity: 0;
+}
+.vm__chain-title {
+  text-align: center;
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: var(--t-xl);
+  letter-spacing: -.02em;
+  color: var(--paper);
+  margin-bottom: clamp(1.75rem, 5vh, 3rem);
+}
+
+/* ---- the rail ---- */
+.vm__rail {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: .15rem .7rem;
-  text-align: start;
-  opacity: inherit;
+  grid-template-columns: repeat(6, 1fr);
+  align-items: start;
+  gap: 0;
+  position: relative;
 }
-.vm__agent-n { grid-row: 1; align-self: baseline; }
-.vm__agent-name { grid-row: 1; font-family: var(--display); font-weight: 900; font-size: var(--t-lg); letter-spacing: -.02em; }
-.vm__agent-ar { grid-row: 1; grid-column: 2; justify-self: end; font-family: var(--display); font-weight: 700; color: var(--accent); }
-.vm__agent-line { grid-column: 2; color: var(--text); font-size: var(--t-sm); }
-.vm__agent-does { grid-column: 2; color: var(--muted); font-size: var(--t-sm); }
+.vm__node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .9rem;
+  text-align: center;
+  padding-inline: .35rem;
+}
+/* The line runs between the nodes, not under them, so it reads as a hand-off. */
+.vm__node::before {
+  content: '';
+  position: absolute;
+  top: 34px;
+  left: calc(-50% + 34px);
+  width: calc(100% - 68px);
+  height: 1.5px;
+  background: rgba(246, 235, 217, .28);
+}
+.vm__node:first-child::before { display: none; }
 
-@media (max-width: 900px) {
-  .vm__agents { width: min(88%, 560px); top: 42%; }
-  .vm__agent-copy { width: calc(100% - var(--gut) * 2); bottom: clamp(1.25rem, 5vh, 2.5rem); }
-  .vm__agent-ar { display: none; }
+.vm__dot {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(246, 235, 217, .08);
+  box-shadow: inset 0 0 0 1.5px rgba(246, 235, 217, .18);
+  flex: none;
+}
+.vm__dot svg {
+  width: 30px;
+  height: 30px;
+  fill: none;
+  stroke: var(--paper);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: .85;
+}
+/* The client's own step is not an agent, so it does not look like one. */
+.vm__node.is-human .vm__dot { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(246, 235, 217, .3); }
+
+/* One node is working, and the slate says so the way the mark does. */
+.vm__node.is-live .vm__dot {
+  background: var(--paper);
+  box-shadow: 0 0 0 10px rgba(246, 235, 217, .1);
+}
+.vm__node.is-live .vm__dot svg { stroke: var(--teal-deep); opacity: 1; }
+.vm__dots {
+  position: absolute;
+  top: -16px; right: -18px;
+  display: flex;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: var(--ink);
+}
+.vm__dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--signal); }
+.vm__dots i:nth-child(2) { opacity: .7; }
+.vm__dots i:nth-child(3) { opacity: .45; }
+
+.vm__node-label {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--t-sm);
+  line-height: 1.25;
+  letter-spacing: -.01em;
+  color: rgba(246, 235, 217, .62);
+  text-wrap: balance;
+}
+.vm__node.is-live .vm__node-label { color: var(--paper); font-weight: 900; }
+
+@media (max-width: 860px) {
+  .vm__chain { top: 58%; }
+  .vm__rail { grid-template-columns: repeat(3, 1fr); row-gap: 2rem; }
+  .vm__node:nth-child(4)::before { display: none; }
+  .vm__dot { width: 54px; height: 54px; }
+  .vm__dot svg { width: 24px; height: 24px; }
+  .vm__node::before { top: 27px; left: calc(-50% + 27px); width: calc(100% - 54px); }
+  .vm__node-label { font-size: var(--t-xs); }
 }
 
-.vmess.is-still .vm__agents, .vmess.is-still .vm__agent-copy { display: none; }
+.vmess.is-still .vm__chain { position: static; transform: none; opacity: 1; margin-top: 2.5rem; }
