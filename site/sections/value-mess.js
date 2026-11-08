@@ -76,10 +76,17 @@
           <div class="vm__frame" aria-hidden="true"><div class="vm__frame-in">${
             (window.KLJOURNEY && window.KLJOURNEY.SET) || FALLBACK_SET
           }${
+            /* The journey's opening frame is its set with its camera stage
+               nested dead centre at a fifth, so the frame is reproduced the
+               same way rather than approximated with the set alone. */
             window.KLJOURNEY && window.KLJOURNEY.CAMERA
               ? `<div class="vm__frame-cam">${window.KLJOURNEY.CAMERA}</div>` : ''
           }</div></div>
-          <p class="vm__head"><span class="vm__next">${D.journey.title}</span></p>
+          <p class="vm__head">
+            <span class="vm__line">${V.answer[0]}</span>
+            <span class="vm__line">${V.answer[1]}</span>
+            <span class="vm__next">${D.journey.title}</span>
+          </p>
         </div>
 
         <div class="vm__bar" aria-hidden="true"></div>
@@ -94,6 +101,8 @@
     const cards = [...root.querySelectorAll('.vm__pile .vm__card')];
     const scraps = [...root.querySelectorAll('.vm__scrap')];
     const frame = root.querySelector('.vm__frame');
+    const frameIn = root.querySelector('.vm__frame-in');
+    const keptHead = root.querySelector('.vm__world--kept .vm__head');
     const flash = root.querySelector('.vm__flash');
     const phases = [...root.querySelectorAll('.vm__phase')];
     const phaseRow = root.querySelector('.vm__phases');
@@ -133,22 +142,12 @@
        leaves the mess covering the answer. Deriving them means any scroll
        position, including one jumped straight to, paints the right frame. */
     const EDGE_FROM = 0.3, EDGE_TO = 0.68;
+    const WIN_FROM = 0.8, WIN_TO = 1.0;
     const clamp01 = (n) => Math.min(1, Math.max(0, n));
+    /* The same shape as power2.inOut, written out so it needs no tween. */
+    const inOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
 
-
-    /* The edge and the phase row are derived from scroll progress rather than
-       driven by proxy tweens. A pinned element's inline styles can be restored
-       on a refresh, which silently put the edge back to its CSS default and
-       left the mess covering the frame. Derived values are right at any scroll
-       position, including one jumped straight to. */
-    function paint(pr) {
-      const ex = 112 + (-9 - 112) * clamp01((pr - EDGE_FROM) / (EDGE_TO - EDGE_FROM));
-      pin.style.setProperty('--x', ex + '%');
-      phaseRow.style.opacity = String(1 - clamp01((pr - 0.72) / 0.08));
-    }
-    paint(0);
-    window.addEventListener('resize', () => paint(tl && tl.scrollTrigger ? tl.scrollTrigger.progress : 0));
 
     const tl = g.timeline({
       scrollTrigger: {
@@ -181,9 +180,43 @@
     tl.to(flash, { opacity: 0.6, duration: 0.01, ease: 'none' }, 0.49)
       .to(flash, { opacity: 0, duration: 0.07, ease: 'power2.out' }, 0.5);
 
-    /* Nothing opens and nothing zooms. The edge passes and the journey's own
-       opening frame is simply what is behind it, which is the frame the
-       journey then carries on from. */
+    /* The window onto the journey's frame. It opens from a small rectangle held
+       on the camera at the middle of that frame to the whole screen, while the
+       drawing scales back to 1. The last frame of this section is therefore the
+       first frame of the next one, and there is nothing to cut between them. */
+    const FRAME_W = () => Math.min(pin.offsetWidth * 0.62, 460);
+    const FRAME_H = () => FRAME_W() * 0.62;
+    /* The camera is a fifth of the borrowed frame, so to sit it inside a window
+       of FRAME_W the drawing has to be scaled by that window's share of a fifth.
+       At the end both the window and the scale reach their own 1, which is the
+       frame the journey opens on. */
+    const START_S = () => Math.max(1, 5 * FRAME_W() / pin.offsetWidth);
+
+    function paint(p) {
+      const ex = 112 + (-9 - 112) * clamp01((p - EDGE_FROM) / (EDGE_TO - EDGE_FROM));
+      pin.style.setProperty('--x', ex + '%');
+
+      /* The words and the phase row are faded here for the same reason: a
+         scrubbed tween's inline opacity can be restored on a refresh and leave
+         them ghosting over the frame. */
+      keptHead.style.opacity = String(1 - clamp01((p - 0.78) / 0.09));
+      phaseRow.style.opacity = String(1 - clamp01((p - 0.74) / 0.07));
+
+      const t = 1 - inOut(clamp01((p - WIN_FROM) / (WIN_TO - WIN_FROM)));
+      const w = pin.offsetWidth, h = pin.offsetHeight;
+      const ix = Math.max(0, (w - FRAME_W()) / 2) * t;
+      const iy = Math.max(0, (h - FRAME_H()) / 2) * t;
+      frame.style.clipPath = `inset(${iy}px ${ix}px round ${(14 * t).toFixed(1)}px)`;
+      frameIn.style.transform = `scale(${(1 + (START_S() - 1) * t).toFixed(4)})`;
+    }
+    paint(0);
+    window.addEventListener('resize', () => paint(tl.scrollTrigger ? tl.scrollTrigger.progress : 0));
+
+    tl.to(frame, { opacity: 1, duration: 0.08, ease: 'power2.out' }, 0.58)
+      .to(keptHead, { y: -22, duration: 0.09, ease: 'power2.in' }, 0.78)
+      /* The window opens and the drawing lets go at the same rate, so the
+         camera never appears to move: the frame around it just leaves. */
+      ;
 
     window.addEventListener('pagehide', () => {
       falls.forEach((f) => f.kill());

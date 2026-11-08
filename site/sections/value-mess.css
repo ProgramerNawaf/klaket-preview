@@ -78,32 +78,20 @@
 }
 .vm__line { display: block; font-family: var(--display); font-weight: 900; font-size: var(--t-2xl); line-height: 1.03; letter-spacing: -.03em; }
 .vm__world--kept .vm__line { color: var(--accent); }
-/* Matches .jlens__title, so the title does not move when the next section
-   takes the frame over. */
-.vm__world--kept .vm__head {
-  top: clamp(2.5rem, 9vh, 5.5rem);
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
-  width: min(100% - var(--gut) * 2, 20ch);
-  padding-inline: 0;
-  z-index: 4;
-  /* The measure is set in ch, so it only matches the journey's if the font size
-     the ch is resolved against matches too, and the journey's title is a
-     heading, so it breaks its lines balanced. */
-  font-size: var(--t-2xl);
-  text-wrap: balance;
-}
-/* The journey's own title, set exactly where the journey sets it, so the frame
-   does not move when the next section takes it over. */
+/* The answer sits in the upper half so the lens can hold the middle. Both are
+   centred on the same axis, so the push does not slide sideways. */
+.vm__world--kept .vm__head { top: 11%; transform: none; }
+/* The journey's own sentence, on the same screen as the answer rather than on
+   a screen of its own. */
 .vm__next {
   display: block;
+  margin-top: .9rem;
   font-family: var(--display);
-  font-weight: 900;
-  font-size: var(--t-2xl);
-  line-height: 1.03;
-  letter-spacing: -.03em;
+  font-weight: 700;
+  font-size: var(--t-lg);
+  letter-spacing: -.02em;
   color: var(--text);
+  opacity: .82;
 }
 
 /* ---- the frame the screen opens into ----
@@ -112,8 +100,19 @@
    bleed while the drawing scales back to 1. At the end it is pixel for pixel
    the frame the journey begins on, so the two sections share one camera and
    there is nothing to cut between them. */
-.vm__frame { position: absolute; inset: 0; z-index: 3; }
-.vm__frame-in { position: absolute; inset: 0; }
+.vm__frame {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  will-change: clip-path;
+  opacity: 0;
+}
+.vm__frame-in {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
 .vm__frame svg { width: 100%; height: 100%; display: block; }
 /* A fifth, dead centre: the hole the set leaves for it. */
 .vm__frame-cam {
@@ -161,10 +160,8 @@
 .vm__phase.is-on { color: var(--text); }
 .vm__phase.is-on i { opacity: 1; }
 
-@media (max-width: 900px) {
-  .vm__world--kept .vm__head { top: clamp(1.5rem, 6vh, 3rem); }
-  .vm__next { font-size: var(--t-xl); }
-}
+@media (max-width: 900px) { .vm__world--kept .vm__head { top: 9%; } }
+@media (max-height: 680px) { .vm__world--kept .vm__head { top: 6%; } }
 @media (max-width: 760px) {
   .vm__card { width: clamp(150px, 46vw, 210px); padding: .55rem .6rem .65rem; }
   .vm__card--note { width: clamp(110px, 32vw, 140px); }
