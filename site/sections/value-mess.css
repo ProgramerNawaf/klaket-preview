@@ -175,3 +175,72 @@
 .vmess.is-still .vm__pile { position: static; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
 .vmess.is-still .vm__card { position: static; width: auto; }
 .vmess.is-still .vm__head { position: static; transform: none; margin-block: 2rem; }
+
+/* ---- the agents on the stage ---------------------------------------------
+   They stand where the camera stood, at the middle of the borrowed frame, and
+   each one shows what it actually produces rather than an icon for it. */
+.vm__agents {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(62%, 720px);
+  translate: -50% -50%;
+  opacity: 0;
+  z-index: 4;
+}
+.vm__agent {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity .25s var(--e-out);
+}
+.vm__agent:first-child { position: relative; }
+.vm__agent svg { width: 100%; height: auto; display: block; }
+.vm__agent g, .vm__agent rect, .vm__agent path { transition: none; }
+
+/* The pass the machine leaves behind it, the same signature the journey uses. */
+.vm__sweep {
+  position: absolute;
+  top: -4%; bottom: -4%;
+  left: 0;
+  width: 18%;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 55%, transparent), transparent);
+  filter: blur(6px);
+}
+
+/* Labels inside the drawings. */
+.vmess .a-mini { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; fill: var(--faint); }
+.vmess .a-num  { font-family: var(--mono); font-size: 13px; fill: var(--accent); }
+.vmess .a-big  { font-family: var(--display); font-weight: 900; font-size: 22px; fill: var(--text); }
+.vmess .s-paper { stroke: var(--paper); fill: none; }
+.vmess .a-flags, .vmess .a-pick, .vmess .a-total { opacity: 0; }
+
+/* ---- who is on the stage ---- */
+.vm__agent-copy {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(2rem, 7vh, 4.5rem);
+  translate: -50% 0;
+  z-index: 5;
+  width: min(100% - var(--gut) * 2, 52ch);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .15rem .7rem;
+  text-align: start;
+  opacity: inherit;
+}
+.vm__agent-n { grid-row: 1; align-self: baseline; }
+.vm__agent-name { grid-row: 1; font-family: var(--display); font-weight: 900; font-size: var(--t-lg); letter-spacing: -.02em; }
+.vm__agent-ar { grid-row: 1; grid-column: 2; justify-self: end; font-family: var(--display); font-weight: 700; color: var(--accent); }
+.vm__agent-line { grid-column: 2; color: var(--text); font-size: var(--t-sm); }
+.vm__agent-does { grid-column: 2; color: var(--muted); font-size: var(--t-sm); }
+
+@media (max-width: 900px) {
+  .vm__agents { width: min(88%, 560px); top: 42%; }
+  .vm__agent-copy { width: calc(100% - var(--gut) * 2); bottom: clamp(1.25rem, 5vh, 2.5rem); }
+  .vm__agent-ar { display: none; }
+}
+
+.vmess.is-still .vm__agents, .vmess.is-still .vm__agent-copy { display: none; }
