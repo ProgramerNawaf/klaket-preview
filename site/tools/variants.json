@@ -331,7 +331,10 @@
       "lens",
       "carousel",
       "reel",
-      "The wall claps, the pile falls, the camera rolls"
+      "The wall claps, the pile falls, the camera rolls",
+      {
+        "companies": false
+      }
     ]
   ]
 }

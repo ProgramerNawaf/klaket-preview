@@ -1,10 +1,30 @@
-/* The messy reading of the value argument.
-   Eight channels, none of them talking to each other, piled at angles with the
-   paper falling out of them. The clapperboard shuts across the whole thing and
-   what is left is one card. */
+/* The messy reading of the value argument, resolved by a wipe.
+   One clapperboard edge travels across the pinned screen, right to left the way
+   a crew's Arabic call sheet reads. A single registered property, --x, is the
+   edge's position: both worlds are clipped against it from opposite sides and
+   the striped bar sits on it, so the edge and what it reveals cannot disagree.
+   The screen never changes: the mess becomes the answer, and the answer becomes
+   the camera, all in one held frame. */
+
+@property --x {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 112%;
+}
 
 .vmess { position: relative; }
-.vm__pin { height: 100svh; position: relative; overflow: hidden; display: grid; place-items: center; }
+.vm__pin {
+  height: 100svh;
+  position: relative;
+  overflow: hidden;
+  /* The edge starts past the right of the screen, not on it. */
+  --x: 112%;
+}
+
+.vm__world { position: absolute; inset: 0; }
+/* The mess lives to the left of the edge, the answer to the right of it. */
+.vm__world--mess { clip-path: inset(0 max(0px, calc(100% - var(--x))) 0 0); }
+.vm__world--kept { clip-path: inset(0 0 0 max(0px, var(--x))); }
 
 /* ---- the pile ---- */
 .vm__pile { position: absolute; inset: 0; z-index: 2; }
@@ -24,7 +44,6 @@
 .vm__who { font-weight: 600; font-size: .8125rem; margin-bottom: .15rem; }
 .vm__body { font-size: .78rem; color: var(--muted); line-height: 1.45; }
 
-/* The sticky note is the one thing in the pile that is not a screen. */
 .vm__card--note {
   background: #E8D9A8;
   color: var(--ink);
@@ -39,67 +58,80 @@
 /* ---- the paper that keeps falling ---- */
 .vm__fall { position: absolute; inset: -12% 0 -12% 0; z-index: 1; pointer-events: none; }
 .vm__scrap {
-  position: absolute;
-  top: 0;
-  background: #E8D9A8;
-  color: rgba(18,18,18,.72);
-  font-family: var(--mono);
-  font-size: .625rem;
-  letter-spacing: .02em;
-  padding: .3em .5em;
-  border-radius: 1px;
-  white-space: nowrap;
-  opacity: .5;
-  box-shadow: 0 8px 18px -10px rgba(0,0,0,.8);
+  position: absolute; top: 0;
+  background: #E8D9A8; color: rgba(18,18,18,.72);
+  font-family: var(--mono); font-size: .625rem;
+  padding: .3em .5em; border-radius: 1px; white-space: nowrap;
+  opacity: .5; box-shadow: 0 8px 18px -10px rgba(0,0,0,.8);
   will-change: transform;
 }
 
-/* ---- the headline, split by the clap ---- */
+/* ---- the words, one set each side of the edge ---- */
 .vm__head {
-  position: relative;
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  transform: translateY(-50%);
   z-index: 4;
   text-align: center;
   padding-inline: var(--gut);
   pointer-events: none;
 }
-.vm__line { display: block; position: relative; font-family: var(--display); font-weight: 900; font-size: var(--t-2xl); line-height: 1.03; letter-spacing: -.03em; }
-.vm__line .is-answer { position: absolute; inset: 0; opacity: 0; color: var(--accent); }
-
-/* ---- the stick that shuts across it ---- */
-.vm__clap {
-  position: absolute;
-  z-index: 5;
-  left: -6%;
-  width: 112%;
-  height: clamp(44px, 7vh, 74px);
-  top: 50%;
-  margin-top: clamp(-37px, -3.5vh, -22px);
-  transform-origin: 0 50%;
-  background-color: var(--ink);
-  background-image: repeating-linear-gradient(45deg, var(--paper) 0 26px, var(--ink) 26px 52px);
-  box-shadow: 0 16px 40px -14px rgba(0,0,0,.9);
-  opacity: 0;
-  pointer-events: none;
+.vm__line { display: block; font-family: var(--display); font-weight: 900; font-size: var(--t-2xl); line-height: 1.03; letter-spacing: -.03em; }
+.vm__world--kept .vm__line { color: var(--accent); }
+/* The journey's own sentence, on the same screen as the answer rather than on
+   a screen of its own. */
+.vm__next {
+  display: block;
+  margin-top: .9rem;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: var(--t-lg);
+  letter-spacing: -.02em;
+  color: var(--text);
+  opacity: .82;
 }
-.vm__flash { position: absolute; inset: 0; z-index: 6; background: var(--paper); opacity: 0; mix-blend-mode: screen; pointer-events: none; }
 
 /* ---- what survives ---- */
 .vm__kept {
-  position: absolute;
-  z-index: 3;
-  left: 50%;
-  top: 28%;
+  position: absolute; z-index: 3;
+  left: 50%; top: 17%;
   transform: translateX(-50%);
   width: clamp(230px, 26vw, 330px);
   background: var(--teal);
   border-radius: 12px;
   padding: .8rem .9rem .9rem;
   box-shadow: 0 0 0 1px rgba(246,235,217,.18) inset, 0 30px 70px -20px rgba(15,92,87,.75);
-  opacity: 0;
 }
 .vm__kept .vm__app, .vm__kept .vm__time { color: rgba(246,235,217,.65); }
 .vm__kept .vm__who { color: var(--paper); }
 .vm__kept .vm__body { color: rgba(246,235,217,.84); }
+
+/* ---- the camera the screen goes into ---- */
+.vm__cam {
+  position: absolute; z-index: 3;
+  left: 50%; bottom: -4%;
+  width: clamp(230px, 30vw, 420px);
+  transform: translateX(-50%);
+  transform-origin: 50% 42%;
+  will-change: transform, opacity;
+}
+.vm__cam svg { width: 100%; height: auto; display: block; }
+
+/* ---- the edge itself ---- */
+.vm__bar {
+  position: absolute;
+  z-index: 5;
+  top: -14%; bottom: -14%;
+  left: var(--x);
+  width: clamp(44px, 5.5vw, 78px);
+  margin-left: clamp(-39px, -2.75vw, -22px);
+  transform: rotate(6deg);
+  background-color: var(--ink);
+  background-image: repeating-linear-gradient(45deg, var(--paper) 0 24px, var(--ink) 24px 48px);
+  box-shadow: 0 0 60px -10px rgba(0,0,0,.9);
+  pointer-events: none;
+}
+.vm__flash { position: absolute; inset: 0; z-index: 6; background: var(--paper); opacity: 0; mix-blend-mode: screen; pointer-events: none; }
 
 .vm__phases { position: absolute; left: 0; right: 0; bottom: clamp(1.25rem, 4vh, 2.5rem); z-index: 7; display: flex; justify-content: center; gap: clamp(1rem, 4vw, 2.75rem); }
 .vm__phase { display: flex; align-items: center; gap: .45rem; color: var(--faint); transition: color var(--d) var(--e-out); }
@@ -111,10 +143,14 @@
   .vm__card { width: clamp(150px, 46vw, 210px); padding: .55rem .6rem .65rem; }
   .vm__card--note { width: clamp(110px, 32vw, 140px); }
   .vm__body { font-size: .72rem; }
+  .vm__kept { top: 11%; }
 }
 
 /* Reduced motion keeps the argument and drops the choreography. */
-.vmess.is-still .vm__pin { height: auto; padding-block: var(--sec); }
-.vmess.is-still .vm__pile, .vmess.is-still .vm__fall, .vmess.is-still .vm__clap, .vmess.is-still .vm__flash { display: none; }
-.vmess.is-still .vm__kept { position: static; transform: none; opacity: 1; margin: 2rem auto 0; }
-.vmess.is-still .vm__line .is-answer { position: static; opacity: 1; display: block; margin-top: .4rem; }
+.vmess.is-still .vm__pin { height: auto; padding-block: var(--sec); --x: 0%; }
+.vmess.is-still .vm__world { position: static; clip-path: none; }
+.vmess.is-still .vm__fall, .vmess.is-still .vm__bar, .vmess.is-still .vm__flash, .vmess.is-still .vm__cam { display: none; }
+.vmess.is-still .vm__pile { position: static; display: grid; gap: .6rem; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.vmess.is-still .vm__card { position: static; width: auto; }
+.vmess.is-still .vm__head { position: static; transform: none; margin-block: 2rem; }
+.vmess.is-still .vm__kept { position: static; transform: none; margin: 1.5rem auto 0; }

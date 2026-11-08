@@ -23,6 +23,12 @@ function dirFor(part, key) {
 
 function page(row, i) {
   const [hero, value, journey, features, footer, title] = row;
+  /* A seventh entry carries per-variant options. Only the ones that say so get
+     the trust strip, because a direction can be about something else. */
+  const opts = row[6] || {};
+  const strip = opts.companies === false
+    ? ''
+    : '\n  <section class="companies" aria-label="Where the team has worked"></section>';
   const pick = Object.fromEntries(SLOTS.map((s, k) => [s, M[s][row[k]]]));
   const n = String(i + 1).padStart(2, '0');
   const missing = [];
@@ -76,13 +82,11 @@ ${css.map((h) => `<link rel="stylesheet" href="${h}">`).join('\n')}
 <nav class="island" data-dock="top" aria-label="Main"></nav>
 
 <main id="main">
-  <section class="${pick.heroes.root}${heroPaper}" id="top"${heroAttrs}></section>
-  <section class="companies" aria-label="Where the team has worked"></section>
+  <section class="${pick.heroes.root}${heroPaper}" id="top"${heroAttrs}></section>${strip}
   <section class="${pick.value.root}" id="value"></section>
   <section class="${pick.journey.root}" id="journey"></section>
   <section class="${pick.features.root} section" id="features"></section>
-  <section class="faq section" id="faq"></section>
-  <section class="companies" aria-label="Where the team has worked"></section>
+  <section class="faq section" id="faq"></section>${strip}
 </main>
 
 <footer class="${pick.footer.root}"></footer>
