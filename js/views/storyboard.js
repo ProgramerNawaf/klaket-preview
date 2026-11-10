@@ -3,7 +3,8 @@
    image (media bucket, client scope), title, description, shot size, movement, a colour label, and links to a scene
    (active_scenes) and a shot (shots). "Create frames from the shot list" makes one frame per shot not yet boarded.
    Frames without an image get a pitch-style placeholder drawn from the shot size and movement.
-   Clients see the frames read only, and only when productions.share_storyboard is on (RLS enforces the same). */
+   Clients see the frames read only, and only when productions.share_storyboard is on (RLS enforces the same).
+   Export PDF: the board on A4 landscape in Klaket colours, through the browser's print window. */
 (function () {
   const esc = MPH.esc;
   const SIZES = ['EWS', 'WS', 'MWS', 'MS', 'MCU', 'CU', 'ECU', 'Insert', 'OTS', 'POV', 'Two-shot'];
@@ -167,7 +168,7 @@
       eyebrow: `Visualize${ctx.isClient ? '' : p.share_storyboard ? ' · Shared with the client' : ' · Team only'}`,
       title: ctx.t('Storyboard'),
       sub: d.frames.length ? `${plural(d.frames.length, 'frame')}${scenesUsed ? ` across ${plural(scenesUsed, 'scene')}` : ''}${!ctx.isClient && linked ? ` · ${linked} linked to the shot list` : ''}` : esc(p.title),
-      actions: `${ctx.canSeeInternal && !ctx.isClient ? shareHtml(ctx) : ''}${d.frames.length ? `<button class="btn btn-sm btn-outline" data-sbd="present">${ui.icon('presentation')}Present</button>` : ''}`,
+      actions: `${ctx.canSeeInternal && !ctx.isClient ? shareHtml(ctx) : ''}${d.frames.length ? `<button class="btn btn-sm btn-outline" data-sbd="export">${ui.icon('file-down')}Export PDF</button><button class="btn btn-sm btn-outline" data-sbd="present">${ui.icon('presentation')}Present</button>` : ''}`,
     });
 
     if (!d.frames.length) {
@@ -262,6 +263,141 @@
     if (MPH.trShow) MPH.trShow({ title: ctx.production.title, sub: `Storyboard · ${plural(list.length, 'frame')}`, slides, start });
     else ctx.toast('Presentation mode isn’t available right now. Reload the page and try again.', 'triangle-alert');
     void ui;
+  }
+
+  /* ------------------------------------------------------------ export PDF
+     A print window holding the board on A4 landscape in Klaket colours: a teal band with the wordmark, the frames in
+     the board's order (grouped by scene when the board is) and the Klaket wordmark in every page's footer. The
+     browser's Save as PDF makes the file. Layouts: a grid of frames, three frames a page with room for notes, or one
+     frame a page. */
+  const LAYOUTS = [
+    ['grid', 'Grid', 'Six frames a page (more for tall ratios)'],
+    ['notes', 'With notes', 'Three frames a page, the description beside each'],
+    ['one', 'One per page', 'A large frame on each page, for reviews'],
+  ];
+  async function exportPdf(ctx, d, opts) {
+    const w = window.open('', '_blank'); // opened before any await, so pop-up blockers see the click
+    if (!w) throw new Error('Allow pop-ups for this site to export the PDF.');
+    w.document.write('<!doctype html><title>Preparing the storyboard…</title><p style="font:14px sans-serif;padding:24px">Preparing the storyboard…</p>');
+    const p = ctx.production;
+    const a = aspectOf(ctx, d);
+    const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
+    const fonts = [...document.querySelectorAll('link[rel="stylesheet"]')].filter((l) => /fonts\.googleapis|treatment-storyboard\.css/.test(l.href))
+      .map((l) => `<link rel="stylesheet" href="${esc(l.href)}">`).join('');
+    const tall = a[2] < 1;
+    const cols = opts.layout === 'grid' ? (tall ? 5 : 3) : 1;
+    const groups = opts.group ? groupsOf(d) : [{ key: 'all', scene: null, frames: d.frames }];
+    const frames = groups.flatMap((g) => g.frames);
+    let n = 0;
+    const frameHtml = (f) => {
+      n += 1;
+      const sc = sceneOf(d, f.scene_id);
+      const sh = shotOf(d, f.shot_id);
+      const lb = label(f.label);
+      const title = f.title || (sh && sh.code ? `Shot ${sh.code}` : `Frame ${n}`);
+      return `<figure class="kx-f" ${lb ? `style="--lc:${lb[1]}"` : ''}>
+        <div class="kx-img"><div class="kx-img-in">${mediaHtml(d, f).replace(' loading="lazy"', '')}</div><span class="kx-n">${pad(n)}</span>${sh && sh.code ? `<span class="kx-code">${esc(sh.code)}</span>` : ''}</div>
+        <figcaption>
+          <div class="kx-t">${lb ? '<i class="kx-lb"></i>' : ''}<span dir="auto">${esc(title)}</span></div>
+          <div class="kx-tags">${f.shot_size ? `<span>${esc(SIZE_NAMES[f.shot_size] || f.shot_size)}</span>` : ''}${f.movement ? `<span>${esc(f.movement)}</span>` : ''}${sc && !opts.group ? `<span>Sc. ${esc(sc.num)}</span>` : ''}</div>
+          ${opts.notes && f.description ? `<p dir="auto">${esc(f.description)}</p>` : ''}
+        </figcaption></figure>`;
+    };
+    const html = groups.map((g) => `
+      <section class="kx-g">
+        ${opts.group ? `<h2 class="kx-sc">${g.scene ? `<span class="kx-scn">Sc. ${esc(g.scene.num)}</span><span dir="auto">${esc(g.scene.heading || g.scene.location || 'Untitled scene')}</span>` : '<span>Not linked to a scene</span>'}<em>${plural(g.frames.length, 'frame')}</em></h2>` : ''}
+        <div class="kx-grid">${g.frames.map(frameHtml).join('')}</div>
+      </section>`).join('');
+    /* AI pictures inside drawings are signed lazily on the page; the print window needs them signed up front */
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const pics = [...tmp.querySelectorAll('svg.sk image[data-media]')];
+    const signed = pics.length ? await ctx.api.mediaUrls([...new Set(pics.map((el) => el.getAttribute('data-media')))]).catch(() => ({})) : {};
+    pics.forEach((el) => { const url = signed[el.getAttribute('data-media')]; if (url) el.setAttribute('href', url); else el.remove(); });
+    const body = tmp.innerHTML;
+    const scenes = new Set(frames.map((f) => f.scene_id).filter((id) => sceneOf(d, id))).size;
+    const when = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const title = `${p.title} · Storyboard`;
+    if (w.closed) return w;
+    w.document.close(); w.document.open(); // replace the "Preparing" note
+    w.document.write(`<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><title>${esc(title)}</title>${fonts}
+      <style>
+        @page { size: A4 landscape; margin: 10mm 10mm 15mm; }
+        :root { --ink: #121212; --ink-2: #4A4744; --paper: #F6EBD9; --rule: #E3D7C3; --teal: #0F5C57; --band: #0A3F3C; --ar: ${a[1]}; }
+        html, body { margin: 0; background: #fff; color: var(--ink); font: 400 10.5pt/1.45 "IBM Plex Sans", "IBM Plex Sans Arabic", sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .kx-head { display: flex; align-items: flex-end; gap: 8mm; background: var(--band); color: var(--paper); border-radius: 4mm; padding: 7mm 8mm; margin-bottom: 6mm; break-inside: avoid; }
+        .kx-head img { height: 9mm; width: auto; display: block; }
+        .kx-head .kx-ti { flex: 1; min-width: 0; }
+        .kx-eye { font: 600 8pt/1 "IBM Plex Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: #ACD062; }
+        .kx-head h1 { margin: 2mm 0 0; font: 900 22pt/1.1 "Cairo", sans-serif; }
+        .kx-meta { text-align: end; font-size: 9pt; line-height: 1.6; color: rgba(246, 235, 217, .8); white-space: nowrap; }
+        .kx-meta b { color: var(--paper); font-weight: 600; }
+        .kx-g + .kx-g { margin-top: 5mm; }
+        .kx-sc { display: flex; align-items: baseline; gap: 3mm; margin: 0 0 3mm; padding-bottom: 2mm; border-bottom: .4mm solid var(--teal); font: 700 11pt/1.3 "Cairo", sans-serif; break-after: avoid; }
+        .kx-sc em { margin-inline-start: auto; font: 400 8.5pt "IBM Plex Sans", sans-serif; font-style: normal; color: var(--ink-2); }
+        .kx-scn { font: 600 9pt "IBM Plex Mono", monospace; color: #fff; background: var(--teal); border-radius: 1.2mm; padding: .6mm 2mm; }
+        .kx-grid { display: grid; grid-template-columns: repeat(${cols}, minmax(0, 1fr)); gap: 5mm 4mm; }
+        .kx-f { margin: 0; break-inside: avoid; }
+        .kx-img { position: relative; aspect-ratio: var(--ar); border-radius: 2.4mm; overflow: hidden; background: var(--band); border: .3mm solid var(--rule); }
+        .kx-img-in, .kx-img-in > .sbd-sketch { position: absolute; inset: 0; display: block; }
+        .kx-img img, .kx-img .sbd-art, .kx-img svg.sk { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+        .kx-n { position: absolute; top: 2mm; inset-inline-start: 2mm; font: 600 8pt/1 "IBM Plex Mono", monospace; background: var(--paper); color: var(--ink); border-radius: 1mm; padding: 1mm 1.6mm; }
+        .kx-code { position: absolute; bottom: 2mm; inset-inline-end: 2mm; font: 600 8pt/1 "IBM Plex Mono", monospace; background: rgba(10, 63, 60, .85); color: var(--paper); border-radius: 1mm; padding: 1mm 1.6mm; }
+        .kx-f[style] .kx-img { box-shadow: inset 0 -1.2mm 0 var(--lc); }
+        figcaption { padding-top: 2mm; }
+        .kx-t { display: flex; align-items: center; gap: 1.6mm; font-weight: 600; font-size: 10pt; }
+        .kx-lb { width: 2.4mm; height: 2.4mm; border-radius: 50%; background: var(--lc); flex: none; }
+        .kx-tags { display: flex; flex-wrap: wrap; gap: 1.2mm; margin-top: 1.2mm; }
+        .kx-tags span { font-size: 7.5pt; font-weight: 600; color: var(--teal); background: #F3ECDF; border-radius: 1mm; padding: .5mm 1.6mm; }
+        .kx-f p { margin: 1.6mm 0 0; font-size: 9pt; color: var(--ink-2); white-space: pre-line; }
+        .L-notes .kx-f { display: grid; grid-template-columns: ${tall ? '38mm' : '108mm'} 1fr; gap: 6mm; align-items: start; padding-bottom: 4mm; border-bottom: .3mm solid var(--rule); }
+        .L-notes figcaption { padding-top: 0; }
+        .L-notes .kx-t { font-size: 12pt; }
+        .L-notes .kx-f p { font-size: 10pt; }
+        .L-one .kx-f { break-after: page; }
+        .L-one .kx-img { ${tall ? 'height: 140mm; width: auto; margin: 0 auto;' : 'max-height: 135mm; width: min(100%, calc(135mm * ' + a[2] + '));'} }
+        .L-one .kx-t { font-size: 14pt; } .L-one .kx-f p { font-size: 11pt; }
+        .kx-foot { position: fixed; bottom: -9mm; left: 0; right: 0; display: flex; align-items: center; gap: 4mm; font-size: 8pt; color: var(--ink-2); }
+        .kx-foot img { height: 4mm; width: auto; }
+        .kx-foot span:last-child { margin-inline-start: auto; }
+      </style></head>
+      <body class="L-${opts.layout}">
+        <header class="kx-head">
+          <img src="${esc(base)}brand/klaket-wordmark-cream.svg" alt="Klaket">
+          <div class="kx-ti"><div class="kx-eye">Storyboard</div><h1 dir="auto">${esc(p.title)}</h1></div>
+          <div class="kx-meta"><b>${plural(frames.length, 'frame')}</b>${scenes ? ` · ${plural(scenes, 'scene')}` : ''}<br>${esc(a[0])} · ${esc(when)}</div>
+        </header>
+        ${body}
+        <footer class="kx-foot"><img src="${esc(base)}brand/klaket-wordmark-ink.svg" alt="Klaket"><span dir="auto">${esc(p.title)} · Storyboard</span><span>Exported ${esc(when)}</span></footer>
+      </body></html>`);
+    w.document.close();
+    const ready = w.document.fonts && w.document.fonts.ready ? w.document.fonts.ready : Promise.resolve();
+    const imgs = [...w.document.images].map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; })));
+    const svgPics = Object.values(signed).map((u) => new Promise((r) => { const i = new Image(); i.onload = i.onerror = r; i.src = u; }));
+    Promise.race([Promise.all([ready, ...imgs, ...svgPics]), new Promise((r) => setTimeout(r, 8000))]).then(() => setTimeout(() => { w.focus(); w.print(); }, 250));
+    return w;
+  }
+
+  function openExport(ctx, d) {
+    const { ui } = ctx;
+    const pick = LAYOUTS.find((l) => l[0] === ctx.state.sbdExport) || LAYOUTS[0];
+    const el = ctx.modal(ctx.frame({
+      title: 'Export the storyboard',
+      sub: `${plural(d.frames.length, 'frame')} · ${esc(aspectOf(ctx, d)[0])}`,
+      body: `
+        <div class="field"><span class="label">Layout</span>
+          <div class="stack tight">${LAYOUTS.map(([id, name, hint]) => `<label class="row small"><input type="radio" name="sbd-x-layout" value="${id}" ${id === pick[0] ? 'checked' : ''}><span class="strong">${name}</span><span class="muted">${hint}</span></label>`).join('')}</div></div>
+        <label class="row small"><input type="checkbox" id="sbd-x-group" ${grouped(ctx) ? 'checked' : ''}>Group frames by scene</label>
+        <label class="row small"><input type="checkbox" id="sbd-x-notes" checked>Include frame descriptions</label>
+        <p class="tiny faint">Opens a print window in Klaket colours. Choose “Save as PDF” there. Nothing is shared.</p>`,
+      foot: `<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="sbd-x-go">${ui.icon('file-down')}Export PDF</button>`,
+    }));
+    el.querySelector('#sbd-x-go').addEventListener('click', () => {
+      const layout = (el.querySelector('input[name="sbd-x-layout"]:checked') || {}).value || 'grid';
+      ctx.state.sbdExport = layout;
+      const done = exportPdf(ctx, d, { layout, group: el.querySelector('#sbd-x-group').checked, notes: el.querySelector('#sbd-x-notes').checked });
+      done.then(() => { ctx.closeOverlay(); ctx.toast('Choose “Save as PDF” in the print window', 'file-down'); }, (ex) => ctx.toastError(ex));
+    });
   }
 
   /* two-step confirm */
@@ -575,6 +711,7 @@
         const act = b.dataset.sbd;
         if (act === 'group') { ctx.state.sbdGroup = !grouped(ctx); return repaint(); }
         if (act === 'present') return present(ctx, d);
+        if (act === 'export') return openExport(ctx, d);
         if (act === 'draw') {
           const ids = d.frames.filter((f) => !f.image_path && !f.illustration).map((f) => f.id);
           if (!ids.length) return;
