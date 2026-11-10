@@ -32,8 +32,8 @@
   /* text */
   --text: #121212;
   --text-2: #33302C;           /* ink 82% on the canvas */
-  --muted: #6B6865;            /* ink 62%: 5.1 on the canvas */
-  --faint: #66625E;            /* ink ~64%: 4.9 on raised paper, 5.6 on the canvas */
+  --muted: #57534F;            /* ink ~70%: 7.0 on the canvas, so small labels stay readable */
+  --faint: #625E59;            /* ink ~66%: 5.6 on raised paper, 6.2 on the canvas */
 
   /* primary: filled actions, active nav, brand fills. --accent is teal used as TEXT or an icon (links, eyebrows) */
   --primary: var(--teal);
@@ -97,6 +97,7 @@
   --radius-pill: 9999px;
   --shadow: 0 12px 32px -8px rgba(18, 18, 18, .28);
   --shadow-sm: 0 2px 8px -6px rgba(18, 18, 18, .22);
+  --sh: 18 18 18;              /* shadow ink as "r g b", for rgb(var(--sh) / alpha) */
   --focus: 0 0 0 3px rgba(15, 92, 87, .32);
 
   --font-ui: "IBM Plex Sans", "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -123,8 +124,8 @@
   --fill-2: rgba(246, 235, 217, .08);
   --text: #F6EBD9;
   --text-2: #DDD3C3;
-  --muted: #A69F93;            /* paper 65%: 7.1 on ink */
-  --faint: #969085;            /* paper ~58%: 5.9 on ink, 5.5 on the surface */
+  --muted: #BAB2A6;            /* paper ~72%: 8.8 on ink */
+  --faint: #ACA59A;            /* paper ~66%: 7.6 on ink, 7.0 on the surface */
   --accent: #5FA8A1;           /* teal tint for text and icons: 6.8 on ink */
   --accent-2: #7CC2BA;
   --accent-soft: rgba(95, 168, 161, .12);
@@ -145,6 +146,7 @@
   --phase-post: #A69F93;
   --shadow: 0 12px 32px -8px rgba(0, 0, 0, .6);
   --shadow-sm: 0 2px 8px -6px rgba(0, 0, 0, .5);
+  --sh: 0 0 0;
   --focus: 0 0 0 3px rgba(95, 168, 161, .45);
   /* data colours on ink: the same roles, as teal tints, paper tints and a signal tint */
   --d-teal-deep: #B5DDD8; --d-teal: #5FA8A1; --d-teal-mid: #8CCBC3;
@@ -217,8 +219,8 @@ html[lang="ar"] .h1, html[lang="ar"] .h2, html[lang="ar"] .h3 { font-family: var
 .mono, .code, .num-mono { font-family: var(--font-mono); font-weight: 500; }
 .muted { color: var(--muted); }
 .faint { color: var(--faint); }
-.small { font-size: 12px; }
-.tiny { font-size: 11px; }
+.small { font-size: 13px; }
+.tiny { font-size: 12px; }
 .mono { font-family: var(--font-mono); font-size: .92em; }
 .num { font-variant-numeric: tabular-nums; }
 .ar { font-family: var(--font-ar); direction: rtl; unicode-bidi: isolate; }
@@ -421,7 +423,7 @@ p { margin: 0; }
 .pill {
   display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
   height: 22px; padding: 0 9px; border-radius: var(--radius-pill);
-  font-size: 11px; font-weight: 500; letter-spacing: .01em;
+  font-size: 12px; font-weight: 500; letter-spacing: .01em;
   background: var(--raised); color: var(--text-2); border: 1px solid transparent;
 }
 .pill svg.lucide { width: 12px; height: 12px; }
@@ -475,7 +477,7 @@ p { margin: 0; }
   font-size: 11px; font-weight: 700; color: var(--ink);
   background: hsl(var(--h) 45% 72%);
 }
-.av.sm { width: 22px; height: 22px; font-size: 9px; }
+.av.sm { width: 22px; height: 22px; font-size: 10px; }
 .av.lg { width: 44px; height: 44px; font-size: 15px; }
 .av.xl { width: 72px; height: 72px; font-size: 24px; }
 .av-stack { display: inline-flex; }
@@ -608,4 +610,25 @@ a.list-row:hover, .list-row.link:hover { background: var(--bg); cursor: pointer;
 .stb-num, .sl-code, .sl-code-in, .cs-day-num .strong, .cs-times td, .cs-call .v, .sd-clock, .sd-time, .sd-log-time, .sd-note-time, .sd-onclock,
 .tb-meta .mono, .ov-chip.mono, .tag.dept, .bd-sc-num, td.num, .num-mono {
   font-family: var(--font-mono); font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: .02em;
+}
+
+/* ------------------------------------------------------------ the Klaket assistant (js/assistant.js) */
+.assistant-panel { position: fixed; inset: 0 0 0 auto; z-index: 60; width: min(440px, 100vw); display: flex; flex-direction: column;
+  background: var(--surface); border-inline-start: 1px solid var(--line); box-shadow: var(--shadow); }
+.assistant-panel[hidden] { display: none; }
+.assistant-head { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.assistant-title { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.assistant-body { flex: 1; min-height: 0; display: flex; }
+.assistant-frame { flex: 1; width: 100%; border: 0; background: var(--bg); }
+.assistant-msg { padding: 16px; display: grid; gap: 10px; align-content: start; }
+@media (min-width: 1100px) { body.assistant-open { padding-inline-end: min(440px, 100vw); } }
+
+/* ------------------------------------------------------------ light / dark / system switch in the top bar */
+.tb-theme button { width: 30px; padding: 0; justify-content: center; }
+.tb-theme button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,.12)); }
+.tb-theme svg { width: 15px; height: 15px; }
+@media (max-width: 760px) {
+  .tb-theme { background: transparent; padding: 0; }
+  .tb-theme button:not(.on) { display: none; }
+  .tb-theme button.on { background: transparent; box-shadow: none; }
 }

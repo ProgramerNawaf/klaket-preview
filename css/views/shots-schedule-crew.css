@@ -51,7 +51,7 @@
   box-shadow: inset 0 0 0 1px var(--fill-2); color: var(--faint); font-size: 11px; font-weight: 600; gap: 2px; cursor: pointer;
   transition: transform .25s cubic-bezier(.3, 1.3, .5, 1), box-shadow .25s; }
 .sl-pic svg.sk { width: 100%; height: 100%; display: block; }
-.sl-pic:hover { transform: scale(1.06); box-shadow: inset 0 0 0 1px var(--accent-line), 0 8px 20px -10px rgba(24, 39, 75, 0.3); }
+.sl-pic:hover { transform: scale(1.06); box-shadow: inset 0 0 0 1px var(--accent-line), 0 8px 20px -10px rgb(var(--sh) / 0.3); }
 .sl-pic.is-empty { grid-auto-flow: column; background: color-mix(in srgb, var(--primary) 6%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 20%, transparent); color: var(--accent); }
 .sl-pic.is-empty svg.lucide { width: 13px; height: 13px; }
 .sl-pic.is-drawing { cursor: progress; background: linear-gradient(100deg, var(--raised) 30%, var(--raised-2) 50%, var(--raised) 70%); background-size: 200% 100%; animation: sl-shimmer 1.2s linear infinite; }
@@ -146,7 +146,7 @@
 .stb-cols {
   display: grid; grid-template-columns: var(--stb-cols); gap: 8px; align-items: center;
   padding-block: 9px; padding-inline: 11px 10px; background: var(--surface); border-block-end: 1px solid var(--line);
-  font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--faint);
+  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--faint);
 }
 .stb-zone { display: flex; flex-direction: column; min-block-size: 44px; transition: background-color .12s; }
 .stb-strip {
@@ -184,7 +184,7 @@
 .stb-cid {
   min-inline-size: 20px; block-size: 20px; padding-inline: 4px; border-radius: 999px; flex: none; display: inline-grid; place-items: center;
   background: color-mix(in srgb, var(--cat-cast) 20%, transparent); color: var(--cat-cast);
-  border: 1px solid color-mix(in srgb, var(--cat-cast) 45%, transparent); font-size: 10.5px; font-weight: 700;
+  border: 1px solid color-mix(in srgb, var(--cat-cast) 45%, transparent); font-size: 11px; font-weight: 700;
 }
 /* "Move to…": a native select laid over an icon, so it works with keyboard, screen readers and touch */
 .stb-move {

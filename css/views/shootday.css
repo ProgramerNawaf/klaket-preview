@@ -103,7 +103,7 @@ button.sd-shot:active { background: var(--raised); }
 .sd-shot-code { min-width: 34px; }
 .sd-shot-txt { gap: 4px; }
 .sd-tags { gap: 4px; }
-.sd-tag { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); color: var(--text-2); }
+.sd-tag { font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 4px; background: var(--surface); border: 1px solid var(--line); color: var(--text-2); }
 .sd-shot-act { flex: none; min-width: 64px; text-align: center; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--line-2); color: var(--text-2); font-weight: 600; }
 .sd-shot.shooting .sd-shot-act { background: var(--primary); border-color: var(--primary); color: var(--accent-ink); }
 .sd-shot.done .sd-shot-act { border-color: transparent; color: var(--faint); }

@@ -1,0 +1,97 @@
+/* The sign-in picture: a night film set in 3D, driven by scroll (js/filmset.js). Dark in both themes: it's a set at
+   night. Brand colours only: ink, paper, teal and its tints; the three red dots on the slate are the logo's. */
+.aa.fs { padding: 0; background: radial-gradient(70% 55% at 30% 10%, #16706A 0%, transparent 60%), radial-gradient(80% 60% at 80% 100%, #0A3F3C 0%, transparent 65%), #0E1514; }
+.fs-scroll { position: sticky; top: 0; height: 100vh; height: 100dvh; overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; outline: none; }
+.fs-scroll::-webkit-scrollbar { display: none; }
+.fs-scroll:focus-visible { box-shadow: inset 0 0 0 3px rgba(95, 168, 161, .6); }
+.fs-track { height: 400%; }
+.fs-sticky { position: sticky; top: 0; height: 100vh; height: 100dvh; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; padding: 40px clamp(24px, 4vw, 56px) 28px; overflow: hidden; }
+.fs-head { display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 2; }
+.fs-head .eyebrow { color: rgba(246, 235, 217, .72); font-size: 11px; letter-spacing: .14em; }
+.fs-title { margin: 0; font: 900 clamp(26px, 2.6vw, 38px)/1.15 var(--font-display); color: var(--paper); text-wrap: balance; max-width: 18ch; }
+
+/* the 3D stage: drawn at 1000×600 and scaled to the panel (--k, set by filmset.js) */
+.scene-container { position: relative; display: grid; place-items: center; min-height: 0; width: 100%; height: 100%; }
+.fs-fit { --k: .6; width: calc(1000px * var(--k)); height: calc(600px * var(--k)); }
+.fs-stage { position: relative; width: 1000px; height: 600px; transform: scale(var(--k)); transform-origin: 0 0; perspective: 1300px; perspective-origin: 50% 30%; }
+#main-scene { position: absolute; inset: 0; transform-style: preserve-3d; transform-origin: 50% 520px; will-change: transform; }
+/* the floor lies flat on the floor line; everything else stands on it at its own depth (--z) */
+.fs-floor { position: absolute; transform: rotateX(90deg); transform-origin: 50% 50%;
+  background: radial-gradient(60% 50% at 55% 50%, rgba(15, 92, 87, .55), transparent 70%), repeating-linear-gradient(0deg, rgba(246, 235, 217, .05) 0 2px, transparent 2px 60px), repeating-linear-gradient(90deg, rgba(246, 235, 217, .05) 0 2px, transparent 2px 60px), #0C1312;
+  border-radius: 24px; box-shadow: 0 0 0 2px rgba(95, 168, 161, .15) inset; }
+.fs-floor svg { width: 100%; height: 100%; display: block; }
+.fs-prop { position: absolute; translate: 0 0 var(--z); transform-origin: 50% 100%; transform-style: preserve-3d; }
+.fs-prop > svg { width: 100%; height: 100%; display: block; overflow: visible; }
+#clapperboard-wrapper { transform-origin: 50% 50%; }
+.fs-clap-hang, .fs-clap-hang svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.fs-svg, .fs-stage svg { direction: ltr; }
+.fs-stage .camera-reel-1, .fs-stage .camera-reel-2 { transform-box: fill-box; transform-origin: center; }
+.fs-stage .clapper-stick { transform-box: fill-box; transform-origin: 0 100%; }        /* hinged at the slate's top-left */
+.fs-stage .fs-arm { transform-box: fill-box; transform-origin: 100% 100%; }             /* from the shoulder */
+.fs-stage .fs-boom { transform-box: fill-box; transform-origin: 0 100%; }               /* from the operator's hands */
+/* before the timeline is live (and for Reduce Motion): the set at eye level, at the clap */
+.fs:not(.fs-live) #main-scene { transform: translateY(40px) translateZ(70px) rotateX(-4deg) rotateY(6deg); }
+.fs:not(.fs-live) .fs-prop:not(#clapperboard-wrapper) { transform: rotateX(2.5deg); }
+.fs:not(.fs-live) #clapperboard-wrapper { transform: rotateX(4deg); }
+.fs-stage .fs-body { stroke: rgba(95, 168, 161, .35); stroke-width: 1.5; }               /* rim light on the crew */
+.fs-slate-text text { font: 500 11px var(--font-mono); letter-spacing: .08em; }
+.fs-slate-text .chalk { font: 900 17px var(--font-display); fill: #8CCBC3; letter-spacing: .04em; }
+.fs-slate-text .prod { font: 900 13px var(--font-display); letter-spacing: .1em; }
+.fs-slate-text .action { font: 900 26px var(--font-display); letter-spacing: .12em; }
+.fs-dots circle { fill: var(--signal); }
+/* the clap: the slate's ACTION flashes and the board kicks once */
+.fs.fs-clap .fs-slate-text .action { animation: fs-flash .7s ease-out; }
+.fs.fs-clap .fs-slate { animation: fs-kick .28s ease-out; transform-box: fill-box; transform-origin: center; }
+@keyframes fs-flash { 0% { fill: #fff; filter: drop-shadow(0 0 10px #B5DDD8); } 100% { fill: #F6EBD9; filter: none; } }
+@keyframes fs-kick { 0% { transform: translateY(0); } 35% { transform: translateY(4px); } 100% { transform: translateY(0); } }
+
+/* "Scroll to Action": bounces until the scroll starts */
+.fs-cue { justify-self: center; margin: 0; display: inline-flex; flex-direction: column; align-items: center; gap: 6px; color: rgba(246, 235, 217, .8);
+  font: 500 11px var(--font-mono); letter-spacing: .14em; text-transform: uppercase; transition: opacity .4s; animation: fs-bounce 1.6s ease-in-out infinite; }
+.fs-cue i { width: 18px; height: 28px; border: 2px solid rgba(246, 235, 217, .6); border-radius: 10px; position: relative; }
+.fs-cue i::after { content: ""; position: absolute; left: 50%; top: 5px; width: 3px; height: 6px; margin-left: -1.5px; border-radius: 2px; background: var(--paper); animation: fs-wheel 1.6s ease-in-out infinite; }
+.fs.fs-moving .fs-cue { opacity: 0; }
+@keyframes fs-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes fs-wheel { 0% { opacity: 1; transform: translateY(0); } 80% { opacity: 0; transform: translateY(9px); } 100% { opacity: 0; } }
+.fs-foot { position: absolute; inset-inline: clamp(24px, 4vw, 56px); bottom: 22px; display: flex; justify-content: flex-end; }
+.fs-foot .mono { font-size: 10.5px; letter-spacing: .16em; color: rgba(246, 235, 217, .55); }
+html[lang="ar"] .fs-head .eyebrow, html[lang="ar"] .fs-cue, html[lang="ar"] .fs-foot .mono { font-family: var(--font-ar); letter-spacing: 0; font-weight: 600; }
+
+/* phones and narrow windows: a banner under the form that plays as the page scrolls past it */
+@media (max-width: 860px) {
+  .fs-scroll { position: static; height: auto; overflow: visible; }
+  .fs-track { height: auto; }
+  .fs-sticky { position: static; height: auto; padding: 28px 16px 44px; gap: 14px; }
+  .fs-title { font-size: 22px; }
+  .fs-cue { display: none; }
+  .fs-foot { bottom: 14px; }
+  .scene-container { height: auto; }
+}
+/* Reduce Motion (or no anime.js): the set at the clap, still */
+.fs.fs-still .fs-track { height: 100%; }
+.fs.fs-still .fs-scroll { overflow: hidden; }
+.fs.fs-still .fs-cue { display: none; }
+@media (prefers-reduced-motion: reduce) { .fs-cue, .fs-cue i::after { animation: none; } }
+
+/* ---- after the clap: Klaket's splash (a flash of paper, then the logo on ink), then the agents picture ---- */
+.fs-splash { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; pointer-events: none; opacity: 0; background: #0E1514; }
+.fs-splash-logo { opacity: 0; }
+.fs-splash-logo .kl-logo { --kl-h: 96px; }
+.fs.fs-splashing .fs-splash { animation: fs-splash 1.7s ease forwards; }
+.fs.fs-splashing .fs-splash-logo { animation: fs-splash-logo 1.7s cubic-bezier(.2, .8, .2, 1) forwards; }
+@keyframes fs-splash { 0% { opacity: 0; background: #F6EBD9; } 6% { opacity: 1; background: #F6EBD9; } 20% { background: #0E1514; } 72% { opacity: 1; } 100% { opacity: 0; background: #0E1514; } }
+@keyframes fs-splash-logo { 0%, 14% { opacity: 0; transform: scale(.6); } 32% { opacity: 1; transform: scale(1.06); } 42% { transform: scale(1); } 72% { opacity: 1; } 100% { opacity: 0; transform: scale(1.03); } }
+/* the hand-over: the set steps aside for the agents picture */
+.fs-after { position: relative; }
+.fs.fs-done .fs-scroll { display: none; }
+.fs.fs-done .fs-after { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; animation: fs-after-in .6s ease-out; }
+.fs-after > .ag { flex: 1; }
+@keyframes fs-after-in { from { opacity: 0; } to { opacity: 1; } }
+.fs-replay { position: absolute; inset-block-start: 14px; inset-inline-end: 14px; z-index: 3; display: inline-flex; align-items: center; gap: 6px;
+  height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(246, 235, 217, .25); background: rgba(18, 18, 18, .35);
+  color: var(--paper); font: 600 12px var(--font-ui); cursor: pointer; backdrop-filter: blur(6px); }
+.fs-replay:hover { background: rgba(18, 18, 18, .55); }
+.fs-replay svg { width: 14px; height: 14px; }
+.fs.fs-still .fs-replay { display: none; } /* Reduce Motion: there's no shot to replay */
+@media (max-width: 860px) { .fs.fs-done .fs-after { min-height: 0; } }
+@media (prefers-reduced-motion: reduce) { .fs.fs-done .fs-after { animation: none; } }

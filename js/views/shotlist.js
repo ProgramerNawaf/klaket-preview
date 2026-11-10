@@ -132,9 +132,11 @@
       title: `Shot ${esc(s.code || '')}`,
       sub: esc([s.size, s.angle, s.movement, s.lens].filter(Boolean).join(' · ')),
       body: `<div class="sl-pic-big">${s.illustration ? MPH.sketch(s.illustration) : ui.empty('image', 'No picture yet', ctx.canEdit ? 'Let the AI draw it from the shot and its scene.' : '')}</div>
-        ${s.description ? `<p class="small" dir="auto">${esc(s.description)}</p>` : ''}`,
+        ${s.description ? `<p class="small" dir="auto">${esc(s.description)}</p>` : ''}
+        ${ctx.canEdit ? `<div class="row wrap" style="gap:8px;align-items:center"><span class="tiny muted">${esc(ctx.t('Picture style'))}</span>${MPH.illus.stylePicker(ctx)}</div>` : ''}`,
       foot: `<button class="btn btn-ghost" data-close>Close</button>${ctx.canEdit ? `<button class="btn btn-primary" data-redraw>${ui.icon('sparkles')}${s.illustration ? 'Redraw with AI' : 'Draw with AI'}</button>` : ''}`,
     }), { wide: true });
+    MPH.illus.wireStyle(ctx, el);
     const b = el.querySelector('[data-redraw]');
     if (b) b.addEventListener('click', async () => {
       b.disabled = true; b.innerHTML = `${ui.spinner()}Drawing`;
@@ -277,6 +279,8 @@
       title: ctx.t('Shot List'),
       sub: `${plural(d.scenes.length, 'scene')}${ed ? ' · changes save as you go' : ''}`,
       actions: `
+        ${ed ? `<label class="btn btn-outline" title="Add the shots from a shot list you already have (PDF or photo)">${ui.icon('file-up')}Upload shot list<input type="file" accept="application/pdf,image/*" data-sl-import hidden></label>` : ''}
+        ${ed ? MPH.illus.stylePicker(ctx) : ''}
         ${ed ? `<button class="btn btn-outline" data-illus-all ${d.shots.some((s) => !s.illustration) ? '' : 'hidden'}>${ui.icon('sparkles')}Draw <span data-illus-n>${d.shots.filter((s) => !s.illustration).length}</span> shots with AI</button>` : ''}
         <div class="seg" role="group" aria-label="Order">
           <button class="${mode === 'scene' ? 'on' : ''}" data-mode="scene" aria-pressed="${mode === 'scene'}">${ui.icon('clapperboard')}By scene</button>
@@ -320,6 +324,126 @@
         </div>
         ${ed ? `<p class="tiny faint sl-hint">${ui.icon('info')}Drag the handle or use the arrows to reorder shots inside a scene. Enter saves a cell, Esc undoes the edit. Codes stay put when you reorder; use Renumber to reset them.</p>` : ''}
       </div>`;
+  }
+
+  /* ------------------------------------------------------------ import an existing shot list
+     The file is saved under the production's internal files, the AI reads it into shots matched to scenes, and the
+     user ticks what to add (like suggested shots). Codes from the document are kept; missing ones continue the scene's. */
+  function openImport(ctx, d, file) {
+    const { ui, esc } = ctx;
+    const el = ctx.modal(ctx.frame({
+      title: 'Upload a shot list',
+      sub: esc(file.name),
+      body: '<div class="stack" data-im-body></div>',
+      foot: '<div class="row sl-ai-foot" data-im-foot></div>',
+    }), { wide: true });
+    const body = el.querySelector('[data-im-body]');
+    const foot = el.querySelector('[data-im-foot]');
+    const paint = (b, f) => { body.innerHTML = b; foot.innerHTML = f; MPH.icons(); };
+    const scenes = d.scenes.slice().sort(sceneOrder);
+    const sceneOpts = (sel) => `<option value="">Choose a scene…</option>${scenes.map((sc) => `<option value="${esc(sc.id)}" ${sc.id === sel ? 'selected' : ''}>Sc. ${esc(sc.num)} · ${esc(sc.heading || sc.location || '')}</option>`).join('')}`;
+
+    const run = async () => {
+      paint(`<div class="sl-ai-running"><span class="spin"></span><div class="stack tight" style="gap:2px"><span class="strong">Reading ${esc(file.name)}…</span><span class="small muted">The AI copies every shot from your list and files each one under its scene. A long list takes up to a minute. Nothing is added until you choose.</span></div></div>`,
+        '<button class="btn btn-ghost" data-close>Cancel</button>');
+      try {
+        const path = await ctx.api.uploadMedia(ctx.production.id, file, 'internal', 'shotlists');
+        preview(await ctx.api.ai('import_shots', { production_id: ctx.production.id, file_path: path }));
+      } catch (ex) {
+        paint(ui.errorBox(ex.message || String(ex)), `<button class="btn btn-ghost" data-close>Close</button><button class="btn btn-primary" data-im-retry>${ui.icon('rotate-ccw')}Try again</button>`);
+        foot.querySelector('[data-im-retry]').addEventListener('click', run);
+      }
+    };
+
+    const preview = (out) => {
+      const shots = (Array.isArray(out && out.shots) ? out.shots : []).map((s) => ({ ...s, scene_id: findScene(d, s.scene_id) ? s.scene_id : '' }));
+      if (!shots.length) {
+        return paint(ui.empty('file-search', 'No shots found', 'The AI couldn’t find a shot list in this file. Try a PDF or a clear photo of the list.'), '<button class="btn btn-ghost" data-close>Close</button>');
+      }
+      const unmatched = shots.filter((s) => !s.scene_id).length;
+      paint(`
+        ${out.notes ? `<div class="callout">${ui.icon('sparkles')}<span class="small" dir="auto">${esc(out.notes)}</span></div>` : ''}
+        <p class="small muted">${plural(shots.length, 'shot')} found${unmatched ? `; ${plural(unmatched, 'shot')} need a scene before they can be added` : ''}. Untick any you don’t want. They’re added after each scene’s existing shots, and everything stays editable.</p>
+        <div class="table-wrap sl-ai-wrap"><table class="table sl-ai-table">
+          <thead><tr><th class="sl-check-c"><input type="checkbox" class="sl-check" data-im-all checked aria-label="Select all shots"></th><th>Scene</th><th>Shot</th><th>Size</th><th>Angle</th><th>Movement</th><th>Lens</th><th>Description</th><th class="r">Est.</th></tr></thead>
+          <tbody>${shots.map((s, i) => `
+            <tr>
+              <td class="sl-check-c"><input type="checkbox" class="sl-check" data-im-pick="${i}" ${s.scene_id ? 'checked' : 'disabled'} aria-label="Add shot ${i + 1}"></td>
+              <td><select class="cell-input" data-im-scene="${i}" aria-label="Scene for shot ${i + 1}">${sceneOpts(s.scene_id)}</select></td>
+              <td class="mono strong nowrap">${esc(s.code || '')}</td>
+              <td>${s.size ? `<span class="sl-size" title="${esc(SIZE_NAMES[s.size] || s.size)}">${esc(s.size)}</span>` : ''}</td>
+              <td class="small nowrap">${esc(s.angle || '')}</td>
+              <td class="small nowrap">${esc(s.movement || '')}</td>
+              <td class="small nowrap num">${esc(s.lens || '')}</td>
+              <td class="small sl-ai-desc" dir="auto">${esc(s.description || '')}${s.subject ? `<span class="muted"> · ${esc(s.subject)}</span>` : ''}</td>
+              <td class="r num small nowrap">${int(s.est_minutes) ? fmtMin(int(s.est_minutes)) : ''}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>`,
+      `<span class="spacer"></span><button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" data-im-add>${ui.icon('plus')}<span data-im-label></span></button>`);
+
+      const sync = () => {
+        const picks = [...body.querySelectorAll('[data-im-pick]')];
+        const k = picks.filter((cb) => cb.checked).length;
+        picks.forEach((cb) => cb.closest('tr').classList.toggle('is-off', !cb.checked));
+        const all = body.querySelector('[data-im-all]');
+        const can = picks.filter((cb) => !cb.disabled).length;
+        all.checked = !!k && k === can; all.indeterminate = k > 0 && k < can;
+        foot.querySelector('[data-im-label]').textContent = k ? `Add ${plural(k, 'shot')}` : 'Select shots to add';
+        foot.querySelector('[data-im-add]').disabled = !k;
+      };
+      body.onchange = (e) => {
+        const t = e.target;
+        if (t.matches('[data-im-all]')) body.querySelectorAll('[data-im-pick]:not(:disabled)').forEach((cb) => { cb.checked = t.checked; });
+        if (t.dataset.imScene != null) {
+          const i = +t.dataset.imScene;
+          shots[i].scene_id = t.value;
+          const cb = body.querySelector(`[data-im-pick="${i}"]`);
+          cb.disabled = !t.value; cb.checked = !!t.value;
+        }
+        sync();
+      };
+      sync();
+
+      foot.querySelector('[data-im-add]').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        const picks = [...body.querySelectorAll('[data-im-pick]:checked')].map((cb) => shots[+cb.dataset.imPick]).filter((s) => s.scene_id);
+        if (!picks.length) return;
+        btn.disabled = true; btn.innerHTML = `${ui.spinner()}Adding…`;
+        const rows = [];
+        scenes.forEach((sc) => {
+          const mine = picks.filter((s) => s.scene_id === sc.id);
+          if (!mine.length) return;
+          const now = shotsOf(d, sc.id);
+          const used = new Set(now.map((s) => String(s.code || '').trim().toUpperCase()));
+          const next = codeSeq(sc, now);
+          const base = now.reduce((m, s) => Math.max(m, (s.sort || 0) + 1), 0);
+          const setupNow = now.reduce((m, s) => Math.max(m, Number(s.setup) || 0), 0);
+          let k = 0;
+          mine.forEach((s, j) => {
+            let code = txt(s.code, 20);
+            if (!code || used.has(code.toUpperCase())) code = next(k++);
+            used.add(code.toUpperCase());
+            rows.push({
+              production_id: ctx.production.id, scene_id: sc.id, code,
+              size: txt(s.size, 20), angle: txt(s.angle, 40), movement: txt(s.movement, 40), lens: txt(s.lens, 40),
+              description: txt(s.description, 2000), subject: txt(s.subject, 200),
+              setup: int(s.setup) ? setupNow + int(s.setup) : null,
+              est_minutes: int(s.est_minutes) || 15, ai: false, sort: base + j,
+            });
+          });
+        });
+        try {
+          const ins = ctx.api.must(await ctx.sb.from('shots').insert(rows).select());
+          ctx.closeOverlay();
+          ctx.toast(`Added ${plural(ins.length, 'shot')} from ${file.name}`, 'file-check');
+          ctx.reload();
+        } catch (ex) {
+          btn.disabled = false; btn.innerHTML = `${ui.icon('plus')}Try again`; MPH.icons();
+          ctx.toastError(ex);
+        }
+      });
+    };
+    run();
   }
 
   /* ------------------------------------------------------------ AI coverage */
@@ -473,7 +597,15 @@
     render: renderPage,
 
     mount(root, ctx, d) {
+      MPH.illus.wireStyle(ctx, root);
       if (!d.scenes.length) return;
+      root.addEventListener('change', (e) => {
+        const f = e.target.matches('[data-sl-import]') && e.target.files && e.target.files[0];
+        if (!f) return;
+        e.target.value = '';
+        if (f.size > 20 * 1024 * 1024) { ctx.toast('That file is larger than 20 MB', 'triangle-alert'); return; }
+        openImport(ctx, d, f);
+      });
       const { ui, esc } = ctx;
       const mode = () => (ctx.state.slMode === 'order' ? 'order' : 'scene');
       let queue = Promise.resolve();

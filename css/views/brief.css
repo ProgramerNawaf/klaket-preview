@@ -86,7 +86,7 @@
 .bf-ap-list { max-height: 46vh; overflow: auto; }
 
 /* Brief Agent: who said it, the must-ask list, what the client said */
-.bf-said { font-size: 10.5px; letter-spacing: .04em; color: var(--faint); white-space: nowrap; }
+.bf-said { font-size: 11px; letter-spacing: .04em; color: var(--faint); white-space: nowrap; }
 .bf-conf-v { font-weight: 600; }
 .bf-qs { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .bf-q { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: var(--radius-pill); font-size: 12px; background: var(--raised); }

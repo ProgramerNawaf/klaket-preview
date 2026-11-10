@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/app.css?v=42">
+<link rel="stylesheet" href="css/app.css?v=95">
 <style>
   /* Public crew page: light, high-contrast theme so it reads on a phone in direct sun. */
   html { color-scheme: light; }
@@ -133,6 +133,9 @@
       confirm: 'Confirm attendance', decline: 'Can’t make it', confirmed: 'You confirmed your attendance', declined: 'You told the production you can’t make it',
       change: 'Change my answer', notYou: 'Not you?', location: 'Location', setLoc: 'Set location', parking: 'Parking', hospital: 'Nearest hospital',
       openMaps: 'Open in Maps', directions: 'Directions', emergency: 'Emergency 911 · Ambulance 997', weather: 'Weather', notes: 'Notes',
+      locations: 'Locations', sunrise: 'Sunrise', sunset: 'Sunset', safety: 'Emergency numbers', findHospital: 'Find the nearest hospital',
+      sos: { 'Unified emergency': 'Unified emergency', 'Ambulance (Red Crescent)': 'Ambulance (Red Crescent)', Police: 'Police', 'Civil Defense (fire)': 'Civil Defense (fire)', 'Road security': 'Road security' },
+      prep: { 'Prep and reset': 'Prep and reset', 'Company move and set-up': 'Company move and set-up' }, min: 'min',
       schedule: 'Schedule', scene: 'Sc.', scenes: function (n) { return n + (n === 1 ? ' scene' : ' scenes'); }, pages: 'pages', estimates: 'Times are estimates.',
       cast: 'Cast', crew: 'Crew', contacts: 'Key contacts', call: 'Call', tbc: 'TBC', version: 'Version', published: 'Published', sending: 'Sending…',
       pickFirst: 'Choose your name or type it first.', sendErr: 'Couldn’t send your answer. Check your connection and try again.',
@@ -149,6 +152,9 @@
       confirm: 'تأكيد الحضور', decline: 'لا أستطيع الحضور', confirmed: 'أكّدت حضورك', declined: 'أبلغت الإنتاج أنك لا تستطيع الحضور',
       change: 'تغيير إجابتي', notYou: 'لست أنت؟', location: 'الموقع', setLoc: 'موقع التصوير', parking: 'المواقف', hospital: 'أقرب مستشفى',
       openMaps: 'فتح في الخرائط', directions: 'الاتجاهات', emergency: 'الطوارئ 911 · الإسعاف 997', weather: 'الطقس', notes: 'ملاحظات',
+      locations: 'المواقع', sunrise: 'الشروق', sunset: 'الغروب', safety: 'أرقام الطوارئ', findHospital: 'ابحث عن أقرب مستشفى',
+      sos: { 'Unified emergency': 'الطوارئ الموحد', 'Ambulance (Red Crescent)': 'الإسعاف (الهلال الأحمر)', Police: 'الشرطة', 'Civil Defense (fire)': 'الدفاع المدني', 'Road security': 'أمن الطرق' },
+      prep: { 'Prep and reset': 'تجهيز بين المشاهد', 'Company move and set-up': 'انتقال الفريق والتجهيز' }, min: 'د',
       schedule: 'الجدول', scene: 'مشهد', scenes: function (n) { return n + ' ' + (n === 1 ? 'مشهد' : 'مشاهد'); }, pages: 'صفحات', estimates: 'الأوقات تقديرية.',
       cast: 'الممثلون', crew: 'الطاقم', contacts: 'جهات الاتصال', call: 'الحضور', tbc: 'يُحدد لاحقًا', version: 'الإصدار', published: 'نُشر', sending: 'جارٍ الإرسال…',
       pickFirst: 'اختر اسمك أو اكتبه أولًا.', sendErr: 'تعذّر إرسال إجابتك. تحقق من الاتصال وحاول مرة أخرى.',
@@ -283,18 +289,25 @@
       '<div class="csp-call' + (me && me.call ? ' sm' : '') + '"><span class="l">' + esc(T('crewCall')) + '</span><span class="v">' + esc(day.crew_call || T('tbc')) + '</span></div>' +
       (day.shoot_call ? '<div class="csp-call sm"><span class="l">' + esc(T('shootCall')) + '</span><span class="v">' + esc(day.shoot_call) + '</span></div>' : '') +
       (day.wrap ? '<div class="csp-call sm"><span class="l">' + esc(T('wrap')) + '</span><span class="v">' + esc(day.wrap) + '</span></div>' : '') +
+      (day.sunrise ? '<div class="csp-call sm"><span class="l">' + esc(T('sunrise')) + '</span><span class="v">' + esc(day.sunrise) + '</span></div>' : '') +
+      (day.sunset ? '<div class="csp-call sm"><span class="l">' + esc(T('sunset')) + '</span><span class="v">' + esc(day.sunset) + '</span></div>' : '') +
       '</div></section>';
 
     h += respondCard();
 
-    // location
-    h += '<section class="csp-card"><div class="csp-h">' + ICON.pin.replace('<svg', '<svg width="16" height="16"') + esc(T('location')) + '</div>' +
-      '<div class="csp-kv"><span class="k">' + esc(T('setLoc')) + '</span><span class="v">' + esc(c.location || T('tbc')) + '</span></div>' +
-      (c.location ? '<a class="csp-maps" href="' + esc(mapsUrl(c.location)) + '" target="_blank" rel="noopener">' + ICON.pin + esc(T('openMaps')) + '</a>' : '') +
-      (c.parking ? '<div class="csp-kv"><span class="k">' + esc(T('parking')) + '</span><span class="v">' + esc(c.parking) + '</span></div>' : '') +
-      '<div class="csp-kv"><span class="k">' + esc(T('hospital')) + '</span><span class="v">' + esc(c.hospital || '—') + '</span></div>' +
-      (c.hospital ? '<a class="csp-maps" href="' + esc(mapsUrl(c.hospital)) + '" target="_blank" rel="noopener">' + ICON.pin + esc(T('directions')) + '</a>' : '') +
-      '<div class="csp-kv"><span class="v" style="font-size:15px">' + esc(T('emergency')) + '</span></div></section>';
+    // locations, each with its nearest hospital (older sheets have one place)
+    var locs = Array.isArray(c.locations) && c.locations.length ? c.locations : (c.location ? [{ name: c.location, hospital: c.hospital || '', parking: c.parking || '' }] : []);
+    h += '<section class="csp-card"><div class="csp-h">' + ICON.pin.replace('<svg', '<svg width="16" height="16"') + esc(T(locs.length > 1 ? 'locations' : 'location')) + '</div>';
+    if (!locs.length) h += '<div class="csp-kv"><span class="v">' + esc(T('tbc')) + '</span></div>';
+    locs.forEach(function (l, i) {
+      h += (i ? '<hr style="border:0;border-block-start:1px solid var(--line);margin:4px 0">' : '') +
+        '<div class="csp-kv"><span class="k">' + (locs.length > 1 ? (i + 1) + ' · ' : '') + esc(T('setLoc')) + (l.scenes && l.scenes.length ? ' · ' + esc(T('scene')) + ' ' + esc(l.scenes.join(', ')) : '') + '</span><span class="v">' + esc(l.name) + '</span></div>' +
+        '<a class="csp-maps" href="' + esc(mapsUrl(l.name)) + '" target="_blank" rel="noopener">' + ICON.pin + esc(T('openMaps')) + '</a>' +
+        (l.parking ? '<div class="csp-kv"><span class="k">' + esc(T('parking')) + '</span><span class="v">' + esc(l.parking) + '</span></div>' : '') +
+        '<div class="csp-kv"><span class="k">' + esc(T('hospital')) + '</span><span class="v">' + esc(l.hospital || '—') + '</span></div>' +
+        '<a class="csp-maps" href="' + esc(l.hospital ? mapsUrl(l.hospital) : mapsUrl('hospital near ' + l.name)) + '" target="_blank" rel="noopener">' + ICON.pin + esc(T(l.hospital ? 'directions' : 'findHospital')) + '</a>';
+    });
+    h += '</section>';
 
     if (c.weather) h += '<section class="csp-card"><div class="csp-h">' + esc(T('weather')) + '</div><div style="font-size:16px;font-weight:600">' + esc(c.weather) + '</div></section>';
     if (notes.length) h += '<section class="csp-card csp-notes-card"><div class="csp-h">' + ICON.alert.replace('<svg', '<svg width="16" height="16"') + esc(T('notes')) + '</div><ul class="csp-notes">' + notes.map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul></section>';
@@ -304,8 +317,9 @@
     h += '<section class="csp-card"><div class="csp-h">' + esc(T('schedule')) + '</div>';
     if (schedule.length) {
       h += schedule.map(function (s) {
-        var meta = [s.time ? '<span class="csp-num">' + esc(s.time) + '</span>' : '', esc(dn(s.day_night)), '<span class="csp-num">' + esc(eighths(s.pages_eighths)) + '</span> ' + esc(T('pages'))].filter(Boolean).join(' · ');
-        return '<div class="csp-sc"><span class="csp-sc-num"><small>' + esc(T('scene')) + '</small>' + esc(s.num) + '</span><div class="csp-sc-body">' +
+        var prep = s.prep_before && s.prep_before.time ? '<div class="csp-sc-m" style="padding-block:6px;border-block-start:1px dashed var(--line-2);font-style:italic"><span class="csp-num">' + esc(s.prep_before.time) + '–' + esc(s.prep_before.end) + '</span> · ' + esc((T('prep') || {})[s.prep_before.label] || s.prep_before.label) + ' · <span class="csp-num">' + esc(s.prep_before.minutes) + '</span> ' + esc(T('min')) + '</div>' : '';
+        var meta = [s.time ? '<span class="csp-num">' + esc(s.time) + (s.end ? '–' + esc(s.end) : '') + '</span>' : '', esc(dn(s.day_night)), '<span class="csp-num">' + esc(eighths(s.pages_eighths)) + '</span> ' + esc(T('pages'))].filter(Boolean).join(' · ');
+        return prep + '<div class="csp-sc"><span class="csp-sc-num"><small>' + esc(T('scene')) + '</small>' + esc(s.num) + '</span><div class="csp-sc-body">' +
           '<span class="csp-sc-h">' + esc(s.heading || s.location || '') + '</span>' + (s.synopsis ? '<span class="csp-sc-m" dir="auto">' + esc(s.synopsis) + '</span>' : '') +
           '<span class="csp-sc-m">' + meta + '</span>' + (s.cast && s.cast.length ? '<span class="csp-sc-m" dir="auto"><strong>' + esc(T('cast')) + ':</strong> ' + esc(s.cast.join(', ')) + '</span>' : '') + '</div></div>';
       }).join('');
@@ -339,6 +353,12 @@
           (tel ? '<a class="csp-tel" href="tel:' + esc(tel) + '">' + ICON.phone + esc(k.phone) + '</a>' : '') + '</div>';
       }).join('') + '</section>';
     }
+
+    // public emergency numbers (older sheets: the two main ones)
+    var sos = Array.isArray(c.emergency) && c.emergency.length ? c.emergency : [{ label: 'Unified emergency', num: '911' }, { label: 'Ambulance (Red Crescent)', num: '997' }];
+    h += '<section class="csp-card"><div class="csp-h">' + ICON.alert.replace('<svg', '<svg width="16" height="16"') + esc(T('safety')) + '</div>' + sos.map(function (e) {
+      return '<div class="csp-row" style="align-items:center"><span class="n">' + esc((T('sos') || {})[e.label] || e.label) + '</span><a class="csp-tel" style="background:var(--danger)" href="tel:' + esc(String(e.num).replace(/[^\d+]/g, '')) + '">' + ICON.phone + esc(e.num) + '</a></div>';
+    }).join('') + '</section>';
 
     h += '<p class="csp-foot">' + esc(T('version')) + ' ' + esc(sheet.version) + (sheet.published_at ? ' · ' + esc(T('published')) + ' ' + esc(stamp(sheet.published_at)) : '') + '<br>' + esc(T('footer')) + '</p>';
     h += '</div>';

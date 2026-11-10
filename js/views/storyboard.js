@@ -200,6 +200,7 @@
           <label class="btn btn-sm btn-outline">${ui.icon('image-up')}Upload frames<input type="file" accept="image/*" multiple data-sbd-file hidden></label>
           <button class="btn btn-sm btn-ghost" data-sbd="add">${ui.icon('plus')}Blank frame</button>
           ${(() => { const n = d.frames.filter((f) => !f.image_path && !f.illustration).length; return n ? `<button class="btn btn-sm btn-outline" data-sbd="draw">${ui.icon('sparkles')}Draw ${plural(n, 'frame')} with AI</button>` : ''; })()}
+          ${MPH.illus.stylePicker(ctx)}
         </div>` : ''}
         <span class="spacer"></span>
         <button class="sbd-switch" role="switch" aria-checked="${grouped(ctx)}" data-sbd="group"><span class="toggle ${grouped(ctx) ? 'on' : ''}" aria-hidden="true"></span>Group by scene</button>
@@ -302,6 +303,7 @@
     render: renderPage,
 
     mount(root, ctx, d) {
+      MPH.illus.wireStyle(ctx, root);
       const { ui } = ctx;
       const pid = ctx.production.id;
       const repaint = () => { root.innerHTML = renderPage(ctx, d); MPH.icons(); };

@@ -1,13 +1,13 @@
 /* Production overview: an illustrated film-set hero, key numbers, then each phase as a coloured band of
    horizontal step cards with big pitch-style illustrations, live status and progress. */
 
-/* steps shown as an emoji instead of an illustration */
-const OV_EMOJI = { brief: '📋', concepts: '💡' };
+/* steps without their own illustration show their icon, drawn large */
+const OV_ICON = { brief: 'clipboard-list', concepts: 'lightbulb' };
 
 /* one step card: big illustration, name, status line, progress. "Soon" steps are softer and open the demo page. */
 function ovCard({ id, label, line, kind = '', ratio = 0, live, href }) {
   const { esc, ui } = MPH;
-  const art = OV_EMOJI[id] ? `<span class="ov-step-emoji" aria-hidden="true">${OV_EMOJI[id]}</span>` : MPH.art.step(id);
+  const art = OV_ICON[id] ? `<span class="ov-step-ico" aria-hidden="true">${ui.icon(OV_ICON[id])}</span>` : MPH.art.step(id);
   return `
     <a class="ov-step ${live ? '' : 'soon'} ${kind ? 'k-' + kind : ''}" href="${href}" role="listitem">
       <span class="ov-step-art">${art}</span>
@@ -193,6 +193,31 @@ MPH.view('overview', {
         </section>`;
     }).join('')}</div>`;
 
+    /* next up: the first step that needs the producer, in the order the work happens. Steps waiting on the client or
+       on an agent are listed apart; steps that need an earlier one are skipped. */
+    const ORDER = ['brief', 'concepts', 'script', 'breakdown', 'treatment', 'storyboard', 'shotlist', 'stripboard', 'budget', 'crew', 'locations', 'callsheets'];
+    const routeOf = (id) => (id === 'breakdown' ? 'script' : id);
+    const labelOf = (id) => (id === 'breakdown' ? 'AI Breakdown' : (MPH.PHASES.flatMap((ph) => ph.tabs).find((x) => x[0] === id) || [])[1] || id);
+    const waits = (line) => /waiting on the client|being written|AI is reading/i.test(line);
+    const blocked = (line) => /^Needs |^Opens when|owners and producers only/i.test(line);
+    const todo = ORDER.filter((id) => status[id] && !waits(status[id][0]) && !blocked(status[id][0]) && status[id][1] !== 'ok' && status[id][2] < 1);
+    const waiting = ORDER.filter((id) => status[id] && waits(status[id][0]));
+    const nextId = todo[0];
+    const stepChip = (id, cls = '') => `<a class="chip ov-then ${cls}" href="#p.${p.id}.${routeOf(id)}">${esc(ctx.t(labelOf(id)))}</a>`;
+    const next = nextId ? `
+      <section class="ov-next" aria-labelledby="ov-next-t">
+        <div class="ov-next-main">
+          ${ui.bubble('waiting', 'signal')}
+          <h2 class="ov-next-title" id="ov-next-t">${esc(ctx.t(labelOf(nextId)))}</h2>
+          <p class="ov-next-line">${esc(status[nextId][0])}</p>
+        </div>
+        <a class="btn btn-primary ov-next-go" href="#p.${p.id}.${routeOf(nextId)}">${esc(`Open ${ctx.t(labelOf(nextId))}`)}${ui.icon(MPH.state.lang === 'ar' ? 'arrow-left' : 'arrow-right')}</a>
+        <div class="ov-next-after">
+          ${todo.length > 1 ? `<span class="small muted">Then</span>${todo.slice(1, 4).map((id) => stepChip(id)).join('')}` : ''}
+          ${waiting.length ? `<span class="small muted ov-next-wait">${ui.icon('hourglass')}Waiting</span>${waiting.map((id) => stepChip(id, 'wait')).join('')}` : ''}
+        </div>
+      </section>` : '';
+
     const tiles = [
       ['clapperboard', d.scenes.length, 'Scenes', `${d.elements.length} elements`],
       ['list-video', d.shots.length, 'Shots', `${d.shots.filter((s) => s.done).length} done`],
@@ -203,6 +228,7 @@ MPH.view('overview', {
     return `
       <div class="page ov">
         ${hero}
+        ${next}
         <div class="ov-tiles">
           ${tiles.map(([icon, v, l, sub], i) => `
             <div class="ov-tile" style="animation-delay:${i * 60}ms"><span class="ov-tile-ico">${ui.icon(icon)}</span>

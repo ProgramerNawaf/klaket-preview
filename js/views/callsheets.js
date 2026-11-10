@@ -29,6 +29,57 @@
   const randHex = (bytes = 16) => [...crypto.getRandomValues(new Uint8Array(bytes))].map((b) => b.toString(16).padStart(2, '0')).join('');
   const mapsUrl = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
 
+  /* ------------------------------------------------------------ sunrise, sunset and weather (Open-Meteo, no key)
+     The place is looked up by name; the forecast covers about 16 days ahead, and outside it sunrise and sunset are
+     worked out with the sunrise equation (to within a couple of minutes). */
+  const WMO = { 0: 'Clear', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Overcast', 45: 'Fog', 48: 'Fog', 51: 'Light drizzle', 53: 'Drizzle', 55: 'Heavy drizzle',
+    61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 80: 'Rain showers', 81: 'Rain showers', 82: 'Heavy showers', 95: 'Thunderstorms', 96: 'Thunderstorms with hail', 99: 'Thunderstorms with hail' };
+  const getJSON = async (url) => { const r = await fetch(url); if (!r.ok) throw new Error(`The weather service answered ${r.status}. Try again later.`); return r.json(); };
+  const tzOffset = (tz, date) => {
+    try {
+      const part = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'longOffset' }).formatToParts(new Date(`${date}T12:00:00Z`)).find((x) => x.type === 'timeZoneName');
+      const m = /GMT([+-])(\d{2}):?(\d{2})?/.exec(part ? part.value : '');
+      return m ? (m[1] === '-' ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3] || 0)) : 180;
+    } catch (e) { return 180; }
+  };
+  function sunEquation(lat, lon, date, offsetMin) {
+    const rad = Math.PI / 180;
+    const J = Date.parse(`${date}T12:00:00Z`) / 86400000 + 2440587.5;
+    const n = Math.ceil(J - 2451545 + 0.0008);
+    const Js = n - lon / 360;
+    const M = ((357.5291 + 0.98560028 * Js) % 360) * rad;
+    const C = 1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M);
+    const L = ((M / rad + C + 180 + 102.9372) % 360) * rad;
+    const Jt = 2451545 + Js + 0.0053 * Math.sin(M) - 0.0069 * Math.sin(2 * L);
+    const dec = Math.asin(Math.sin(L) * Math.sin(23.4397 * rad));
+    const cw = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * Math.sin(dec)) / (Math.cos(lat * rad) * Math.cos(dec));
+    if (cw < -1 || cw > 1) return {};
+    const w = Math.acos(cw) / rad;
+    const at = (j) => fmt(Math.round(((j - 2440587.5) * 86400000 % 86400000) / 60000) + offsetMin);
+    return { sunrise: at(Jt - w / 360), sunset: at(Jt + w / 360) };
+  }
+  MPH.sunAndWeather = async (place, date) => {
+    if (!date) throw new Error('Set the shoot day’s date first.');
+    const tries = uniq([place, ...String(place).split(/[,،]/).map((x) => x.trim()).reverse()].filter(Boolean));
+    let g = null;
+    for (const q of tries) {
+      const out = await getJSON(`https://geocoding-api.open-meteo.com/v1/search?count=1&language=en&format=json&name=${encodeURIComponent(q)}`);
+      if (out.results && out.results.length) { g = out.results[0]; break; }
+    }
+    if (!g) throw new Error(`Couldn’t find “${place}” on the map. Type the city or district name as the set location.`);
+    const where = [g.name, g.admin1, g.country].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(', ');
+    const days = (Date.parse(date) - Date.now()) / 86400000;
+    if (days > -90 && days < 15) {
+      const f = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${g.latitude}&longitude=${g.longitude}&timezone=auto&start_date=${date}&end_date=${date}&daily=sunrise,sunset,weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,precipitation_probability_max`);
+      const x = f.daily || {};
+      const v = (k) => (x[k] && x[k][0] != null ? x[k][0] : null);
+      const parts = [WMO[v('weather_code')] || '', v('temperature_2m_max') != null ? `${Math.round(v('temperature_2m_max'))}°C high` : '', v('temperature_2m_min') != null ? `${Math.round(v('temperature_2m_min'))}°C low` : '',
+        v('wind_speed_10m_max') != null ? `wind ${Math.round(v('wind_speed_10m_max'))} km/h` : '', v('precipitation_probability_max') ? `${v('precipitation_probability_max')}% chance of rain` : ''].filter(Boolean);
+      return { place: where, sunrise: String(v('sunrise') || '').slice(11, 16), sunset: String(v('sunset') || '').slice(11, 16), weather: parts.join(', ') };
+    }
+    return Object.assign({ place: where, weather: '' }, sunEquation(g.latitude, g.longitude, date, tzOffset(g.timezone, date)));
+  };
+
   /* ------------------------------------------------------------ Export PDF
      A print window holding the sheet on A4 in Klaket colours. Works for a draft (DRAFT watermark, "not shared")
      and for a published version; the browser's print dialog saves it as a PDF. */
@@ -39,7 +90,11 @@
     const css = [...document.querySelectorAll('link[rel="stylesheet"]')]
       .filter((l) => /fonts\.googleapis|\/app\.css|\/platform\.css|budget-callsheets\.css/.test(l.href))
       .map((l) => `<link rel="stylesheet" href="${esc(l.href)}">`).join('');
-    const doc = sheetDoc(snap, Object.assign({}, meta, { klaket: base + 'brand/klaket-wordmark-ink.svg' }));
+    // draw the icons here (the print window has no icon library), then hand over the finished markup
+    const tmp = document.createElement('div');
+    tmp.innerHTML = sheetDoc(snap, Object.assign({}, meta, { klaket: base + 'brand/klaket-wordmark-ink.svg' }));
+    MPH.icons(tmp);
+    const doc = tmp.innerHTML;
     w.document.write(`<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><title>${esc(title)}</title>${css}
       <style>@page{size:A4 portrait;margin:9mm}html,body{margin:0;background:#fff}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
       .cs-paper-wrap{border:0;border-radius:0;padding:0;background:none}.cs-doc{box-shadow:none;max-width:none;border-radius:0}</style></head>
@@ -60,6 +115,43 @@
   const defaultCall = (p, day) => hhmm(p.default_call) || hhmm(day.crew_call) || '';
   const callOf = (p, roster, day) => (roster[p.id] && roster[p.id].call) || defaultCall(p, day);
 
+  /* ------------------------------------------------------------ templates, timing and safety */
+  const TEMPLATES = [
+    { id: 'short', label: 'Short', hint: 'One page: crew and timings, locations with hospitals, the schedule and safety numbers' },
+    { id: 'standard', label: 'Standard', hint: 'Adds notes, the cast and key contacts' },
+    { id: 'expanded', label: 'Expanded', hint: 'Adds scene synopses, parking and the props, wardrobe and production breakdown' },
+  ];
+  const templateOf = (edits) => (TEMPLATES.some((x) => x.id === edits.template) ? edits.template : 'standard');
+  // Saudi public emergency numbers, printed on every sheet
+  const EMERGENCY = [
+    { label: 'Unified emergency', num: '911' }, { label: 'Ambulance (Red Crescent)', num: '997' }, { label: 'Police', num: '999' },
+    { label: 'Civil Defense (fire)', num: '998' }, { label: 'Road security', num: '996' },
+  ];
+  const PREPS = [15, 20, 30];
+  const prepOf = (edits) => (PREPS.includes(Number(edits.prep)) ? Number(edits.prep) : 15);
+  const moveOf = (edits) => (Number(edits.move) >= 15 && Number(edits.move) <= 120 ? Number(edits.move) : 30);
+  const BREAKDOWN = { props: ['props'], wardrobe: ['wardrobe', 'makeup'], production: ['vehicles', 'equipment', 'sfx', 'animals', 'stunts', 'sound', 'vfx', 'extras'] };
+  const CAT_NAMES = { makeup: 'Hair & makeup', vehicles: 'Vehicles', equipment: 'Equipment', sfx: 'SFX', animals: 'Animals', stunts: 'Stunts', sound: 'Sound', vfx: 'VFX', extras: 'Extras' };
+  const hospitalSearch = (place) => mapsUrl(`hospital near ${place}`);
+
+  /* every place the day shoots at: the set location, then each scene's location in shooting order. Hospital and
+     parking are kept per place (edits.loc, keyed by the place's name); the old single hospital/parking fields
+     belong to the first place. */
+  function locationsOf(d, day, edits, scenes) {
+    const first = (edits.set_location || '').trim() || day.location || '';
+    const names = [];
+    [first, ...scenes.map((s) => s.location || '')].forEach((n) => { const t = String(n || '').trim(); if (t && !names.some((x) => norm(x) === norm(t))) names.push(t); });
+    const loc = edits.loc || {};
+    return names.map((name, i) => {
+      const e = loc[norm(name)] || {};
+      return {
+        name, hospital: e.hospital != null ? e.hospital : (i === 0 ? edits.hospital || '' : ''),
+        parking: e.parking != null ? e.parking : (i === 0 ? edits.parking || '' : ''),
+        scenes: scenes.filter((s) => norm(s.location || first) === norm(name) || (!s.location && i === 0)).map((s) => s.num),
+      };
+    });
+  }
+
   function buildSnapshot(ctx, d, day, edits) {
     const p = ctx.production;
     const org = (ctx.session.orgs || []).find((o) => o.id === p.org_id);
@@ -67,21 +159,41 @@
     const scenes = d.scenes.filter((s) => s.shoot_day_id === day.id).sort((a, b) => (a.day_sort - b.day_sort) || (a.sort - b.sort));
     const castBy = {};
     d.cast.forEach((e) => { (castBy[e.scene_id] = castBy[e.scene_id] || []).push(e.name); });
+    const elsBy = {};
+    (d.elements || []).forEach((e) => { const m = (elsBy[e.scene_id] = elsBy[e.scene_id] || {}); (m[e.category] = m[e.category] || []).push(e.name); });
 
     const people = d.people.filter((x) => onSheet(x, roster)).map((x) => ({
       id: x.id, name: x.name, role: x.role || '', dept: deptOf(x), kind: x.kind, call: callOf(x, roster, day),
     }));
 
+    // scenes in shooting order with their times: a prep gap between scenes on the same set, a longer one to move
+    const prep = prepOf(edits), move = moveOf(edits);
+    const crewMin = toMin(day.crew_call);
     let t = toMin(edits.shoot_call);
-    const schedule = scenes.map((s) => {
+    const estimated = t == null && crewMin != null;
+    if (estimated) t = crewMin + 60; // no first-shot time yet: an hour after crew call
+    const placeOf = (s) => norm(s.location || edits.set_location || day.location);
+    const schedule = scenes.map((s, i) => {
+      let prep_before = null;
+      if (i > 0 && t != null) {
+        const moving = placeOf(s) !== placeOf(scenes[i - 1]);
+        const mins = moving ? move : prep;
+        prep_before = { minutes: mins, label: moving ? 'Company move and set-up' : 'Prep and reset', time: fmt(t), end: fmt(t + mins) };
+        t += mins;
+      }
+      const els = elsBy[s.id] || {};
+      const pick = (cats) => uniq(cats.flatMap((c) => (els[c] || []).map((n) => (CAT_NAMES[c] && cats.length > 1 && c !== cats[0] ? `${n} (${CAT_NAMES[c].toLowerCase()})` : n))));
       const row = {
         num: s.num, heading: s.heading || '', int_ext: s.int_ext || '', day_night: s.day_night || '', location: s.location || '',
         synopsis: s.synopsis || '', pages_eighths: s.pages_eighths || 0, est_minutes: s.est_minutes || 0,
-        cast: uniq(castBy[s.id] || []), time: t != null ? fmt(t) : '',
+        cast: uniq(castBy[s.id] || []), time: t != null ? fmt(t) : '', end: t != null ? fmt(t + (s.est_minutes || 60)) : '', prep_before,
+        props: pick(BREAKDOWN.props), wardrobe: pick(BREAKDOWN.wardrobe),
+        production: uniq(BREAKDOWN.production.flatMap((c) => (els[c] || []).map((n) => `${CAT_NAMES[c]}: ${n}`))),
       };
       if (t != null) t += s.est_minutes || 60;
       return row;
     });
+    const lastEnd = schedule.length && schedule[schedule.length - 1].end;
 
     const talent = people.filter((x) => x.kind === 'talent');
     const used = new Set();
@@ -90,26 +202,31 @@
       const loose = (x) => { const r = norm(x.role); return !!(r && c && (r.includes(c) || c.includes(r))); };
       const m = talent.find((x) => !used.has(x.id) && norm(x.role) === c) || talent.find((x) => !used.has(x.id) && loose(x));
       if (m) used.add(m.id);
-      return { no: i + 1, character, talent: m ? m.name : '', person_id: m ? m.id : null, call: m ? m.call : '' };
+      const sc = schedule.filter((s) => s.cast.includes(character)).map((s) => s.num);
+      return { no: i + 1, character, talent: m ? m.name : '', person_id: m ? m.id : null, call: m ? m.call : '', scenes: sc };
     });
-    talent.filter((x) => !used.has(x.id)).forEach((x) => cast.push({ no: cast.length + 1, character: x.role || 'Talent', talent: x.name, person_id: x.id, call: x.call }));
+    talent.filter((x) => !used.has(x.id)).forEach((x) => cast.push({ no: cast.length + 1, character: x.role || 'Talent', talent: x.name, person_id: x.id, call: x.call, scenes: [] }));
 
     const contactIds = Array.isArray(edits.contacts) ? edits.contacts : suggestedContacts(d.people);
     const contacts = contactIds.map((id) => d.people.find((x) => x.id === id)).filter(Boolean)
       .map((x) => ({ name: x.name, role: x.role || '', phone: x.phone || '' }));
 
+    const locations = locationsOf(d, day, edits, scenes);
     const total = Math.max(d.days.length, ...d.days.map((x) => x.day_no || 0));
     return {
-      v: 1,
+      v: 2,
+      template: templateOf(edits),
       house: org ? org.name : '',
       production: { title: p.title, title_ar: p.title_ar || '', client: p.client_name || '', agency: p.agency || '', code: p.code || '' },
       day: {
-        day_no: day.day_no, total, date: day.date || '', crew_call: hhmm(day.crew_call), wrap: hhmm(day.wrap),
-        shoot_call: edits.shoot_call || '', notes: day.notes || '',
+        day_no: day.day_no, total, date: day.date || '', crew_call: hhmm(day.crew_call), wrap: hhmm(day.wrap) || lastEnd || '',
+        shoot_call: edits.shoot_call || (estimated && schedule.length ? schedule[0].time : ''), shoot_call_estimated: estimated && !!schedule.length,
+        notes: day.notes || '', sunrise: edits.sunrise || '', sunset: edits.sunset || '', prep, move,
       },
-      location: (edits.set_location || '').trim() || day.location || '',
-      parking: edits.parking || '',
-      hospital: edits.hospital || '',
+      location: locations[0] ? locations[0].name : '',
+      locations,
+      parking: locations[0] ? locations[0].parking : '',
+      hospital: locations[0] ? locations[0].hospital : '',
       weather: edits.weather || '',
       notes: edits.notes || '',
       schedule,
@@ -117,96 +234,126 @@
       cast,
       people,
       contacts,
+      emergency: EMERGENCY,
       edits: clone(edits),
     };
   }
 
-  /* ------------------------------------------------------------ the paper call sheet (renders a snapshot) */
+  /* ------------------------------------------------------------ the paper call sheet (renders a snapshot)
+     Top left: the crew with their positions and call times. Middle: the production and the crew call.
+     Top right: the day, its timings, sunrise, sunset and weather. Then locations (each with its nearest hospital),
+     the schedule with prep and moves between scenes, the cast, the breakdown and the safety numbers, as the
+     sheet's template (short, standard, expanded) asks. Snapshots from before templates render as standard. */
   function sheetDoc(snap, meta) {
     const { ui } = MPH;
     const c = snap;
     const day = c.day || {};
+    const tpl = TEMPLATES.some((x) => x.id === c.template) ? c.template : 'standard';
+    const std = tpl !== 'short', full = tpl === 'expanded';
     const draft = meta.status !== 'published';
     const notes = [...String(c.notes || '').split('\n'), ...String(day.notes || '').split('\n')].map((s) => s.trim()).filter(Boolean);
     const crew = (c.people || []).filter((x) => x.kind !== 'talent');
     const depts = uniq(crew.map((x) => x.dept)).sort(byDept);
     const contacts = c.contacts || [];
+    const locations = Array.isArray(c.locations) && c.locations.length ? c.locations
+      : (c.location ? [{ name: c.location, hospital: c.hospital || '', parking: c.parking || '', scenes: [] }] : []);
+    const emergency = Array.isArray(c.emergency) && c.emergency.length ? c.emergency : EMERGENCY;
+    const schedule = c.schedule || [];
+    const hasTimes = schedule.some((s) => s.time);
     const initials = ui.initials(c.house || 'Klaket');
+    const list = (a) => (a && a.length ? esc(a.join(', ')) : '<span class="cs-muted">—</span>');
+    const timeRow = (k, v, cls = '') => (v ? `<tr class="${cls}"><th>${k}</th><td class="num">${esc(v)}</td></tr>` : '');
+    const breakdown = full && schedule.some((s) => (s.props || []).length || (s.wardrobe || []).length || (s.production || []).length);
     return `
-      <article class="cs-doc ${draft ? 'is-draft' : ''}" dir="ltr" lang="en" aria-label="Call sheet day ${esc(day.day_no)}">
+      <article class="cs-doc cs-tpl-${tpl} ${draft ? 'is-draft' : ''}" dir="ltr" lang="en" aria-label="Call sheet day ${esc(day.day_no)}">
         ${draft ? '<div class="cs-watermark" aria-hidden="true">DRAFT</div>' : ''}
         <header class="cs-doc-head">
           <div class="cs-doc-co">
-            <div class="cs-logo"><span>${esc(initials)}</span></div>
-            ${c.house ? `<div class="strong">${esc(c.house)}</div>` : ''}
-            ${contacts.length ? contacts.map((k) => `<div><span class="cs-k">${esc(k.role || 'Contact')}</span> ${esc(k.name)}${k.phone ? ` · <span class="num">${esc(k.phone)}</span>` : ''}</div>`).join('')
-              : '<div class="cs-muted">No key contacts listed</div>'}
+            <div class="cs-k cs-k-head">Crew · position · call</div>
+            ${crew.length ? `<div class="cs-headcrew">${depts.map((dn) => `
+              <div class="cs-hc-dept">${esc(dn)}</div>
+              ${crew.filter((x) => x.dept === dn).map((x) => `<div class="cs-hc-row ${meta.me === x.id ? 'me' : ''}"><span class="cs-hc-name">${esc(x.name)}<span class="cs-hc-role">${esc(x.role || '—')}</span></span><span class="num strong">${esc(x.call || day.crew_call || '')}</span></div>`).join('')}`).join('')}</div>`
+              : '<div class="cs-muted">No crew on this sheet yet</div>'}
           </div>
           <div class="cs-doc-mid">
+            <div class="cs-logo"><span>${esc(initials)}</span></div>
+            ${c.house ? `<div class="strong">${esc(c.house)}</div>` : ''}
             <div class="cs-title">${esc(String(c.production?.title || '').toUpperCase())}${c.production?.title_ar ? ` <span class="ar">${esc(c.production.title_ar)}</span>` : ''}</div>
             <div class="cs-muted">${[c.production?.client, c.production?.agency, c.production?.code].filter(Boolean).map(esc).join(' · ')}</div>
             <div class="cs-your">
               <span class="cs-k">Crew call</span>
               <span class="cs-your-t num">${esc(day.crew_call || 'TBC')}</span>
             </div>
-            ${day.shoot_call ? `<div class="cs-general">Shooting call <span class="strong num">${esc(day.shoot_call)}</span></div>` : ''}
+            ${day.shoot_call ? `<div class="cs-general">Shooting call <span class="strong num">${esc(day.shoot_call)}</span>${day.shoot_call_estimated ? ' (est.)' : ''}</div>` : ''}
           </div>
           <div class="cs-doc-day">
             <div class="cs-dayof">DAY ${esc(day.day_no)} OF ${esc(day.total || day.day_no)}</div>
             <div class="strong">${day.date ? esc(MPH.date(day.date, 'long')) : 'Date TBC'}</div>
-            ${c.weather ? `<div class="cs-muted">${esc(c.weather)}</div>` : ''}
             <table class="cs-times"><tbody>
               <tr><th>Crew call</th><td class="num">${esc(day.crew_call || 'TBC')}</td></tr>
-              ${day.shoot_call ? `<tr><th>Shooting call</th><td class="num">${esc(day.shoot_call)}</td></tr>` : ''}
+              ${timeRow('Shooting call', day.shoot_call)}
               <tr><th>Est. wrap</th><td class="num">${esc(day.wrap || 'TBC')}</td></tr>
+              ${timeRow(`${ui.icon('sunrise')}Sunrise`, day.sunrise, 'cs-sun')}
+              ${timeRow(`${ui.icon('sunset')}Sunset`, day.sunset, 'cs-sun')}
             </tbody></table>
+            ${c.weather ? `<div class="cs-weather">${ui.icon('cloud-sun')}<span>${esc(c.weather)}</span></div>` : ''}
           </div>
         </header>
 
-        ${notes.length ? `<section class="cs-notes"><div class="cs-sec-t">Notes</div><ul>${notes.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></section>` : ''}
+        ${std && notes.length ? `<section class="cs-notes"><div class="cs-sec-t">Notes</div><ul>${notes.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></section>` : ''}
 
         <section class="cs-sec">
-          <div class="cs-sec-t">Locations</div>
-          <div class="cs-scroll"><table class="cs-t"><thead><tr><th>Set location</th><th>Parking</th><th>Nearest hospital</th></tr></thead><tbody><tr>
-            <td>${c.location ? `<div class="strong">${esc(c.location)}</div><a class="cs-link" href="${esc(mapsUrl(c.location))}" target="_blank" rel="noopener">${ui.icon('map-pin')}Open in Maps</a>` : '<span class="cs-muted">TBC</span>'}</td>
-            <td class="cs-pre">${c.parking ? esc(c.parking) : '<span class="cs-muted">—</span>'}</td>
-            <td>${c.hospital ? `<div class="strong">${esc(c.hospital)}</div><a class="cs-link" href="${esc(mapsUrl(c.hospital))}" target="_blank" rel="noopener">${ui.icon('map-pin')}Directions</a>` : '<span class="cs-muted">—</span>'}<div class="cs-muted">Emergency 911 · Ambulance 997</div></td>
-          </tr></tbody></table></div>
+          <div class="cs-sec-t">Locations · ${locations.length || 0}</div>
+          ${locations.length ? `<div class="cs-scroll"><table class="cs-t"><thead><tr><th>#</th><th>Location</th>${full ? '<th>Parking</th>' : ''}<th>Nearest hospital</th></tr></thead><tbody>
+            ${locations.map((l, i) => `<tr>
+              <td class="num strong">${i + 1}</td>
+              <td><div class="strong">${esc(l.name)}</div>${(l.scenes || []).length ? `<div class="cs-muted">Sc. ${esc(l.scenes.join(', '))}</div>` : ''}<a class="cs-link" href="${esc(mapsUrl(l.name))}" target="_blank" rel="noopener">${ui.icon('map-pin')}Open in Maps</a></td>
+              ${full ? `<td class="cs-pre">${l.parking ? esc(l.parking) : '<span class="cs-muted">—</span>'}</td>` : ''}
+              <td>${l.hospital ? `<div class="strong">${esc(l.hospital)}</div><a class="cs-link" href="${esc(mapsUrl(l.hospital))}" target="_blank" rel="noopener">${ui.icon('navigation')}Directions</a>` : `<span class="cs-muted">TBC</span> <a class="cs-link" href="${esc(hospitalSearch(l.name))}" target="_blank" rel="noopener">${ui.icon('search')}Find nearest</a>`}</td>
+            </tr>`).join('')}
+          </tbody></table></div>` : '<div class="cs-empty">No location set for this day yet.</div>'}
         </section>
 
         <section class="cs-sec">
-          <div class="cs-sec-t">Schedule</div>
-          ${(c.schedule || []).length ? `<div class="cs-scroll"><table class="cs-t"><thead><tr>${day.shoot_call ? '<th>Est.</th>' : ''}<th>Sc.</th><th>Set & description</th><th>D/N</th><th>Pages</th><th>Cast</th></tr></thead><tbody>
-            ${c.schedule.map((s) => `<tr>
-              ${day.shoot_call ? `<td class="num strong">${esc(s.time)}</td>` : ''}
+          <div class="cs-sec-t">Shooting schedule</div>
+          ${schedule.length ? `<div class="cs-scroll"><table class="cs-t cs-sched"><thead><tr>${hasTimes ? '<th>Time</th>' : ''}<th>Sc.</th><th>Set & description</th><th>D/N</th>${std ? '<th>Pages</th>' : ''}<th>Cast</th></tr></thead><tbody>
+            ${schedule.map((s) => `${s.prep_before && hasTimes ? `<tr class="cs-prep"><td class="num">${esc(s.prep_before.time)}–${esc(s.prep_before.end)}</td><td></td><td colspan="${std ? 4 : 3}">${ui.icon(s.prep_before.label.startsWith('Company') ? 'truck' : 'timer')}${esc(s.prep_before.label)} · ${esc(s.prep_before.minutes)} min</td></tr>` : ''}<tr>
+              ${hasTimes ? `<td class="num strong nowrap">${esc(s.time)}${s.end ? `<span class="cs-muted">–${esc(s.end)}</span>` : ''}</td>` : ''}
               <td class="strong">${esc(s.num)}</td>
-              <td><div class="strong">${esc(s.heading || s.location || '')}</div>${s.synopsis ? `<div class="cs-muted">${esc(s.synopsis)}</div>` : ''}</td>
+              <td><div class="strong">${esc(s.heading || s.location || '')}</div>${full && s.synopsis ? `<div class="cs-muted">${esc(s.synopsis)}</div>` : ''}</td>
               <td>${esc(s.day_night || '')}</td>
-              <td class="num">${esc(MPH.eighths(s.pages_eighths))}</td>
+              ${std ? `<td class="num">${esc(MPH.eighths(s.pages_eighths))}</td>` : ''}
               <td>${esc((s.cast || []).join(', ') || '—')}</td></tr>`).join('')}
           </tbody></table></div>
-          <div class="cs-muted cs-sum">${c.schedule.length} scene${c.schedule.length === 1 ? '' : 's'} · ${esc(MPH.eighths(c.pages_eighths))} pages${day.shoot_call ? ' · times are estimates from scene lengths' : ''}</div>`
+          <div class="cs-muted cs-sum">${schedule.length} scene${schedule.length === 1 ? '' : 's'} · ${esc(MPH.eighths(c.pages_eighths))} pages${hasTimes ? ` · ${esc(day.prep || 15)} min prep between scenes, ${esc(day.move || 30)} min for a company move · times are estimates from scene lengths` : ''}</div>`
           : '<div class="cs-empty">No scenes scheduled for this day yet.</div>'}
         </section>
 
-        ${(c.cast || []).length ? `<section class="cs-sec">
+        ${std && (c.cast || []).length ? `<section class="cs-sec">
           <div class="cs-sec-t">Cast</div>
-          <div class="cs-scroll"><table class="cs-t"><thead><tr><th>#</th><th>Character</th><th>Talent</th><th>Call</th></tr></thead><tbody>
-            ${c.cast.map((r) => `<tr class="${meta.me && r.person_id === meta.me ? 'cs-me' : ''}"><td class="num strong">${esc(r.no)}</td><td class="strong">${esc(r.character)}</td><td>${r.talent ? esc(r.talent) : '<span class="cs-muted">TBC</span>'}</td><td class="num strong">${esc(r.call || '')}</td></tr>`).join('')}
+          <div class="cs-scroll"><table class="cs-t"><thead><tr><th>#</th><th>Character</th><th>Talent</th><th>Scenes</th><th>Call</th></tr></thead><tbody>
+            ${c.cast.map((r) => `<tr class="${meta.me && r.person_id === meta.me ? 'cs-me' : ''}"><td class="num strong">${esc(r.no)}</td><td class="strong">${esc(r.character)}</td><td>${r.talent ? esc(r.talent) : '<span class="cs-muted">TBC</span>'}</td><td class="num">${esc((r.scenes || []).join(', ') || '—')}</td><td class="num strong">${esc(r.call || '')}</td></tr>`).join('')}
           </tbody></table></div>
         </section>` : ''}
 
-        <section class="cs-sec">
-          <div class="cs-sec-t">Crew</div>
-          ${depts.length ? `<div class="cs-crew">${depts.map((dn) => `
-            <div class="cs-dept"><div class="cs-dept-t">${esc(dn)}</div>
-              ${crew.filter((x) => x.dept === dn).map((x) => `<div class="cs-crew-row ${meta.me === x.id ? 'me' : ''}"><span class="cs-role">${esc(x.role || '—')}</span><span class="grow">${esc(x.name)}</span><span class="num strong">${esc(x.call || '')}</span></div>`).join('')}
-            </div>`).join('')}</div>` : '<div class="cs-empty">No crew on this sheet yet.</div>'}
+        ${breakdown ? `<section class="cs-sec">
+          <div class="cs-sec-t">Breakdown · props, wardrobe and production</div>
+          <div class="cs-scroll"><table class="cs-t"><thead><tr><th>Sc.</th><th>Cast</th><th>Props</th><th>Wardrobe & makeup</th><th>Production</th></tr></thead><tbody>
+            ${schedule.map((s) => `<tr><td class="strong">${esc(s.num)}</td><td>${list(s.cast)}</td><td>${list(s.props)}</td><td>${list(s.wardrobe)}</td><td>${list(s.production)}</td></tr>`).join('')}
+          </tbody></table></div>
+        </section>` : ''}
+
+        <section class="cs-sec cs-safety-sec">
+          <div class="cs-sec-t">Safety and contacts</div>
+          <div class="cs-safety">
+            <div class="cs-sos">${emergency.map((e) => `<div class="cs-sos-n"><span class="num">${esc(e.num)}</span><span>${esc(e.label)}</span></div>`).join('')}</div>
+            ${std ? `<div class="cs-keyc">${contacts.length ? contacts.map((k) => `<div><span class="cs-k">${esc(k.role || 'Contact')}</span> ${esc(k.name)}${k.phone ? ` · <span class="num strong">${esc(k.phone)}</span>` : ''}</div>`).join('') : '<div class="cs-muted">No key contacts listed</div>'}</div>` : ''}
+          </div>
         </section>
 
         <footer class="cs-doc-foot">
           ${meta.klaket ? `<span class="cs-kl-brand"><img src="${esc(meta.klaket)}" alt="Klaket" width="54" height="34"></span>` : ''}
-          <span>v${esc(meta.version)}${draft ? ' · draft, not shared' : meta.published_at ? ` · published ${esc(MPH.date(meta.published_at, 'long'))} ${esc(MPH.date(meta.published_at, 'time'))}` : ''}</span>
+          <span>v${esc(meta.version)} · ${esc(TEMPLATES.find((x) => x.id === tpl).label.toLowerCase())} sheet${draft ? ' · draft, not shared' : meta.published_at ? ` · published ${esc(MPH.date(meta.published_at, 'long'))} ${esc(MPH.date(meta.published_at, 'time'))}` : ''}</span>
           <span>Confirm your attendance from the link you received</span>
         </footer>
       </article>`;
@@ -325,6 +472,21 @@
       })}`;
   }
 
+  /* one block per location of the day: its nearest hospital and its parking */
+  function locsForm(d, day, edits, scenes) {
+    const { ui } = MPH;
+    const locs = locationsOf(d, day, edits, scenes);
+    if (!locs.length) return '<p class="small muted">No location yet. Set the day’s location above, or add locations to the scenes in the breakdown.</p>';
+    return locs.map((l, i) => `
+      <div class="cs-locf">
+        <div class="row" style="gap:8px;align-items:baseline"><span class="cs-locf-n num">${i + 1}</span><span class="small strong grow">${esc(l.name)}</span>${l.scenes.length ? `<span class="tiny muted">Sc. ${esc(l.scenes.join(', '))}</span>` : ''}</div>
+        <div class="field"><label class="tiny" for="cs-h-${i}">Nearest hospital</label>
+          <div class="row" style="gap:6px"><input id="cs-h-${i}" class="input grow" data-loc="${esc(norm(l.name))}" data-lf="hospital" value="${esc(l.hospital)}" placeholder="Hospital name and district">
+          <a class="btn btn-sm btn-ghost" href="${esc(hospitalSearch(l.name))}" target="_blank" rel="noopener" title="Search hospitals near ${esc(l.name)} in Google Maps">${ui.icon('search')}Find</a></div></div>
+        <div class="field"><label class="tiny" for="cs-p-${i}">Parking</label><input id="cs-p-${i}" class="input" data-loc="${esc(norm(l.name))}" data-lf="parking" value="${esc(l.parking)}" placeholder="e.g. Crew parking in the north lot"></div>
+      </div>`).join('');
+  }
+
   function builderForm(ctx, d, sheet, day, edits) {
     const { ui, production: p } = ctx;
     const roster = edits.roster || {};
@@ -345,19 +507,40 @@
             <dt>Wrap</dt><dd class="num">${esc(hhmm(day.wrap) || '—')}</dd>
           </dl>` })}
 
-        ${ui.panel({ title: 'Sheet details', icon: 'notebook-pen', body: `
+        ${ui.panel({ title: 'Template', icon: 'layout-template', body: `
+          <div class="stack tight">
+            <div class="seg cs-tpl-seg" role="group" aria-label="Call sheet template">${TEMPLATES.map((x) => `<button type="button" class="${templateOf(edits) === x.id ? 'on' : ''}" data-tpl="${x.id}" aria-pressed="${templateOf(edits) === x.id}">${esc(x.label)}</button>`).join('')}</div>
+            <span class="tiny muted" data-tpl-hint>${esc(TEMPLATES.find((x) => x.id === templateOf(edits)).hint)}.</span>
+          </div>` })}
+
+        ${ui.panel({ title: 'Timing and weather', icon: 'clock', body: `
           <div class="stack">
             <div class="grid-2">
-              <div class="field"><label for="cs-e-loc">Set location</label><input id="cs-e-loc" class="input" data-e="set_location" value="${esc(edits.set_location || '')}" placeholder="${esc(day.location || 'Address or place name')}"></div>
               <div class="field"><label for="cs-e-shoot">Shooting call (first shot)</label><input id="cs-e-shoot" class="input" type="time" data-e="shoot_call" value="${esc(edits.shoot_call || '')}">
-                <span class="tiny faint">Optional. Adds estimated times to the schedule.</span></div>
+                <span class="tiny faint">Empty: an hour after crew call.</span></div>
+              <div class="field"><label for="cs-e-prep">Prep between scenes</label><select id="cs-e-prep" class="select" data-e="prep">${PREPS.map((m) => `<option value="${m}" ${prepOf(edits) === m ? 'selected' : ''}>${m} min</option>`).join('')}</select>
+                <span class="tiny faint">A company move to a new location takes</span>
+                <select class="select" data-e="move" aria-label="Company move time">${[20, 30, 45, 60, 90].map((m) => `<option value="${m}" ${moveOf(edits) === m ? 'selected' : ''}>${m} min</option>`).join('')}</select></div>
             </div>
-            <div class="field"><label for="cs-e-weather">Weather</label><input id="cs-e-weather" class="input" data-e="weather" value="${esc(edits.weather || '')}" placeholder="e.g. Clear, 38°C high, wind 20 km/h. Sunrise 05:48, sunset 17:52"></div>
-            <div class="field"><label for="cs-e-park">Parking</label><textarea id="cs-e-park" class="textarea" rows="2" data-e="parking" placeholder="e.g. Crew parking in the north lot. Only unit vehicles past the gate.">${esc(edits.parking || '')}</textarea></div>
-            <div class="field"><label for="cs-e-hosp">Nearest hospital</label><input id="cs-e-hosp" class="input" data-e="hospital" value="${esc(edits.hospital || '')}" placeholder="e.g. King Faisal Specialist Hospital, Al Mathar Ash Shamali"></div>
-            <div class="field"><label for="cs-e-notes">General notes</label><textarea id="cs-e-notes" class="textarea" rows="4" data-e="notes" placeholder="One note per line, e.g. Shoes off in the majlis.">${esc(edits.notes || '')}</textarea>
-              <span class="tiny faint">Each line becomes a bullet.${day.notes ? ' Day notes from the stripboard are added below them.' : ''}</span></div>
+            <div class="grid-2">
+              <div class="field"><label for="cs-e-rise">Sunrise</label><input id="cs-e-rise" class="input" type="time" data-e="sunrise" value="${esc(edits.sunrise || '')}"></div>
+              <div class="field"><label for="cs-e-set">Sunset</label><input id="cs-e-set" class="input" type="time" data-e="sunset" value="${esc(edits.sunset || '')}"></div>
+            </div>
+            <div class="field"><label for="cs-e-weather">Weather</label><input id="cs-e-weather" class="input" data-e="weather" value="${esc(edits.weather || '')}" placeholder="e.g. Clear, 38°C high, wind 20 km/h"></div>
+            <div class="row wrap" style="gap:8px;align-items:center"><button type="button" class="btn btn-sm btn-outline" data-cs="sun" ${day.date ? '' : 'disabled title="Set the shoot day’s date on the stripboard first"'}>${ui.icon('cloud-sun')}Fill sunrise, sunset and weather</button>
+              <span class="tiny faint" data-sun-note>From Open-Meteo for the first location. The weather forecast reaches 16 days ahead.</span></div>
           </div>` })}
+
+        ${ui.panel({ title: 'Locations and hospitals', icon: 'map-pin', body: `
+          <div class="stack">
+            <div class="field"><label for="cs-e-loc">Set location</label><input id="cs-e-loc" class="input" data-e="set_location" data-relocs value="${esc(edits.set_location || '')}" placeholder="${esc(day.location || 'Address or place name')}">
+              <span class="tiny faint">The day’s main location. Scene locations from the breakdown are added after it.</span></div>
+            <div class="stack" data-locs>${locsForm(d, day, edits, scenes)}</div>
+          </div>` })}
+
+        ${ui.panel({ title: 'Notes', icon: 'notebook-pen', body: `
+          <div class="field"><label for="cs-e-notes">General notes</label><textarea id="cs-e-notes" class="textarea" rows="4" data-e="notes" placeholder="One note per line, e.g. Shoes off in the majlis.">${esc(edits.notes || '')}</textarea>
+            <span class="tiny faint">Each line becomes a bullet on the standard and expanded sheets.${day.notes ? ' Day notes from the stripboard are added below them.' : ''}</span></div>` })}
 
         ${ui.panel({ title: `Scenes · ${scenes.length}`, icon: 'clapperboard', flush: true, body: scenes.length ? `<div class="list">${scenes.map((s) => `
             <div class="list-row cs-scene"><span class="mono small strong">${esc(s.num)}</span>
@@ -540,7 +723,8 @@
         sb.from('shoot_days').select('id, day_no, date, location, crew_call, wrap, notes').eq('production_id', pid).order('day_no'),
         sb.from('call_sheets').select('id, shoot_day_id, version, status, share_token, content, notes, published_at, created_at, call_sheet_responses(id, call_sheet_id, person_id, name, status, responded_at)').eq('production_id', pid).order('version', { ascending: false }),
         sb.from('active_scenes').select('id, num, heading, int_ext, day_night, location, synopsis, pages_eighths, est_minutes, sort, shoot_day_id, day_sort').eq('production_id', pid),
-        sb.from('elements').select('scene_id, name').eq('production_id', pid).eq('category', 'cast'),
+        // cast, plus what the expanded sheet breaks down per scene (props, wardrobe and production); removed ones stay off
+        sb.from('elements').select('scene_id, name, category, status').eq('production_id', pid).in('category', ['cast', ...BREAKDOWN.props, ...BREAKDOWN.wardrobe, ...BREAKDOWN.production]),
         // deliberately no day_rate: nothing about money is needed (or loaded) here
         sb.from('people').select('id, name, role, dept, kind, phone, default_call, status').eq('production_id', pid).order('name'),
       ]);
@@ -566,7 +750,12 @@
       }
 
       const sheetId = ctx.params[0];
-      Object.assign(d, { scenes: must(scenes) || [], cast: must(cast) || [], people: must(people) || [], responses });
+      const els = must(cast) || [];
+      Object.assign(d, {
+        scenes: must(scenes) || [], people: must(people) || [], responses,
+        cast: els.filter((e) => e.category === 'cast'),
+        elements: els.filter((e) => e.category !== 'cast' && e.status === 'accepted'),
+      });
       if (sheetId) {
         d.sheet = d.sheets.find((s) => s.id === sheetId) || null;
         if (d.sheet) d.edits = clone((d.sheet.content && d.sheet.content.edits) || {});
@@ -606,6 +795,7 @@
           if (a === 'refresh') return ctx.reload();
           if (a === 'publish') return openPublish();
           if (a === 'pdf') return exportSheet();
+          if (a === 'sun') return await fillSun(el);
           if (a === 'del-draft') return await delDraft(el);
           if (a === 'new-version') return await newVersion(el);
         } catch (ex) { ctx.toastError(ex); }
@@ -676,11 +866,54 @@
       const changed = () => { setSave('Unsaved changes'); previewSoon(); saveSoon(); };
 
       root.addEventListener('input', (e) => {
-        const f = e.target.dataset.e;
+        const t = e.target;
+        if (t.dataset.loc) {
+          const all = edits.loc = edits.loc || {};
+          const one = all[t.dataset.loc] = all[t.dataset.loc] || {};
+          one[t.dataset.lf] = t.value;
+          return changed();
+        }
+        const f = t.dataset.e;
         if (!f) return;
-        edits[f] = e.target.value;
+        edits[f] = t.value;
         changed();
       });
+      // a new set location renames the first place: redraw the per-location fields
+      root.addEventListener('focusout', (e) => {
+        if (!e.target.matches('[data-relocs]')) return;
+        const box = root.querySelector('[data-locs]');
+        const scenes = d.scenes.filter((s) => s.shoot_day_id === day.id).sort((a, b) => (a.day_sort - b.day_sort) || (a.sort - b.sort));
+        if (box) { box.innerHTML = locsForm(d, day, edits, scenes); MPH.icons(); }
+      });
+      root.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-tpl]');
+        if (!b) return;
+        edits.template = b.dataset.tpl;
+        root.querySelectorAll('[data-tpl]').forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+        const hint = root.querySelector('[data-tpl-hint]');
+        if (hint) hint.textContent = `${TEMPLATES.find((x) => x.id === edits.template).hint}.`;
+        changed();
+      });
+
+      /* sunrise, sunset and the forecast for the day's first location, from Open-Meteo (no key; only the place name
+         and the date are sent). Sunrise and sunset are worked out here when the date is past the forecast's reach. */
+      async function fillSun(el) {
+        const snap = buildSnapshot(ctx, d, day, edits);
+        const place = snap.locations[0] && snap.locations[0].name;
+        const note = root.querySelector('[data-sun-note]');
+        if (!place) return ctx.toast('Set the day’s location first', 'map-pin');
+        el.disabled = true; const label = el.innerHTML; el.innerHTML = `${ui.spinner()}Looking up ${esc(place)}`;
+        try {
+          const out = await MPH.sunAndWeather(place, day.date);
+          if (out.sunrise) edits.sunrise = out.sunrise;
+          if (out.sunset) edits.sunset = out.sunset;
+          if (out.weather) edits.weather = out.weather;
+          ['sunrise', 'sunset', 'weather'].forEach((k) => { const i = root.querySelector(`[data-e="${k}"]`); if (i) i.value = edits[k] || ''; });
+          if (note) note.textContent = `${out.place}${out.weather ? '' : '. No forecast yet for this date (it reaches 16 days ahead); sunrise and sunset are calculated'}.`;
+          changed();
+        } catch (ex) { ctx.toastError(ex); }
+        el.disabled = false; el.innerHTML = label; MPH.icons();
+      }
       root.addEventListener('change', (e) => {
         const t = e.target;
         if (t.dataset.on) {

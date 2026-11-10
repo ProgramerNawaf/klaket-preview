@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Klaket | كلاكيت · Welcome</title>
+<meta name="description" content="Klaket: every production, one conversation. A short introduction before you sign in.">
+<link rel="icon" href="../brand/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* ------------------------------------------------------------------ tokens */
+  :root {
+    /* Klaket: teal, ink, paper and signal red (red stays in the logo's three dots: one red thing per screen) */
+    --teal: #0F5C57;
+    --teal-deep: #0A3F3C;
+    --bg: #121212;                   /* ink */
+    --bg-2: #1C1C1C;
+    --ink: #F6EBD9;                  /* paper */
+    --muted: #A69F93;
+    --faint: rgba(246, 235, 217, 0.16);
+    --accent: #5FA8A1;               /* the one accent: Klaket teal, tinted for text on ink */
+    --accent-soft: rgba(95, 168, 161, 0.16);
+    --display: "Cairo", "IBM Plex Sans Arabic", system-ui, sans-serif;
+    --sans: "IBM Plex Sans", "IBM Plex Sans Arabic", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --gutter: clamp(16px, 4vw, 40px);
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 400 16px/1.6 var(--sans); -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: inherit; }
+
+  /* ------------------------------------------------------------------ header (always on top) */
+  .site-header {
+    position: fixed; inset: 0 0 auto 0; z-index: 30;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px var(--gutter);
+    background: linear-gradient(to bottom, rgba(18, 18, 18, 0.86), rgba(18, 18, 18, 0));
+  }
+  .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; padding: 4px; border-radius: 8px; }
+  .logo img { display: block; height: 34px; width: auto; }
+  .logo .logo-word { height: 30px; }
+  .hero-word { display: block; width: clamp(150px, 20vw, 220px); height: auto; margin: 0 auto 26px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 0 20px; border-radius: 999px;
+    font: 600 15px/1 var(--sans); text-decoration: none; cursor: pointer;
+    border: 1px solid var(--faint); background: rgba(255, 255, 255, 0.04); color: var(--ink);
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .btn:hover { background: rgba(255, 255, 255, 0.09); border-color: rgba(246, 235, 217, 0.36); }
+  .btn-primary { background: var(--teal); border-color: var(--accent); color: var(--ink); }
+  .btn-primary:hover { background: #13706A; }
+  .btn:focus-visible, .tick:focus-visible, .logo:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* ------------------------------------------------------------------ shots: the readable page (no JS, or reduced motion) */
+  .shot {
+    min-height: 100vh; display: grid; align-content: center; justify-items: center; text-align: center;
+    padding: 96px var(--gutter);
+  }
+  .shot-inner { width: min(880px, 100%); }
+  .eyebrow { font: 600 12px/1 var(--sans); letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); margin: 0 0 18px; }
+  h1, h2 { font-family: var(--display); font-weight: 900; margin: 0 0 18px; letter-spacing: -0.015em; text-wrap: balance; }
+  h1 { font-size: clamp(40px, 7.4vw, 96px); line-height: 1.02; }
+  h2 { font-size: clamp(32px, 5.4vw, 66px); line-height: 1.08; }
+  h1 em, h2 em { font-style: normal; color: var(--accent); }
+  .ar { display: block; font: 700 clamp(17px, 2vw, 24px)/1.5 "IBM Plex Sans Arabic", var(--display); color: var(--muted); margin: -6px 0 16px; }
+  .lede { font-size: clamp(16px, 1.6vw, 19px); color: var(--muted); max-width: 52ch; margin: 0 auto; text-wrap: pretty; }
+  .cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 34px; text-align: left; }
+  .card-z { transform-style: preserve-3d; }   /* depth for parallax (set by the script); the card inside animates */
+  .card {
+    padding: 18px; border-radius: 14px; border: 1px solid var(--faint);
+    background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  }
+  .card b { display: block; font: 600 14px/1.3 var(--sans); margin-bottom: 6px; }
+  .card span { font-size: 13px; color: var(--muted); }
+  .stats { display: flex; justify-content: center; gap: clamp(20px, 5vw, 56px); margin-top: 30px; flex-wrap: wrap; }
+  .stat b { display: block; font: 900 clamp(32px, 4.4vw, 52px)/1.1 var(--display); color: var(--ink); }
+  .stat span { font-size: 13px; color: var(--muted); letter-spacing: 0.04em; }
+  .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 30px; }
+  .cta-row .btn { min-height: 52px; padding: 0 28px; font-size: 16px; }
+  .fine { margin-top: 18px; font-size: 13px; color: var(--muted); }
+
+  /* the central object of shot 4 (a ring of film frames): hidden in the flat page */
+  .ring, .layer, .viewport-fx, .film, .cue { display: none; }
+
+  /* ------------------------------------------------------------------ the camera rig (only when motion is on: html.cine) */
+  html.cine .scroll-track { height: 600vh; position: relative; }
+  html.cine .viewport {
+    position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden;
+    perspective: 1100px; perspective-origin: 50% 50%;
+    background:
+      radial-gradient(1200px 700px at 50% 120%, rgba(15, 92, 87, 0.30), transparent 60%),
+      radial-gradient(900px 600px at 15% -10%, rgba(246, 235, 217, 0.05), transparent 60%),
+      var(--bg);
+  }
+  /* rotations on three nested elements, so the order is exact: rotateX, then rotateY, then rotateZ (roll) */
+  html.cine .rig, html.cine .world { position: absolute; inset: 0; transform-style: preserve-3d; transform-origin: 50% 50%; }
+  html.cine .rig-x { will-change: transform; }
+  html.cine .world { will-change: transform; }
+  html.cine .shot {
+    position: absolute; left: 50%; top: 50%; min-height: 0; padding: 0;
+    width: min(880px, 86vw); display: block;
+    transform: translate(-50%, -50%) var(--place, none);
+    transform-style: preserve-3d; backface-visibility: hidden;
+  }
+  html.cine .shot-inner, html.cine .cards { width: 100%; transform-style: preserve-3d; }
+  html.cine [data-reveal] { opacity: 0; }             /* the timeline reveals each shot's lines */
+  html.cine .layer { display: block; position: absolute; left: 50%; top: 50%; pointer-events: none; }
+  .dust { width: 4px; height: 4px; margin: -2px; border-radius: 50%; background: rgba(246, 235, 217, 0.7); box-shadow: 0 0 10px rgba(95, 168, 161, 0.6); }
+  .orb { width: 900px; height: 900px; margin: -450px; border-radius: 50%; background: radial-gradient(circle, rgba(15, 92, 87, 0.42), transparent 62%); }
+  .orb.cool { background: radial-gradient(circle, rgba(246, 235, 217, 0.08), transparent 62%); }
+  .strip {
+    width: 1400px; height: 120px; margin: -60px -700px; border-radius: 6px; opacity: 0.35;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 18px, rgba(0, 0, 0, 0.9) 18px 34px) top / 100% 14px no-repeat,
+      repeating-linear-gradient(90deg, transparent 0 18px, rgba(0, 0, 0, 0.9) 18px 34px) bottom / 100% 14px no-repeat,
+      linear-gradient(90deg, rgba(15, 92, 87, 0.55), rgba(246, 235, 217, 0.08), rgba(10, 63, 60, 0.5));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  html.cine .ring { display: block; position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; transform: var(--place, none); }
+  .ring-spin { position: absolute; transform-style: preserve-3d; animation: spin 40s linear infinite; }
+  .frame {
+    position: absolute; width: 150px; height: 96px; margin: -48px -75px; border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: linear-gradient(150deg, rgba(95, 168, 161, 0.45), rgba(18, 18, 18, 0.88) 55%), var(--bg-2);
+    box-shadow: 0 0 30px rgba(95, 168, 161, 0.14);
+  }
+  @keyframes spin { to { transform: rotateY(360deg); } }
+
+  /* film grain and vignette over the scene */
+  html.cine .viewport-fx { display: block; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.6) 100%); }
+  html.cine .viewport-fx::after {
+    content: ""; position: absolute; inset: -50%; opacity: 0.07;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: grain 0.8s steps(4) infinite;
+  }
+  @keyframes grain { 25% { transform: translate(-3%, 2%); } 50% { transform: translate(2%, -3%); } 75% { transform: translate(-2%, -2%); } }
+
+  /* the camera timeline: a strip with a tick per shot */
+  html.cine .film {
+    display: flex; align-items: center; gap: 12px; position: fixed; z-index: 30; left: 50%; bottom: 22px; transform: translateX(-50%);
+    padding: 8px 12px; border-radius: 999px; background: rgba(18, 18, 18, 0.66); border: 1px solid var(--faint);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .film-track { position: relative; width: clamp(160px, 26vw, 280px); height: 22px; }
+  .film-track::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 8px; margin-top: -4px; border-radius: 2px;
+    background: repeating-linear-gradient(90deg, rgba(246, 235, 217, 0.22) 0 4px, transparent 4px 9px);
+  }
+  .film-fill { position: absolute; left: 0; right: 0; top: 50%; height: 2px; margin-top: -1px; background: var(--accent); transform-origin: 0 50%; transform: scaleX(0); }
+  .ticks { position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: center; }
+  .tick { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(246, 235, 217, 0.4); background: var(--bg); padding: 0; cursor: pointer; transition: transform 0.2s, background 0.2s, border-color 0.2s; }
+  .tick.on { background: var(--accent); border-color: var(--accent); transform: scale(1.25); }
+  .film-label { font: 600 11px/1 var(--sans); letter-spacing: 0.16em; color: var(--muted); min-width: 4.5em; text-align: right; }
+
+  /* "scroll to begin" */
+  html.cine .cue {
+    display: flex; flex-direction: column; align-items: center; gap: 10px; position: fixed; left: 50%; bottom: 84px; z-index: 20;
+    transform: translateX(-50%); font: 600 11px/1 var(--sans); letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted);
+    transition: opacity 0.5s;
+  }
+  .cue::after { content: ""; width: 1px; height: 38px; background: linear-gradient(var(--accent), transparent); animation: cue 1.8s ease-in-out infinite; transform-origin: top; }
+  @keyframes cue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+  html.cine .cue.gone { opacity: 0; pointer-events: none; }
+
+  /* ------------------------------------------------------------------ small screens */
+  @media (max-width: 720px) {
+    .cards { grid-template-columns: 1fr; }
+    html.cine .shot { width: 90vw; }
+    html.cine .cards { gap: 8px; margin-top: 20px; transform-style: preserve-3d; }
+    html.cine .card { padding: 12px 14px; }
+    .frame { width: 104px; height: 66px; margin: -33px -52px; }
+    html.cine .film { bottom: 14px; }
+    html.cine .cue { bottom: 72px; }
+  }
+
+  /* reduced motion: the stacked page, with simple fades (see the script) */
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .fade { opacity: 0; transition: opacity 0.6s ease; }
+    .fade.in { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="#top" aria-label="Klaket, home"><img src="../brand/klaket-mark-on-dark.svg" alt=""><img class="logo-word" src="../brand/klaket-wordmark-cream.svg" alt=""></a>
+    <a class="btn" href="#login">Log in</a>
+  </header>
+
+  <main id="top" class="scroll-track">
+    <div class="viewport">
+      <div class="rig rig-x"><div class="rig rig-y"><div class="rig rig-z">
+        <div class="world">
+          <!-- shot 1 · wide establishing -->
+          <section class="shot" id="shot-1" data-shot="0" aria-labelledby="h-1">
+            <div class="shot-inner">
+              <img class="hero-word" data-reveal src="../brand/klaket-wordmark-cream.svg" alt="Klaket">
+              <h1 id="h-1" data-reveal>Every production, <em>one</em> conversation.</h1>
+              <span class="ar" lang="ar" dir="rtl" data-reveal>كل إنتاج، في محادثة واحدة.</span>
+              <p class="lede" data-reveal>From the client’s first brief to shoot day, the whole crew works in one place. Scroll to take the tour, or log in any time.</p>
+            </div>
+          </section>
+
+          <!-- shot 2 · dolly in, roll right -->
+          <section class="shot" id="shot-2" data-shot="1" aria-labelledby="h-2">
+            <div class="shot-inner">
+              <p class="eyebrow" data-reveal>01 · The brief</p>
+              <h2 id="h-2" data-reveal>Briefs that <em>write themselves</em>.</h2>
+              <span class="ar" lang="ar" dir="rtl" data-reveal>البريف يكتب نفسه.</span>
+              <p class="lede" data-reveal>A kickoff call, a client email or a voice memo becomes a structured brief in Arabic and English. Every value has its source, and nothing counts until you approve it.</p>
+            </div>
+          </section>
+
+          <!-- shot 3 · pan left, tilt down, parallax cards -->
+          <section class="shot" id="shot-3" data-shot="2" aria-labelledby="h-3">
+            <div class="shot-inner">
+              <p class="eyebrow" data-reveal>02 · From idea to deck</p>
+              <h2 id="h-3" data-reveal>Ideas, scripts and decks, <em>in sync</em>.</h2>
+              <p class="lede" data-reveal>Three creative routes from the reviewed brief. The client picks one, the script follows, and the treatment deck arrives with a frame for every shot.</p>
+              <div class="cards">
+                <div class="card-z" data-depth="0"><div class="card" data-reveal><b>Creative Agent</b><span>Safe, bold and wildcard ideas, scored against the brief.</span></div></div>
+                <div class="card-z" data-depth="45"><div class="card" data-reveal><b>Script Agent</b><span>Timed scenes, dialogue and cutdowns from the chosen idea.</span></div></div>
+                <div class="card-z" data-depth="90"><div class="card" data-reveal><b>Treatment Agent</b><span>The director’s deck and lookbook, painted frame by frame.</span></div></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- shot 4 · orbit around the central object -->
+          <div class="ring" data-ring aria-hidden="true"><div class="ring-spin"></div></div>
+          <section class="shot" id="shot-4" data-shot="3" aria-labelledby="h-4">
+            <div class="shot-inner">
+              <p class="eyebrow" data-reveal>03 · The whole crew</p>
+              <h2 id="h-4" data-reveal>Built for the <em>whole</em> crew.</h2>
+              <p class="lede" data-reveal>Producers, directors, heads of department and the client, each seeing what they need, all the way to the call sheet.</p>
+              <div class="stats">
+                <div class="stat" data-reveal><b>4</b><span>AI agents, brief to deck</span></div>
+                <div class="stat" data-reveal><b>عربي + EN</b><span>Arabic and English</span></div>
+                <div class="stat" data-reveal><b>1</b><span>conversation per production</span></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- shot 5 · pull back, level -->
+          <section class="shot" id="shot-5" data-shot="4" aria-labelledby="h-5">
+            <div class="shot-inner">
+              <p class="eyebrow" data-reveal>Ready when you are</p>
+              <h2 id="h-5" data-reveal>Ready? <em>Action.</em></h2>
+              <span class="ar" lang="ar" dir="rtl" data-reveal>جاهز؟ أكشن.</span>
+              <p class="lede" data-reveal>Sign in to open your productions, or create an account for your production house.</p>
+              <div class="cta-row" data-reveal>
+                <a class="btn btn-primary" id="login" href="#login">Log in</a>
+                <a class="btn" href="#signup">Create account</a>
+              </div>
+              <p class="fine" data-reveal>Klaket | كلاكيت · for Saudi production houses</p>
+            </div>
+          </section>
+        </div>
+      </div></div></div>
+      <div class="viewport-fx" aria-hidden="true"></div>
+    </div>
+  </main>
+
+  <div class="cue" aria-hidden="true">Scroll to begin</div>
+  <nav class="film" aria-label="Story progress">
+    <div class="film-track">
+      <div class="film-fill"></div>
+      <div class="ticks">
+        <button class="tick" type="button" data-go="0" aria-label="Shot 1: Welcome"></button>
+        <button class="tick" type="button" data-go="1" aria-label="Shot 2: The brief"></button>
+        <button class="tick" type="button" data-go="2" aria-label="Shot 3: From idea to deck"></button>
+        <button class="tick" type="button" data-go="3" aria-label="Shot 4: The whole crew"></button>
+        <button class="tick" type="button" data-go="4" aria-label="Shot 5: Get started"></button>
+      </div>
+    </div>
+    <span class="film-label" aria-live="polite">SHOT 1/5</span>
+  </nav>
+
+<script type="module">
+/* ==========================================================================================================
+   CAMERA KEYFRAMES (the 5 shots). The world is laid out in px; the camera frames one shot per keyframe.
+     pos  = where the camera looks in the world (x right, y down, z toward the viewer: negative = further away)
+     rot  = camera rotation in degrees: rx tilt, ry pan / orbit, rz roll
+   Each shot's text panel sits at its pos (plus `offset`) and faces the camera; small screens halve rotations
+   and Z distances (MOBILE_SCALE).
+
+     #  shot                         pos (x, y, z)            rot (rx, ry, rz)
+     1  wide establishing            (    0,    0,     0)     (  0,   0,   0)
+     2  dolly in + roll right        (    0,    0, -1500)     (  0,   0,   4)
+     3  pan left + tilt down         (-1500,  420, -2700)     ( -9,  14,  -3)
+     4  orbit the central object     (  300, -100, -4200)     (  4,  25,   5)
+     5  pull back + level out        (    0,    0, -3600)     (  0,   0,   0)
+
+   To change a shot, edit SHOTS below; the panels and the camera move together.
+   ========================================================================================================== */
+import { createTimeline, onScroll, animate, stagger, utils } from 'https://cdn.jsdelivr.net/npm/animejs@4.4.1/+esm';
+
+const SHOTS = [
+  { pos: [0, 0, 0],            rot: [0, 0, 0] },
+  { pos: [0, 0, -1500],        rot: [0, 0, 4] },
+  { pos: [-1500, 420, -2700],  rot: [-9, 14, -3] },
+  { pos: [300, -100, -4200],   rot: [4, 25, 5], object: [-420, 40, -620] },  // the ring sits behind the panel, to its left
+  { pos: [0, 0, -3600],        rot: [0, 0, 0] },
+];
+const MOVE = 1000, HOLD = 450;        // timeline units per move, and the pause on each shot
+const MOBILE_SCALE = 0.5;
+
+const root = document.documentElement;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+const small = matchMedia('(max-width: 720px)');
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const shots = $$('.shot');
+const label = $('.film-label');
+const ticks = $$('.tick');
+const cue = $('.cue');
+
+let tl = null, active = -1, built = false;
+
+/* the stacked page, with simple fades (reduced motion) */
+function flatPage() {
+  root.classList.remove('cine');
+  const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && e.target.classList.add('in')), { threshold: 0.2 });
+  $$('.shot-inner').forEach((el) => { el.classList.add('fade'); io.observe(el); });
+}
+
+/* place a panel in the world facing the camera of its shot: translate to its spot, then undo the camera's rotation
+   (camera = rotateX · rotateY · rotateZ, so the inverse is rotateZ⁻¹ · rotateY⁻¹ · rotateX⁻¹) */
+const facing = ([x, y, z], [rx, ry, rz]) => `translate3d(${x}px, ${y}px, ${z}px) rotateZ(${-rz}deg) rotateY(${-ry}deg) rotateX(${-rx}deg)`;
+
+function scaled(k) {
+  return SHOTS.map((s) => ({
+    pos: [s.pos[0] * k, s.pos[1] * k, s.pos[2] * k],
+    rot: s.rot.map((r) => r * k),
+    object: s.object && s.object.map((v) => v * k),
+  }));
+}
+
+/* scenery: dust, glow orbs and film strips at many depths along the camera path (parallax comes from the move) */
+function scenery(world, k) {
+  $$('.layer', world).forEach((el) => el.remove());
+  let seed = 7;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const add = (cls, x, y, z, extra = '') => {
+    const el = document.createElement('div');
+    el.className = `layer ${cls}`;
+    el.setAttribute('aria-hidden', 'true');
+    el.style.transform = `translate3d(${x}px, ${y}px, ${z}px) ${extra}`;
+    world.prepend(el);
+  };
+  for (let i = 0; i < (k < 1 ? 36 : 70); i++) add('dust', (rnd() - 0.5) * 4200 * k, (rnd() - 0.5) * 2400 * k, (300 - rnd() * 5600) * k);
+  add('orb', -900 * k, -300 * k, -1800 * k); add('orb cool', 1200 * k, 500 * k, -3400 * k);
+  add('orb', 200 * k, 200 * k, -5200 * k);   add('orb cool', -1400 * k, -600 * k, -400 * k);
+  add('strip', 0, 620 * k, -1100 * k, 'rotateX(78deg)');
+  add('strip', -1600 * k, -520 * k, -3000 * k, 'rotateY(18deg) rotateX(-70deg)');
+}
+
+function build() {
+  if (tl) { tl.revert(); tl = null; }
+  root.classList.add('cine');
+  const k = small.matches ? MOBILE_SCALE : 1;
+  const S = scaled(k);
+  const world = $('.world'), rx = $('.rig-x'), ry = $('.rig-y'), rz = $('.rig-z');
+
+  // panels: each at its shot, facing that shot's camera; shot 3's cards at a few extra depths for parallax
+  shots.forEach((el, i) => el.style.setProperty('--place', facing(S[i].pos, S[i].rot)));
+  $$('#shot-3 .card-z').forEach((c) => { c.style.transform = `translateZ(${(Number(c.dataset.depth) || 0) * k}px)`; });
+  const ring = $('[data-ring]');
+  const o = S[3];
+  ring.style.setProperty('--place', `translate3d(${o.pos[0] + o.object[0]}px, ${o.pos[1] + o.object[1]}px, ${o.pos[2] + o.object[2]}px)`);
+  const spin = $('.ring-spin');
+  if (!spin.children.length) {
+    for (let i = 0; i < 10; i++) {
+      const f = document.createElement('div');
+      f.className = 'frame';
+      f.style.setProperty('--a', `${i * 36}deg`);
+      spin.append(f);
+    }
+  }
+  $$('.frame', spin).forEach((f, i) => { f.style.transform = `rotateY(${i * 36}deg) translateZ(${260 * k}px)`; });
+  scenery(world, k);
+
+  // the camera: the world moves the opposite way to the camera; the rig rotates around the frame centre
+  const at = (i) => ({ x: -S[i].pos[0], y: -S[i].pos[1], z: -S[i].pos[2] });
+  utils.set(world, { translateX: 0, translateY: 0, translateZ: 0 });
+  utils.set([rx, ry, rz], { rotateX: 0, rotateY: 0, rotateZ: 0 });
+
+  tl = createTimeline({
+    defaults: { duration: MOVE, ease: 'inOutSine' },
+    autoplay: onScroll({ target: '.scroll-track', enter: 'top top', leave: 'bottom bottom', sync: 0.25 }),
+    onUpdate: (self) => progress(self),
+  });
+  // shot 1 holds first, then each move is followed by a hold on the next shot
+  for (let i = 1; i < S.length; i++) {
+    const t = HOLD + (i - 1) * (MOVE + HOLD);
+    const p = at(i);
+    tl.add(world, { translateX: p.x, translateY: p.y, translateZ: p.z }, t)
+      .add(rx, { rotateX: S[i].rot[0] }, t)
+      .add(ry, { rotateY: S[i].rot[1] }, t)
+      .add(rz, { rotateZ: S[i].rot[2] }, t);
+  }
+  // shot 4's object only appears as the camera heads for it (it would show through the earlier shots)
+  utils.set(ring, { opacity: 0 });
+  tl.add(ring, { opacity: 1 }, HOLD + 2 * (MOVE + HOLD))
+    .add(ring, { opacity: 0.18 }, HOLD + 3 * (MOVE + HOLD)); // a faint backdrop behind the final CTA
+  // the last hold
+  tl.add(world, { translateZ: at(S.length - 1).z, duration: HOLD }, HOLD + (S.length - 1) * (MOVE + HOLD) - HOLD);
+  built = true;
+  setActive(0, true);
+}
+
+/* which shot the camera is resting on: the nearest hold */
+const restAt = (i) => (i === 0 ? 0 : HOLD + (i - 1) * (MOVE + HOLD) + MOVE);
+function progress(self) {
+  const t = self.progress * self.duration;
+  let best = 0;
+  for (let i = 1; i < SHOTS.length; i++) if (Math.abs(restAt(i) - t) < Math.abs(restAt(best) - t)) best = i;
+  $('.film-fill').style.transform = `scaleX(${self.progress})`;
+  if (best !== active) setActive(best);
+  if (self.progress > 0.01) cue.classList.add('gone');
+}
+
+/* each shot's lines slide in when its shot is active, and fade out when the camera leaves it */
+function setActive(i, instant = false) {
+  const prev = active;
+  active = i;
+  if (prev > -1 && prev !== i) {
+    const out = $$('[data-reveal]', shots[prev]);
+    utils.remove(out); // a reveal still waiting on its stagger mustn't finish after the fade-out
+    animate(out, { opacity: 0, translateY: -14, duration: 380, ease: 'inQuad' });
+  }
+  utils.remove($$('[data-reveal]', shots[i]));
+  animate($$('[data-reveal]', shots[i]), { opacity: [0, 1], translateY: [22, 0], delay: stagger(90, { start: instant ? 0 : 160 }), duration: 720, ease: 'outCubic' });
+  shots.forEach((s, n) => s.toggleAttribute('inert', n !== i)); // buttons in other shots can't take focus
+  ticks.forEach((t, n) => { t.classList.toggle('on', n === i); t.setAttribute('aria-current', n === i ? 'step' : 'false'); });
+  label.textContent = `SHOT ${i + 1}/${SHOTS.length}`;
+}
+
+/* ticks jump to a shot: scroll to where the camera rests on it */
+ticks.forEach((t) => t.addEventListener('click', () => {
+  const track = $('.scroll-track');
+  const total = SHOTS.length > 1 ? HOLD + (SHOTS.length - 1) * (MOVE + HOLD) : 1;
+  const span = track.offsetHeight - innerHeight;
+  window.scrollTo({ top: track.offsetTop + span * (restAt(Number(t.dataset.go)) / total), behavior: reduced.matches ? 'auto' : 'smooth' });
+}));
+addEventListener('scroll', () => cue.classList.add('gone'), { once: true, passive: true });
+
+/* the CTAs live in the last shot: a skip from the header goes straight there */
+$('.site-header .btn').addEventListener('click', (e) => {
+  if (!built) return;
+  e.preventDefault();
+  ticks[SHOTS.length - 1].click();
+  setTimeout(() => $('#login').focus({ preventScroll: true }), reduced.matches ? 0 : 900);
+});
+
+if (reduced.matches) flatPage();
+else build();
+small.addEventListener('change', () => { if (!reduced.matches) build(); });
+reduced.addEventListener('change', () => location.reload());
+</script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+/* Klaket landing · styles
+   Brand colours and fonts live in :root. Swap them there (see README).
+   Motion-only starting states sit under html.motion so the page reads fine without JS or with reduced motion. */
+
+:root {
+  /* Klaket brand tokens (docs/brand/README.md). Signal red stays in the logo's dots only. */
+  --black: #121212;      /* ink: the canvas */
+  --chalk: #F6EBD9;      /* paper: text, clapper stripes */
+  --slate: #1C1C1C;      /* surface: cards, slate board */
+  --raised: #262523;
+  --teal: #0F5C57;       /* Technicolor teal: buttons and brand panels (fills) */
+  --teal-deep: #0A3F3C;
+  --accent: #5FA8A1;     /* teal tint: teal as text and lines on ink (#0F5C57 on ink is only 2.4:1) */
+  --muted: #A69F93;      /* paper 65% */
+  --line: #312F2B;
+  --display: 'Cairo', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --body: 'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, -apple-system, sans-serif;
+  --arabic: 'IBM Plex Sans Arabic', 'Cairo', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --gutter: clamp(16px, 4vw, 48px);
+  --max: 1280px;
+  --radius: 10px;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--black); color: var(--chalk);
+  font: 400 1rem/1.6 var(--body); overflow-x: hidden;
+}
+img, video, svg { display: block; max-width: 100%; }
+a { color: inherit; }
+h1, h2, h3 { margin: 0; font-weight: 400; }
+ul, ol { list-style: none; margin: 0; padding: 0; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+section[id] { scroll-margin-top: 72px; }
+.wrap { width: 100%; max-width: var(--max); margin-inline: auto; padding-inline: var(--gutter); }
+.skip { position: absolute; left: 12px; top: -60px; z-index: 100; background: var(--teal); color: var(--chalk); padding: 10px 14px; border-radius: 6px; font-weight: 600; }
+.skip:focus { top: 12px; }
+
+/* ---------- type ---------- */
+.slate-label { font: 500 .75rem/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 16px; }
+.h2 { font: 900 clamp(2.2rem, 4.6vw, 3.8rem)/1.1 var(--display); letter-spacing: -.01em; margin-bottom: 40px; }
+.lead { font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--muted); max-width: 56ch; }
+
+/* ---------- buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 24px;
+  background: var(--teal); color: var(--chalk); border: 2px solid var(--teal); border-radius: 999px;
+  font: 600 1rem var(--body); text-decoration: none; cursor: pointer;
+  transition: transform .2s, background-color .2s, color .2s;
+}
+.btn:hover { transform: translateY(-2px); background: var(--teal-deep); border-color: var(--teal-deep); }
+.btn-ghost { background: transparent; color: var(--chalk); border-color: var(--line); }
+.btn-ghost:hover { background: transparent; border-color: var(--chalk); }
+.btn-sm { min-height: 40px; padding: 0 16px; font-size: .9rem; }
+
+/* ---------- film texture ---------- */
+.grain {
+  position: fixed; inset: -50%; z-index: 90; pointer-events: none; opacity: .07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain .9s steps(6) infinite;
+}
+@keyframes grain {
+  0% { transform: translate(0, 0); } 20% { transform: translate(-6%, 4%); } 40% { transform: translate(5%, -7%); }
+  60% { transform: translate(-3%, 8%); } 80% { transform: translate(7%, 2%); } 100% { transform: translate(0, 0); }
+}
+.vignette { position: fixed; inset: 0; z-index: 89; pointer-events: none; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.55) 100%); }
+
+/* clapperboard stripes as section dividers */
+.stripes {
+  height: 22px; margin-block: clamp(56px, 9vw, 120px);
+  background: repeating-linear-gradient(45deg, var(--chalk) 0 22px, var(--black) 22px 44px);
+  border-block: 2px solid var(--chalk); opacity: .9;
+}
+
+/* ---------- header ---------- */
+.site-head {
+  position: fixed; inset: 0 0 auto; z-index: 50; display: flex; align-items: center; gap: 24px;
+  padding: 14px var(--gutter);
+  background: linear-gradient(to bottom, rgba(18,18,18,.92), rgba(18,18,18,0));
+}
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand img:first-child { height: 32px; width: auto; }
+.brand img:last-child { height: 34px; width: auto; }
+.site-head nav { margin-inline-start: auto; }
+.site-head nav ul { display: flex; gap: 24px; }
+.site-head nav a { text-decoration: none; font-weight: 500; font-size: .95rem; color: var(--muted); }
+.site-head nav a:hover { color: var(--chalk); }
+@media (max-width: 760px) {
+  .site-head nav { display: none; }
+  .site-head .btn-sm { margin-inline-start: auto; }
+}
+
+/* ---------- 01 hero ---------- */
+.hero { position: relative; min-height: 100svh; display: grid; align-items: center; overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 50% at 72% 40%, rgba(15,92,87,.55), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 15% 85%, rgba(246,235,217,.05), transparent 70%),
+    var(--black);
+}
+.hero-inner { padding-block: 120px 80px; }
+.hero-title { font: 900 clamp(3rem, 9.5vw, 8rem)/1.02 var(--display); letter-spacing: -.02em; max-width: 10ch; }
+.hero-ar, .roll-ar { width: fit-content; }
+.hero-ar { font: 700 clamp(1.3rem, 2.4vw, 2rem)/1.4 var(--display); color: var(--accent); margin: 18px 0 0; }
+.hero-title .ch { display: inline-block; }
+.hero-tag { font-size: clamp(1.05rem, 1.8vw, 1.35rem); color: var(--muted); max-width: 44ch; margin: 28px 0 36px; }
+.hero-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.letterbox { position: absolute; left: 0; right: 0; height: 7vh; background: #000; z-index: 2; pointer-events: none; }
+.letterbox-top { top: 0; } .letterbox-bottom { bottom: 0; }
+html.motion .letterbox-top { transform-origin: top; }
+html.motion .letterbox-bottom { transform-origin: bottom; }
+
+/* ---------- 02 about ---------- */
+.about { display: grid; gap: 48px; grid-template-columns: repeat(12, 1fr); }
+.about-copy { grid-column: 1 / span 7; }
+.stats { grid-column: 8 / span 5; display: grid; gap: 16px; align-content: center; margin: 0; }
+.stat { border-left: 3px solid var(--accent); padding: 4px 0 4px 20px; }
+.stat dt { font: 500 .75rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.stat dd { margin: 0; font: 900 clamp(2.6rem, 5vw, 4rem)/1.1 var(--display); font-variant-numeric: tabular-nums; }
+@media (max-width: 860px) { .about-copy, .stats { grid-column: 1 / -1; } }
+
+/* ---------- 03 services ---------- */
+.cards { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); perspective: 900px; }
+.card {
+  position: relative; padding: 28px; border-radius: var(--radius); background: var(--slate);
+  border: 1px solid var(--line); transform-style: preserve-3d; transition: border-color .2s; outline-offset: 4px;
+}
+.card:hover, .card:focus-visible { border-color: var(--accent); }
+.card .icon { width: 36px; height: 36px; fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 20px; transform: translateZ(30px); }
+.card h3 { font: 700 1.45rem/1.2 var(--display); margin-bottom: 8px; transform: translateZ(20px); }
+.card p { margin: 0; color: var(--muted); }
+
+/* ---------- 04 work ---------- */
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(3, 1fr); }
+@media (max-width: 960px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+.thumb {
+  position: relative; display: block; width: 100%; padding: 0; border: 0; border-radius: var(--radius); overflow: hidden;
+  background: var(--slate); color: var(--chalk); cursor: pointer; aspect-ratio: 16 / 9; text-align: left;
+}
+.thumb img, .thumb video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.thumb video { opacity: 0; transition: opacity .3s; }
+.thumb.playing video { opacity: 1; }
+.thumb-meta {
+  position: absolute; inset: auto 0 0; padding: 40px 16px 14px; display: flex; flex-direction: column; gap: 2px;
+  background: linear-gradient(to top, rgba(0,0,0,.85), transparent);
+}
+.thumb-cat { font: 500 .7rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.thumb-name { font: 700 1.3rem/1.2 var(--display); }
+
+.lightbox { width: min(960px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--black); color: var(--chalk); }
+.lightbox::backdrop { background: rgba(0,0,0,.85); }
+.lb-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; }
+.lb-title { font: 700 1.3rem/1.2 var(--display); }
+.lb-close { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--chalk); font-size: 1.1rem; cursor: pointer; }
+.lb-video { width: 100%; aspect-ratio: 16 / 9; background: #000; }
+
+/* ---------- 05 process: film strip ---------- */
+.strip {
+  --hole: radial-gradient(circle at 50% 50%, var(--black) 0 5px, transparent 5.5px) 0 0 / 26px 16px repeat-x;
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: 6px;
+  margin-inline: auto; max-width: var(--max); padding: 26px var(--gutter);
+  background: var(--teal-deep); border-block: 2px solid var(--teal);
+  overflow-x: auto; scroll-snap-type: x mandatory; position: relative;
+}
+.strip::before, .strip::after { content: ''; position: absolute; left: 0; right: 0; height: 16px; background: var(--hole); background-color: var(--teal-deep); }
+.strip::before { top: 5px; background: radial-gradient(circle, #5a5a55 0 4px, transparent 4.5px) 0 0 / 26px 16px repeat-x; }
+.strip::after { bottom: 5px; background: radial-gradient(circle, #5a5a55 0 4px, transparent 4.5px) 0 0 / 26px 16px repeat-x; }
+.frame { scroll-snap-align: start; padding: 22px; background: var(--black); border-radius: 4px; min-height: 200px; position: relative; }
+.frame:not(:last-child)::after { content: '→'; position: absolute; right: 12px; top: 18px; color: var(--accent); font-family: var(--mono); }
+.frame-no { font: 500 .8rem var(--mono); color: var(--accent); letter-spacing: .1em; }
+.frame h3 { font: 900 1.7rem/1.2 var(--display); margin: 10px 0 8px; }
+.frame p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+/* ---------- 06 clients ---------- */
+.marquee { display: flex; overflow: hidden; border-block: 1px solid var(--line); padding-block: 26px; margin-bottom: 48px;
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+.marquee-track { display: flex; flex-shrink: 0; gap: 64px; padding-right: 64px; animation: marquee 32s linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+.marquee li { font: 700 1.6rem/1.2 var(--display); letter-spacing: .06em; color: #969085; white-space: nowrap; }
+@keyframes marquee { to { transform: translateX(-100%); } }
+.quotes { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.quote { margin: 0; padding: 32px; background: var(--slate); border-radius: var(--radius); border-top: 3px solid var(--accent); }
+.quote blockquote { margin: 0 0 20px; }
+.quote p { margin: 0; font-size: 1.2rem; line-height: 1.5; }
+.quote figcaption { color: var(--muted); font-size: .9rem; }
+.quote strong { color: var(--chalk); font-weight: 600; }
+
+/* ---------- 07 action! (sticky scroll scene) ---------- */
+.action { position: relative; height: 320vh; margin-top: clamp(56px, 9vw, 120px); }
+.action-stage {
+  position: sticky; top: 0; height: 100svh; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-rows: auto 1fr auto;
+  align-items: center; gap: 0 clamp(16px, 4vw, 64px); padding: 88px var(--gutter) 28px;
+  background: radial-gradient(ellipse 50% 45% at 60% 55%, rgba(15,92,87,.45), transparent 70%), var(--black);
+}
+.action-title { grid-column: 1 / -1; font: 900 clamp(2.6rem, 7vw, 5.6rem)/1.05 var(--display); display: flex; align-items: baseline; gap: 16px; }
+.action-title .slate-label { margin: 0; }
+.action-title [lang="ar"] { font-family: var(--display); color: var(--accent); font-size: .55em; }
+.clapper { grid-column: 1; grid-row: 2; width: min(100%, 420px); justify-self: end; overflow: visible; }
+.rig { grid-column: 2; grid-row: 2; position: relative; width: min(100%, 400px); }
+.camera { width: 100%; height: auto; overflow: visible; }
+.action-hint { grid-column: 1 / -1; margin: 0; color: var(--muted); font: 500 .8rem var(--mono); letter-spacing: .08em; text-transform: uppercase; text-align: center; }
+
+.reel-rim { fill: var(--slate); stroke: var(--chalk); stroke-width: 4; }
+.reel-hub { fill: var(--accent); }
+.reel-holes circle { fill: var(--black); stroke: #555; stroke-width: 2; }
+.cam-body { fill: var(--teal-deep); stroke: var(--chalk); stroke-width: 4; }
+.cam-panel { fill: var(--black); stroke: #555; stroke-width: 2; }
+.cam-knob { fill: var(--slate); stroke: var(--chalk); stroke-width: 3; }
+.cam-lens { fill: var(--teal); stroke: var(--chalk); stroke-width: 4; stroke-linejoin: round; }
+.cam-glass { fill: var(--accent); }
+.cam-legs { stroke: var(--chalk); stroke-width: 6; stroke-linecap: round; fill: none; }
+
+/* film out of the lens: the clip box starts at the lens tip (x 406/420, y 206/300 of the camera) and runs off-screen right */
+.film-out { position: absolute; left: 97%; top: 68.7%; width: 100vw; height: 64px; transform: translateY(-50%); overflow: hidden; }
+.film-track {
+  display: flex; gap: 6px; height: 100%; padding: 10px 6px; width: max-content;
+  background: #0A0A0A radial-gradient(circle, #5a5650 0 3px, transparent 3.5px) 0 1px / 16px 8px repeat-x;
+  border-block: 2px solid #333;
+}
+.film-track span { width: 76px; height: 100%; border-radius: 2px; background: var(--img) center / cover; opacity: .9; }
+
+.slate-board { fill: #161616; stroke: #121212; stroke-width: 3; }
+.slate-lines path { stroke: var(--chalk); stroke-width: 2.5; fill: none; opacity: .9; }
+.slate-text text { font: 500 13px var(--mono); fill: var(--chalk); letter-spacing: .06em; }
+.slate-text .chalk { font: 900 22px var(--display); fill: var(--accent); letter-spacing: .04em; }
+.slate-text .chalk.sm { font-size: 16px; font-weight: 700; fill: var(--chalk); }
+.hinge { fill: #111; stroke: #333; stroke-width: 2; }
+.screw { fill: #9a9a94; }
+.arm-lift, .arm-snap { will-change: transform; }
+.reel { will-change: transform; }
+
+@media (max-width: 760px) {
+  .action-stage { grid-template-columns: 1fr; grid-template-rows: auto auto auto auto; align-content: center; gap: 20px; padding-top: 76px; }
+  .rig { grid-column: 1; grid-row: 2; width: min(62vw, 300px); justify-self: start; }
+  .clapper { grid-column: 1; grid-row: 3; width: min(78vw, 340px); justify-self: center; }
+  .film-out { height: 44px; }
+  .film-track span { width: 52px; }
+}
+
+/* ---------- 08 contact + footer ---------- */
+.contact { display: grid; gap: 48px; grid-template-columns: repeat(12, 1fr); padding-bottom: 96px; }
+.contact > div { grid-column: 1 / span 6; }
+.form { grid-column: 8 / span 5; display: grid; gap: 16px; }
+@media (max-width: 860px) { .contact > div, .form { grid-column: 1 / -1; } }
+.roll { font: 900 clamp(3.4rem, 10vw, 7.5rem)/1 var(--display); letter-spacing: -.02em; margin-bottom: 8px; color: var(--chalk); }
+.roll-ar { font: 700 clamp(1.4rem, 3vw, 2.2rem)/1.4 var(--display); color: var(--accent); margin: 0 0 20px; }
+.socials { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 28px; }
+.socials a { font: 500 .8rem var(--mono); letter-spacing: .12em; text-transform: uppercase; text-underline-offset: 6px; }
+.socials a:hover { color: var(--accent); }
+.field { display: grid; gap: 6px; }
+.field label { font: 500 .75rem var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.field input, .field select, .field textarea {
+  width: 100%; min-height: 48px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--slate); color: var(--chalk); font: 400 1rem var(--body);
+}
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { border-color: var(--accent); outline-offset: 0; }
+.field [aria-invalid="true"] { border-color: #FF6B5E; }
+.form .btn { justify-self: start; }
+.form-note { margin: 0; min-height: 1.6em; color: var(--accent); }
+.site-foot { border-top: 1px solid var(--line); padding-block: 28px; }
+.foot-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.foot-inner img { height: 40px; width: auto; }
+.slate-line { margin: 0; font: 500 .8rem var(--mono); letter-spacing: .14em; color: var(--muted); }
+
+/* ---------- sound toggle ---------- */
+.sound {
+  position: fixed; right: 18px; bottom: 18px; z-index: 60; width: 52px; height: 52px; border-radius: 50%;
+  display: grid; place-items: center; border: 2px solid var(--line); background: rgba(28,28,28,.92); color: var(--chalk); cursor: pointer;
+}
+.sound svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.sound .wave { display: none; }
+.sound[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.sound[aria-pressed="true"] .wave { display: inline; }
+.sound[aria-pressed="true"] .mute { display: none; }
+.sound-tip {
+  position: absolute; right: 62px; white-space: nowrap; padding: 6px 10px; border-radius: 6px; background: var(--chalk); color: var(--black);
+  font: 600 .8rem var(--body); opacity: 0; transform: translateX(6px); transition: opacity .2s, transform .2s; pointer-events: none;
+}
+.sound:hover .sound-tip, .sound:focus-visible .sound-tip { opacity: 1; transform: none; }
+
+/* ---------- motion-only starting states (JS animates them in) ---------- */
+html.motion [data-reveal] { opacity: 0; transform: translateY(28px); }
+html.motion .hero-title .ch { opacity: 0; transform: translateY(.4em); }
+html.motion .hero-ar, html.motion .hero-tag, html.motion .hero-cta, html.motion .hero .slate-label { opacity: 0; }
+
+/* ---------- reduced motion: everything static ---------- */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .grain, .marquee-track { animation: none; }
+  .marquee { overflow-x: auto; }
+  .marquee-track[aria-hidden] { display: none; }
+  .btn:hover { transform: none; }
+  /* the scroll scene collapses to a normal section with the clapper shown shut */
+  .action { height: auto; }
+  .action-stage { position: relative; height: auto; min-height: 0; padding-block: 48px; }
+  .action-hint { display: none; }
+}

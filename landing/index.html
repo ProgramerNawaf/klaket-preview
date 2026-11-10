@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Klaket · Film and video production</title>
+  <meta name="description" content="Klaket is a film and video production studio: commercials, corporate films, social content, post-production, animation and photography.">
+  <meta name="theme-color" content="#121212">
+  <link rel="icon" href="../brand/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+Arabic:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <!-- Motion is opt-in: JS swaps no-js for js, and adds "motion" only when the visitor hasn't asked for reduced motion.
+       Without either class every section renders fully visible and static. -->
+  <script>
+    document.documentElement.classList.replace('no-js', 'js');
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('motion');
+    // if anime.js can't load (offline, blocked CDN), drop the hidden starting states so nothing stays invisible
+    setTimeout(function () { if (!window.__klaketReady) document.documentElement.classList.remove('motion'); }, 4000);
+  </script>
+  <script type="importmap">{ "imports": { "animejs": "https://cdn.jsdelivr.net/npm/animejs@4.4.1/+esm" } }</script>
+  <script type="module" src="main.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- Film texture: animated grain + vignette, pointer-events off, above everything -->
+  <div class="grain" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <header class="site-head">
+    <a class="brand" href="#top" aria-label="Klaket, back to top">
+      <img src="../brand/klaket-mark-on-dark.svg" alt="" width="25" height="32">
+      <img src="../brand/klaket-wordmark-cream.svg" alt="Klaket" width="54" height="34">
+    </a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="#services">Services</a></li>
+        <li><a href="#work">Work</a></li>
+        <li><a href="#process">Process</a></li>
+        <li><a href="#contact">Contact</a></li>
+      </ul>
+    </nav>
+    <a class="btn btn-sm" href="#contact">Start your project</a>
+  </header>
+
+  <main id="main">
+    <!-- SCENE 01 · Hero -->
+    <section class="hero" id="top" data-scene="1" aria-labelledby="hero-title">
+      <div class="letterbox letterbox-top" aria-hidden="true"></div>
+      <div class="hero-inner wrap">
+        <p class="slate-label">Scene 01 · Take 01</p>
+        <h1 id="hero-title" class="hero-title" data-split>Stories that roll.</h1><!-- PLACEHOLDER headline -->
+        <p class="hero-ar" lang="ar" dir="rtl">من الفكرة إلى النسخة النهائية.</p>
+        <p class="hero-tag">Commercials, films and content for brands across Saudi Arabia and the Gulf, from first idea to final cut.</p><!-- PLACEHOLDER tagline -->
+        <div class="hero-cta">
+          <a class="btn" href="#contact">Start your project</a>
+          <a class="btn btn-ghost" href="#work">See the work</a>
+        </div>
+      </div>
+      <div class="letterbox letterbox-bottom" aria-hidden="true"></div>
+    </section>
+
+    <div class="stripes" aria-hidden="true"></div>
+
+    <!-- SCENE 02 · About -->
+    <section class="about wrap" id="about" data-scene="2" aria-labelledby="about-title">
+      <div class="about-copy">
+        <p class="slate-label">Scene 02 · Who we are</p>
+        <h2 id="about-title" class="h2">A crew built for the whole shoot.</h2>
+        <!-- PLACEHOLDER copy -->
+        <p class="lead">Klaket is a production house of directors, producers, editors and animators. We plan, shoot and finish work for brands that want it done properly, on time and on brief. One team carries your project from the first call to the final delivery.</p>
+      </div>
+      <!-- PLACEHOLDER numbers: set data-count to the real figures -->
+      <dl class="stats" data-reveal-group>
+        <div class="stat" data-reveal><dt>Years rolling</dt><dd><span data-count="12">12</span><span aria-hidden="true">+</span></dd></div>
+        <div class="stat" data-reveal><dt>Projects delivered</dt><dd><span data-count="340">340</span><span aria-hidden="true">+</span></dd></div>
+        <div class="stat" data-reveal><dt>Clients</dt><dd><span data-count="85">85</span></dd></div>
+      </dl>
+    </section>
+
+    <div class="stripes" aria-hidden="true"></div>
+
+    <!-- SCENE 03 · Services -->
+    <section class="services wrap" id="services" data-scene="3" aria-labelledby="services-title">
+      <p class="slate-label">Scene 03 · Services</p>
+      <h2 id="services-title" class="h2">What we shoot.</h2>
+      <ul class="cards" data-reveal-group>
+        <li class="card" data-reveal data-tilt tabindex="0">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="m16 10 6-3v10l-6-3"/></svg>
+          <h3>Commercials</h3><p>TV and online spots that sell without shouting.</p>
+        </li>
+        <li class="card" data-reveal data-tilt tabindex="0">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>
+          <h3>Corporate film</h3><p>Brand stories, launches and interviews with real people.</p>
+        </li>
+        <li class="card" data-reveal data-tilt tabindex="0">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+          <h3>Social content</h3><p>Vertical cuts and series made for the feed.</p>
+        </li>
+        <li class="card" data-reveal data-tilt tabindex="0">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H4zM8 20h8M12 16v4"/><path d="m10 8 4 2-4 2z"/></svg>
+          <h3>Post-production</h3><p>Edit, color grade, sound mix and subtitles.</p>
+        </li>
+        <li class="card" data-reveal data-tilt tabindex="0">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="3"/></svg>
+          <h3>Animation</h3><p>Motion graphics, 2D and 3D for ideas you can't film.</p>
+        </li>
+        <li class="card" data-reveal data-tilt tabindex="0">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h4l2-3h6l2 3h4v12H3z"/><circle cx="12" cy="13" r="4"/></svg>
+          <h3>Photography</h3><p>Campaign, product and behind-the-scenes stills.</p>
+        </li>
+      </ul>
+    </section>
+
+    <div class="stripes" aria-hidden="true"></div>
+
+    <!-- SCENE 04 · Selected work. PLACEHOLDER media: generated clips in assets/video, posters in assets/img -->
+    <section class="work wrap" id="work" data-scene="4" aria-labelledby="work-title">
+      <p class="slate-label">Scene 04 · Selected work</p>
+      <h2 id="work-title" class="h2">Recent takes.</h2>
+      <ul class="grid" data-reveal-group>
+        <li data-reveal><button class="thumb" type="button" data-video="assets/video/work-01.mp4" data-title="Desert Light · Commercial">
+          <img src="assets/img/work-01.jpg" alt="Placeholder still for Desert Light, a commercial" loading="lazy" width="640" height="360">
+          <span class="thumb-meta"><span class="thumb-cat">Commercial</span><span class="thumb-name">Desert Light</span></span></button></li>
+        <li data-reveal><button class="thumb" type="button" data-video="assets/video/work-02.mp4" data-title="Founders · Corporate film">
+          <img src="assets/img/work-02.jpg" alt="Placeholder still for Founders, a corporate film" loading="lazy" width="640" height="360">
+          <span class="thumb-meta"><span class="thumb-cat">Corporate film</span><span class="thumb-name">Founders</span></span></button></li>
+        <li data-reveal><button class="thumb" type="button" data-video="assets/video/work-03.mp4" data-title="Night Market · Social content">
+          <img src="assets/img/work-03.jpg" alt="Placeholder still for Night Market, social content" loading="lazy" width="640" height="360">
+          <span class="thumb-meta"><span class="thumb-cat">Social content</span><span class="thumb-name">Night Market</span></span></button></li>
+        <li data-reveal><button class="thumb" type="button" data-video="assets/video/work-04.mp4" data-title="Grade Reel · Post-production">
+          <img src="assets/img/work-04.jpg" alt="Placeholder still for Grade Reel, post-production" loading="lazy" width="640" height="360">
+          <span class="thumb-meta"><span class="thumb-cat">Post-production</span><span class="thumb-name">Grade Reel</span></span></button></li>
+        <li data-reveal><button class="thumb" type="button" data-video="assets/video/work-05.mp4" data-title="Logo Motion · Animation">
+          <img src="assets/img/work-05.jpg" alt="Placeholder still for Logo Motion, an animation" loading="lazy" width="640" height="360">
+          <span class="thumb-meta"><span class="thumb-cat">Animation</span><span class="thumb-name">Logo Motion</span></span></button></li>
+        <li data-reveal><button class="thumb" type="button" data-video="assets/video/work-06.mp4" data-title="Product Stills · Photography">
+          <img src="assets/img/work-06.jpg" alt="Placeholder still for Product Stills, photography" loading="lazy" width="640" height="360">
+          <span class="thumb-meta"><span class="thumb-cat">Photography</span><span class="thumb-name">Product Stills</span></span></button></li>
+      </ul>
+    </section>
+
+    <div class="stripes" aria-hidden="true"></div>
+
+    <!-- SCENE 05 · Process: a film strip, one frame per step -->
+    <section class="process" id="process" data-scene="5" aria-labelledby="process-title">
+      <div class="wrap">
+        <p class="slate-label">Scene 05 · Process</p>
+        <h2 id="process-title" class="h2">Five frames, start to finish.</h2>
+      </div>
+      <ol class="strip" data-reveal-group tabindex="0" aria-label="Process steps, scroll sideways on small screens">
+        <li class="frame" data-reveal><span class="frame-no">01</span><h3>Brief</h3><p>We listen, ask the hard questions and agree the goal.</p></li>
+        <li class="frame" data-reveal><span class="frame-no">02</span><h3>Script</h3><p>Ideas, script and treatment, approved before we spend.</p></li>
+        <li class="frame" data-reveal><span class="frame-no">03</span><h3>Shoot</h3><p>Crew, cast, locations and kit, on one call sheet.</p></li>
+        <li class="frame" data-reveal><span class="frame-no">04</span><h3>Edit</h3><p>Cut, grade, sound and graphics, reviewed in rounds.</p></li>
+        <li class="frame" data-reveal><span class="frame-no">05</span><h3>Deliver</h3><p>Masters and cut-downs for every screen it runs on.</p></li>
+      </ol>
+    </section>
+
+    <div class="stripes" aria-hidden="true"></div>
+
+    <!-- SCENE 06 · Clients. PLACEHOLDER: swap the text logos for client SVGs, and the quotes for real ones -->
+    <section class="clients" id="clients" data-scene="6" aria-labelledby="clients-title">
+      <div class="wrap">
+        <p class="slate-label">Scene 06 · Clients</p>
+        <h2 id="clients-title" class="h2">In good company.</h2>
+      </div>
+      <div class="marquee" aria-label="Client logos">
+        <ul class="marquee-track">
+          <li>NORTHWIND</li><li>Oasis&nbsp;Co.</li><li>FALCON</li><li>Sahara Labs</li><li>MERIDIAN</li><li>Palm&nbsp;&amp;&nbsp;Pine</li><li>ATLAS</li><li>Qamar</li>
+        </ul>
+        <ul class="marquee-track" aria-hidden="true">
+          <li>NORTHWIND</li><li>Oasis&nbsp;Co.</li><li>FALCON</li><li>Sahara Labs</li><li>MERIDIAN</li><li>Palm&nbsp;&amp;&nbsp;Pine</li><li>ATLAS</li><li>Qamar</li>
+        </ul>
+      </div>
+      <div class="quotes wrap" data-reveal-group>
+        <figure class="quote" data-reveal>
+          <blockquote><p>“They turned a two-line brief into a launch film our whole team is proud of, and they hit the date.”</p></blockquote>
+          <figcaption><strong>Placeholder Name</strong> · Marketing Director, Client Co.</figcaption>
+        </figure>
+        <figure class="quote" data-reveal>
+          <blockquote><p>“Calm on set, sharp in the edit. The first cut was already close to final.”</p></blockquote>
+          <figcaption><strong>Placeholder Name</strong> · Head of Brand, Client Co.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- SCENE 07 · Action! The sticky scroll scene: camera reels turn with scroll, film slides out of the lens,
+         the clapper lifts as the scene enters and snaps shut at the centre. -->
+    <section class="action" id="action" data-scene="7" aria-labelledby="action-title">
+      <div class="action-stage">
+        <h2 id="action-title" class="action-title"><span class="slate-label">Scene 07</span> Action! <span lang="ar" dir="rtl">أكشن!</span></h2>
+
+        <div class="rig">
+          <!-- Camera: separate groups for each reel so they can spin -->
+          <svg class="camera" viewBox="0 0 420 300" aria-hidden="true" focusable="false">
+            <g class="reel reel-back" style="transform-origin: 128px 84px">
+              <circle cx="128" cy="84" r="66" class="reel-rim"/>
+              <circle cx="128" cy="84" r="12" class="reel-hub"/>
+              <g class="reel-holes"><circle cx="128" cy="46" r="15"/><circle cx="161" cy="103" r="15"/><circle cx="95" cy="103" r="15"/></g>
+            </g>
+            <g class="reel reel-front" style="transform-origin: 262px 84px">
+              <circle cx="262" cy="84" r="66" class="reel-rim"/>
+              <circle cx="262" cy="84" r="12" class="reel-hub"/>
+              <g class="reel-holes"><circle cx="262" cy="46" r="15"/><circle cx="295" cy="103" r="15"/><circle cx="229" cy="103" r="15"/></g>
+            </g>
+            <rect x="70" y="150" width="250" height="112" rx="10" class="cam-body"/>
+            <rect x="92" y="170" width="70" height="40" rx="4" class="cam-panel"/>
+            <circle cx="112" cy="232" r="9" class="cam-knob"/><circle cx="140" cy="232" r="9" class="cam-knob"/>
+            <path d="M320 178 h28 l44 -20 v96 l-44 -20 h-28z" class="cam-lens"/>
+            <circle cx="396" cy="206" r="10" class="cam-glass"/>
+            <path d="M180 262 l-40 38 M210 262 v38 M240 262 l40 38" class="cam-legs"/>
+          </svg>
+          <!-- Film strip slides out of the lens; frames are mini versions of the work posters -->
+          <div class="film-out" aria-hidden="true">
+            <div class="film-track">
+              <span style="--img:url(assets/img/work-01.jpg)"></span><span style="--img:url(assets/img/work-02.jpg)"></span>
+              <span style="--img:url(assets/img/work-03.jpg)"></span><span style="--img:url(assets/img/work-04.jpg)"></span>
+              <span style="--img:url(assets/img/work-05.jpg)"></span><span style="--img:url(assets/img/work-06.jpg)"></span>
+              <span style="--img:url(assets/img/work-01.jpg)"></span><span style="--img:url(assets/img/work-02.jpg)"></span>
+              <span style="--img:url(assets/img/work-03.jpg)"></span><span style="--img:url(assets/img/work-04.jpg)"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clapperboard: arm-lift (scroll) wraps arm-snap (timeline) so both rotations compose around the hinge -->
+        <svg class="clapper" viewBox="0 0 400 330" role="img" aria-labelledby="slate-desc" focusable="false">
+          <title id="slate-desc">Clapperboard slate showing the current scene, take and how far you've scrolled</title>
+          <defs>
+            <pattern id="stripes" width="44" height="44" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="44" height="44" fill="#121212"/><rect width="22" height="44" fill="#F6EBD9"/>
+            </pattern>
+          </defs>
+          <g class="slate">
+            <rect x="20" y="96" width="370" height="40" fill="url(#stripes)" stroke="#121212" stroke-width="3"/>
+            <rect x="20" y="136" width="370" height="186" rx="4" class="slate-board"/>
+            <g class="slate-lines"><path d="M34 190 h342 M34 250 h342 M34 286 h342 M150 150 v40 M262 150 v40 M230 250 v36"/></g>
+            <g class="slate-text">
+              <text x="40" y="164">SCENE</text><text x="160" y="164">TAKE</text><text x="272" y="164">ROLL</text>
+              <text x="40" y="186" class="chalk" data-slate="scene">01</text>
+              <text x="160" y="186" class="chalk" data-slate="take">01</text>
+              <text x="272" y="186" class="chalk" data-slate="roll">0%</text>
+              <text x="40" y="214">PROD.CO.</text><text x="120" y="214" class="chalk sm">KLAKET</text>
+              <text x="40" y="242">DIRECTOR</text><text x="130" y="242" class="chalk sm">YOU</text><!-- PLACEHOLDER -->
+              <text x="40" y="274">DATE</text><text x="86" y="274" class="chalk sm" data-slate="date"></text>
+              <text x="242" y="274">SOUND</text><text x="306" y="274" class="chalk sm" data-slate="sound">OFF</text>
+              <text x="40" y="310">CAMERAMAN</text><text x="146" y="310" class="chalk sm">A-CAM</text>
+            </g>
+          </g>
+          <g class="arm-lift" style="transform-origin: 24px 92px">
+            <g class="arm-snap" style="transform-origin: 24px 92px">
+              <rect x="20" y="56" width="370" height="36" fill="url(#stripes)" stroke="#121212" stroke-width="3"/>
+            </g>
+          </g>
+          <path d="M8 52 h44 l24 40 v44 h-68z" class="hinge"/>
+          <circle cx="24" cy="70" r="4" class="screw"/><circle cx="24" cy="118" r="4" class="screw"/><circle cx="54" cy="118" r="4" class="screw"/>
+        </svg>
+
+        <p class="action-hint">Keep scrolling. Turn on sound for the clap.</p>
+      </div>
+    </section>
+
+    <div class="stripes" aria-hidden="true"></div>
+
+    <!-- SCENE 08 · Contact -->
+    <section class="contact wrap" id="contact" data-scene="8" aria-labelledby="contact-title">
+      <div>
+        <p class="slate-label">Scene 08 · Contact</p>
+        <h2 id="contact-title" class="roll">Let’s roll.</h2>
+        <p class="roll-ar" lang="ar" dir="rtl">يلّا نبدأ التصوير.</p>
+        <p class="lead">Tell us what you're making. A producer replies within one working day.</p><!-- PLACEHOLDER promise -->
+        <ul class="socials" aria-label="Social links"><!-- PLACEHOLDER links -->
+          <li><a href="#" aria-label="Klaket on Instagram (placeholder link)">Instagram</a></li>
+          <li><a href="#" aria-label="Klaket on Vimeo (placeholder link)">Vimeo</a></li>
+          <li><a href="#" aria-label="Klaket on LinkedIn (placeholder link)">LinkedIn</a></li>
+          <li><a href="#" aria-label="Klaket on X (placeholder link)">X</a></li>
+        </ul>
+      </div>
+      <!-- Not wired to a backend yet: main.js stops the submit and shows a thank-you note -->
+      <form class="form" id="contact-form" novalidate>
+        <div class="field"><label for="f-name">Name</label><input id="f-name" name="name" autocomplete="name" required></div>
+        <div class="field"><label for="f-email">Email</label><input id="f-email" name="email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="f-type">Project type</label>
+          <select id="f-type" name="type">
+            <option>Commercial</option><option>Corporate film</option><option>Social content</option>
+            <option>Post-production</option><option>Animation</option><option>Photography</option><option>Not sure yet</option>
+          </select></div>
+        <div class="field"><label for="f-msg">Tell us about it</label><textarea id="f-msg" name="message" rows="4" required></textarea></div>
+        <button class="btn" type="submit">Send the brief</button>
+        <p class="form-note" id="form-note" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer class="site-foot">
+    <div class="wrap foot-inner">
+      <img src="../brand/klaket-wordmark-cream.svg" alt="Klaket" width="64" height="40">
+      <p class="slate-line">SCENE 01 · TAKE 01 · © <span data-year>2026</span> Klaket</p>
+    </div>
+  </footer>
+
+  <!-- Sound toggle: muted by default, choice saved in localStorage. Hidden for reduced motion. -->
+  <button class="sound" type="button" aria-pressed="false" aria-describedby="sound-tip" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/><path class="mute" d="m16 9 6 6m0-6-6 6"/></svg>
+    <span class="sound-tip" id="sound-tip" role="tooltip">Enable cinematic sound</span>
+  </button>
+
+  <!-- Lightbox for the work grid -->
+  <dialog class="lightbox" id="lightbox" aria-labelledby="lb-title">
+    <div class="lb-inner">
+      <div class="lb-head"><h2 id="lb-title" class="lb-title"></h2><button class="lb-close" type="button" aria-label="Close">✕</button></div>
+      <video class="lb-video" controls playsinline preload="none"></video>
+    </div>
+  </dialog>
+</body>
+</html>

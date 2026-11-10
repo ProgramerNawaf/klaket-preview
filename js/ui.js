@@ -99,7 +99,8 @@
 
   UI.lockNote = (text = 'Internal only. Clients never see this.') => `<span class="lock-note">${UI.icon('lock')}${esc(text)}</span>`;
 
-  UI.loading = (text = 'Loading…') => `<div class="page"><div class="empty"><span class="spin"></span><span class="small">${esc(text)}</span></div></div>`;
+  /* loading: the page's shape (heading, a row of cards, a block), so the screen doesn't jump when the data lands */
+  UI.loading = (text = 'Loading…') => `<div class="fl-skel" role="status" aria-label="${esc(text)}"><i class="s-eyebrow"></i><i class="s-title"></i><i class="s-sub"></i><div class="s-row"><i></i><i></i><i></i></div><i class="s-block"></i></div>`;
   UI.spinner = () => '<span class="spin sm"></span>';
   UI.errorBox = (msg) => `<div class="callout danger">${UI.icon('triangle-alert')}<span class="small">${esc(msg)}</span></div>`;
 

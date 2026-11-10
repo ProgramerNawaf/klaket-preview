@@ -6,7 +6,11 @@ window.MPH_CONFIG = {
   supabaseUrl: 'https://ynoiedyobvsrvuoaggqu.supabase.co',
   supabaseKey: 'sb_publishable_DKacttTPNeuyEoVdUG1n6w_hXSwmLRI',
   demoUrl: 'https://alomaiir.github.io/mph-prototype/',
+  // The Klaket assistant (agent-native sidecar in agent/). Empty hides the Assistant button.
+  agentUrl: '',
 };
+// on localhost the assistant runs from `cd agent && pnpm dev`
+if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.MPH_CONFIG.agentUrl = 'http://localhost:8091';
 
 /* Local development: on localhost, open the app with ?db=local to use the local Supabase stack (`npx supabase start`,
    seeded from supabase/seed.sql) and ?db=live to switch back. The choice is remembered in this browser.

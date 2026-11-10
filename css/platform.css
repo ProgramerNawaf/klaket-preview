@@ -136,7 +136,7 @@ html[lang="ar"] .auth-title { font-family: var(--font-ar); line-height: 1.45; le
 .msel-search { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-block-end: 1px solid var(--line); color: var(--faint); }
 .msel-search input { flex: 1; background: none; border: 0; outline: 0; color: var(--text); font-size: 14px; }
 .msel-list { max-height: 260px; overflow-y: auto; padding: 6px; }
-.msel-group { padding: 10px 10px 4px; font-size: 10.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--faint); }
+.msel-group { padding: 10px 10px 4px; font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--faint); }
 .msel-opt { width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius); font-size: 14px; color: var(--text-2); text-align: start; transition: background .15s, color .15s; }
 .msel-opt:hover { background: var(--bg); color: var(--text); }
 .msel-box { width: 18px; height: 18px; flex: none; border-radius: 6px; display: grid; place-items: center; box-shadow: inset 0 0 0 1.5px var(--line-2); color: transparent; transition: background .2s, box-shadow .2s, color .2s; }
@@ -237,7 +237,7 @@ html[lang="ar"] .auth-title { font-family: var(--font-ar); line-height: 1.45; le
 [dir="rtl"] .ag-fill { transform-origin: right; }
 .ag-card.in .ag-fill { animation: ag-grow-x 1s .2s cubic-bezier(.2, .7, .2, 1) both; }
 @keyframes ag-grow-x { from { transform: scaleX(0); } }
-.ag-meter-l { position: absolute; inset-block-start: 14px; inset-inline-end: 0; font-size: 10px; color: var(--faint); letter-spacing: .04em; }
+.ag-meter-l { position: absolute; inset-block-start: 14px; inset-inline-end: 0; font-size: 11px; color: var(--faint); letter-spacing: .04em; }
 .ag-bars { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; height: 132px; align-items: end; }
 .ag-bar { all: unset; box-sizing: border-box; cursor: pointer; height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 4px; text-align: center; }
 .ag-bar-v { font-size: 11px; color: var(--muted); }
@@ -263,7 +263,7 @@ html[lang="ar"] .ag .eyebrow:not([dir="ltr"]), html[lang="ar"] .ag-foot .mono, h
   .ag-title { font-size: 22px; }
   .ag-node { width: 36px; height: 36px; } .ag-step.gate .ag-node { width: 30px; height: 30px; }
   .ag-steps::before { inset-block-start: 17px; }
-  .ag-name { font-size: 10.5px; }
+  .ag-name { font-size: 11px; }
   .ag-card { padding: 14px 16px; }
   .ag-frame figcaption { display: none; }
   .ag-bars { height: 110px; gap: 5px; }
@@ -307,7 +307,7 @@ html[lang="ar"] .ag .eyebrow:not([dir="ltr"]), html[lang="ar"] .ag-foot .mono, h
 .ph-soon:hover::after, .ph-soon:focus-visible::after { opacity: 1; transform: none; }
 
 /* not-yet-live steps */
-.soon-tag { font-size: 9px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 999px; background: var(--raised); color: var(--muted); margin-inline-start: 2px; }
+.soon-tag { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding: 1px 6px; border-radius: 999px; background: var(--raised); color: var(--muted); margin-inline-start: 2px; }
 .rail a { position: relative; }
 .soon-dot { font-size: 8px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--market); }
 
@@ -379,7 +379,7 @@ html[lang="ar"] .ag .eyebrow:not([dir="ltr"]), html[lang="ar"] .ag-foot .mono, h
   .main > .content { flex: none; overflow: visible; }
   .topbar.in-prod { min-height: 50px; padding-inline: 8px 10px; }
   .topbar.in-prod .topbar-logo, .topbar.in-prod .ph-docs { display: none; }
-  .topbar.in-prod .tb-status .pill { font-size: 10.5px; }
+  .topbar.in-prod .tb-status .pill { font-size: 11px; }
   .topbar.in-prod .tb-preview { padding-inline: 8px; }
   .tb-back { width: 32px; height: 32px; justify-content: center; }
   .pnav { padding: 6px 10px; min-height: 48px; gap: 8px; }
@@ -395,7 +395,7 @@ html[lang="ar"] .ag .eyebrow:not([dir="ltr"]), html[lang="ar"] .ag-foot .mono, h
   .phase-menu { inset-inline: 8px; inset-block-start: calc(100% - 2px); min-width: 0; max-height: min(70vh, 560px); overflow-y: auto; }
   .pm-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; padding: 0 4px 8px 42px; }
   [dir="rtl"] .pm-steps { padding: 0 42px 8px 4px; }
-  .pm-group { grid-column: 1 / -1; font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding: 6px 4px 2px; }
+  .pm-group { grid-column: 1 / -1; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); padding: 6px 4px 2px; }
   .pm-steps a { display: flex; align-items: center; gap: 7px; padding: 9px 8px; border-radius: var(--radius); font-size: 13.5px; color: var(--text-2); }
   .pm-steps a svg.lucide { width: 15px; height: 15px; color: var(--muted); }
   .pm-steps a.active { background: var(--accent-soft); color: var(--text); font-weight: 600; }

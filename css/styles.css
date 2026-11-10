@@ -48,7 +48,7 @@ html[data-style="intercom"] {
 html[data-style="intercom"] .page { padding: 36px 40px 72px; gap: 32px; }
 html[data-style="intercom"] .panel, html[data-style="intercom"] .card { box-shadow: none !important; }
 html[data-style="intercom"] .pill, html[data-style="intercom"] .tag, html[data-style="intercom"] .chip {
-  font-family: var(--font-mono); font-weight: 500; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  font-family: var(--font-mono); font-weight: 500; font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
 }
 html[data-style="intercom"] .topbar .crumbs { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
 html[data-style="intercom"] .btn.btn-dark { background: var(--text); color: var(--bg); border-color: var(--text); }
@@ -87,14 +87,3 @@ html[data-style="gitbutler"] .table tbody tr:hover td { background: var(--accent
 html[data-style="gitbutler"] .table tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
 html[data-style="gitbutler"][dir="rtl"] .table tbody tr:hover td:first-child, html[dir="rtl"][data-style="gitbutler"] .table tbody tr:hover td:first-child { box-shadow: inset -3px 0 0 var(--primary); }
 
-/* ------------------------------------------------------------ the preview dock (all styles) */
-.style-dock { position: fixed; inset-block-end: 14px; inset-inline-start: 50%; translate: -50% 0; z-index: 80; display: flex; align-items: center; gap: 8px;
-  padding: 6px 6px 6px 12px; border-radius: 12px; background: var(--ink); color: var(--paper); box-shadow: var(--shadow); }
-[dir="rtl"] .style-dock { translate: 50% 0; padding: 6px 12px 6px 6px; }
-.style-dock .sd-label { font-size: 10px; letter-spacing: .12em; opacity: .75; }
-.style-dock .select { height: 30px; width: auto; background: #262523; color: var(--paper); border-color: rgba(246, 235, 217, .2); font-size: 12px; }
-.style-dock .seg { background: #262523; }
-.style-dock .seg button { color: rgba(246, 235, 217, .8); }
-.style-dock .seg button.on { background: var(--teal); color: var(--paper); }
-@media (max-width: 760px) { .style-dock { inset-block-end: 76px; } }
-@media print { .style-dock { display: none; } }

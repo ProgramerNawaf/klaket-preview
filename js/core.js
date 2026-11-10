@@ -61,9 +61,13 @@
     'Deliverables': 'التسليمات', 'Wrap Report': 'تقرير الختام', 'Shoot Day': 'يوم التصوير',
     'Treatment & Lookbook': 'المعالجة ولوحة المزاج', 'Brief': 'الموجز', 'Concepts': 'الأفكار', 'Choose a phase': 'اختر مرحلة', 'Time': 'الوقت', 'Visual': 'الصورة', 'Audio': 'الصوت', 'AV': 'صوت وصورة', 'Screenplay': 'السيناريو', 'Shots': 'اللقطات', 'Visual blueprint': 'المخطط البصري', 'Checks': 'الفحوص', 'Complete': 'مكتملة', 'In progress': 'جارية', 'Up next': 'التالية', 'Documents': 'المستندات',
     'Search': 'بحث', 'Preview client view': 'معاينة عرض العميل', 'Back to producer view': 'العودة لعرض المنتج',
+    'Theme': 'المظهر', 'Light': 'فاتح', 'Dark': 'داكن', 'System (follows your device)': 'النظام (يتبع جهازك)',
     'New production': 'إنتاج جديد', 'Sign out': 'تسجيل الخروج', 'Soon': 'قريبًا', 'Coming soon': 'قريبًا',
     'Story': 'القصة', 'Breakdown': 'التفريغ', 'Visualize': 'التصوّر', 'Schedule': 'الجدولة', 'Budget': 'الميزانية',
     'Team & places': 'الفريق والمواقع', 'Shoot': 'التصوير', 'Edit': 'المونتاج', 'Approve': 'الاعتماد', 'Finish & deliver': 'التشطيب والتسليم', 'Close': 'الختام',
+    'Picture style': 'أسلوب الصور', 'Sketch': 'رسم', 'Realistic': 'واقعي', 'Animated': 'رسوم متحركة',
+    'Pencil storyboard panels': 'لوحات ستوري بورد بالرصاص', 'Photoreal film stills': 'لقطات سينمائية واقعية', 'Animated feature frames': 'لقطات بأسلوب الأفلام المتحركة',
+    'new pictures use this style': 'الصور الجديدة بهذا الأسلوب',
     'Phase one': 'المرحلة الأولى', 'Phase two': 'المرحلة الثانية', 'Phase three': 'المرحلة الثالثة', 'Post and delivery': 'ما بعد الإنتاج والتسليم',
   };
   MPH.t = (s) => (MPH.state.lang === 'ar' && AR[s]) || s;

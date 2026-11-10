@@ -46,6 +46,8 @@ MPH.view('productions', {
 
 /* create or edit a production (shared with Overview) */
 MPH.openProductionForm = (ctx, prod = null) => {
+  // a new production starts in the step-by-step wizard (js/flow.js); this form edits an existing one
+  if (!prod && MPH.flow) return MPH.flow.newProduction(ctx);
   const { ui, esc } = ctx;
   const v = (k) => esc(prod?.[k] ?? '');
   const statuses = ['Briefing', 'Development', 'Bidding', 'Pre-production', 'Shooting', 'Post-production', 'Delivered'];
@@ -90,15 +92,14 @@ MPH.openProductionForm = (ctx, prod = null) => {
         ctx.api.must(await ctx.sb.from('productions').update(row).eq('id', prod.id));
         ctx.closeOverlay(); ctx.toast('Saved'); ctx.refreshAll();
       } else {
-        const count = (await ctx.sb.from('productions').select('id', { count: 'exact', head: true }).eq('org_id', ctx.session.org.id)).count || 0;
         row.org_id = ctx.session.org.id;
         row.created_by = ctx.session.user.id;
-        row.code = `${(ctx.session.org.name.match(/\b\w/g) || ['P']).join('').slice(0, 3).toUpperCase()}-${String(new Date().getFullYear()).slice(2)}${String(count + 1).padStart(2, '0')}`;
+        row.code = await MPH.flow.nextCode(ctx);
         const created = ctx.api.must(await ctx.sb.from('productions').insert(row).select().single());
         ctx.closeOverlay(); ctx.toast(`${created.title} created. Drawing its header image…`, 'sparkles');
         // the AI draws a header image from the title and description; it appears on the overview when ready
         MPH.illus.cover(ctx, created.id).then(() => { if (location.hash.includes(created.id)) ctx.refreshAll(); }).catch(() => {});
-        ctx.go(`p.${created.id}.script`);
+        ctx.go(`p.${created.id}.brief`);
       }
     } catch (ex) { err.hidden = false; err.innerHTML = ui.errorBox(ex.message); MPH.icons(); }
   });

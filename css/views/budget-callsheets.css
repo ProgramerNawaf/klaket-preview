@@ -100,7 +100,7 @@ button.bid-ver.on { background: var(--raised); box-shadow: inset 3px 0 0 var(--p
 .cs-dayrow { align-items: flex-start; flex-wrap: wrap; }
 .cs-dayrow > .grow { flex-basis: 260px; }
 .cs-day-num { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 44px; height: 48px; border-radius: var(--radius); background: var(--bg-2); border: 1px solid var(--line-2); line-height: 1.1; flex: none; }
-.cs-day-num .tiny { color: var(--faint); text-transform: uppercase; font-size: 9px; letter-spacing: .08em; }
+.cs-day-num .tiny { color: var(--faint); text-transform: uppercase; font-size: 11px; letter-spacing: .08em; }
 .cs-day-num .strong { font: 600 19px/1 var(--font-display); }
 .cs-counts .dot { width: 7px; height: 7px; vertical-align: 0; }
 .cs-vlink { color: var(--text-2); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 2px; }
@@ -114,14 +114,14 @@ button.bid-ver.on { background: var(--raised); box-shadow: inset 3px 0 0 var(--p
 /* builder */
 .cs-builder { display: grid; grid-template-columns: minmax(340px, 440px) minmax(0, 1fr); gap: 16px; align-items: start; }
 @media (max-width: 1180px) { .cs-builder { grid-template-columns: minmax(0, 1fr); } }
-.cs-prev-col { position: sticky; inset-block-start: 0; min-width: 0; }
-@media (max-width: 1180px) { .cs-prev-col { position: static; } }
+.cs-prev-col { position: sticky; inset-block-start: 0; min-width: 0; max-height: calc(100dvh - 180px); overflow: auto; overscroll-behavior: contain; border-radius: var(--radius); } /* a long sheet scrolls in its own column */
+@media (max-width: 1180px) { .cs-prev-col { position: static; max-height: none; overflow: visible; } }
 .cs-build { border: 0; padding: 0; margin: 0; min-width: 0; }
 .cs-build[disabled] { opacity: .8; }
 .cs-warn { color: var(--warn); }
 .cs-scene { padding-block: 8px; }
 .cs-roster { max-height: 460px; overflow: auto; }
-.cs-roster-dept { position: sticky; inset-block-start: 0; z-index: 1; background: var(--bg-2); padding: 5px 16px; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); border-block-end: 1px solid var(--line); }
+.cs-roster-dept { position: sticky; inset-block-start: 0; z-index: 1; background: var(--bg-2); padding: 5px 16px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); border-block-end: 1px solid var(--line); }
 .cs-roster-row { display: flex; align-items: center; gap: 10px; padding: 6px 16px; border-block-end: 1px solid var(--line); }
 .cs-roster-row.off .stack { opacity: .5; }
 .cs-roster-row .check { align-items: center; }
@@ -154,7 +154,7 @@ button.bid-ver.on { background: var(--raised); box-shadow: inset 3px 0 0 var(--p
 .cs-doc {
   --paper: #F4F1E8; --ink: #1B211F; --ink-2: #4E5754; --rule: #D5CFBF; --band: #13312F; --lime: #5E7D1F;
   position: relative; background: var(--paper); color: var(--ink); border-radius: 6px; padding: 22px 24px 16px;
-  font-size: 12px; line-height: 1.45; box-shadow: 0 10px 30px rgba(24, 39, 75, 0.17); max-width: 1000px; margin-inline: auto; overflow: hidden;
+  font-size: 12px; line-height: 1.45; box-shadow: 0 10px 30px rgb(var(--sh) / 0.17); max-width: 1000px; margin-inline: auto; overflow: hidden;
   font-family: var(--font-ui);
 }
 .cs-doc .strong { color: var(--ink); }
@@ -183,7 +183,7 @@ button.bid-ver.on { background: var(--raised); box-shadow: inset 3px 0 0 var(--p
 .cs-notes ul { margin: 2px 0 0; padding-inline-start: 18px; }
 .cs-notes li { margin-block: 1px; }
 .cs-sec { margin-block-start: 14px; }
-.cs-sec-t { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #F4F1E8; background: var(--band); padding: 3px 8px; border-radius: 3px 3px 0 0; }
+.cs-sec-t { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #F4F1E8; background: var(--band); padding: 3px 8px; border-radius: 3px 3px 0 0; }
 .cs-notes .cs-sec-t { background: none; color: #7A5A17; padding: 0; }
 .cs-scroll { overflow-x: auto; }
 .cs-t { width: 100%; border-collapse: collapse; font-size: 11.5px; }
@@ -197,12 +197,43 @@ button.bid-ver.on { background: var(--raised); box-shadow: inset 3px 0 0 var(--p
 .cs-empty { border: 1px solid var(--rule); border-block-start: 0; padding: 8px 10px; color: var(--ink-2); font-style: italic; }
 .cs-crew { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; border: 1px solid var(--rule); border-block-start: 0; padding: 6px 10px 8px; }
 .cs-dept { break-inside: avoid; padding-block: 4px; }
-.cs-dept-t { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--lime); border-block-end: 1px solid var(--rule); padding-block-end: 2px; margin-block-end: 2px; }
+.cs-dept-t { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--lime); border-block-end: 1px solid var(--rule); padding-block-end: 2px; margin-block-end: 2px; }
 .cs-crew-row { display: flex; gap: 8px; align-items: baseline; padding-block: 2px; }
 .cs-crew-row .cs-role { color: var(--ink-2); width: 44%; flex: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cs-crew-row.me { background: #E4EDC8; margin-inline: -4px; padding-inline: 4px; border-radius: 3px; }
-.cs-doc-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-block-start: 14px; padding-block-start: 8px; border-block-start: 1px solid var(--rule); font-size: 10px; color: var(--ink-2); }
+.cs-doc-foot { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-block-start: 14px; padding-block-start: 8px; border-block-start: 1px solid var(--rule); font-size: 11px; color: var(--ink-2); }
+/* top left: the crew, each with position and call time */
+.cs-k-head { margin-block-end: 2px; }
+.cs-headcrew { display: flex; flex-direction: column; font-size: 11px; }
+.cs-hc-dept { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--lime); padding-block: 4px 1px; border-block-end: 1px solid var(--rule); }
+.cs-hc-dept:first-child { padding-block-start: 0; }
+.cs-hc-row { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; padding-block: 1px; }
+.cs-hc-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-hc-role { color: var(--ink-2); margin-inline-start: 6px; }
+.cs-hc-row.me { background: #E4EDC8; margin-inline: -4px; padding-inline: 4px; border-radius: 3px; }
+.cs-doc-mid .cs-logo { margin-block-end: 0; }
+/* top right: timings, sunrise, sunset, weather */
+.cs-times .cs-sun th { display: inline-flex; align-items: center; gap: 4px; }
+.cs-weather { display: flex; align-items: flex-start; gap: 5px; margin-block-start: 6px; font-size: 11px; color: var(--ink); max-width: 220px; text-align: start; }
+.cs-weather svg.lucide { flex: none; margin-block-start: 2px; }
+/* the schedule: prep and company moves between scenes */
+.cs-sched td.nowrap { white-space: nowrap; }
+.cs-t tr.cs-prep td { background: #EFEBDF; color: var(--ink-2); font-size: 11px; padding-block: 3px; font-style: italic; }
+.cs-t tr.cs-prep svg.lucide { vertical-align: -2px; margin-inline-end: 5px; }
+/* safety: the public emergency numbers and the key contacts */
+.cs-safety { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 10px 18px; border: 1px solid var(--rule); border-block-start: 0; padding: 8px 10px; }
+.cs-tpl-short .cs-safety { grid-template-columns: minmax(0, 1fr); }
+.cs-sos { display: grid; grid-template-columns: repeat(auto-fill, minmax(116px, 1fr)); gap: 6px; }
+.cs-sos-n { display: flex; flex-direction: column; gap: 0; padding: 4px 8px; border: 1.5px solid #B8352A; border-radius: 4px; background: #fff; }
+.cs-sos-n .num { font: 700 17px/1.1 var(--font-display); color: #B8352A; }
+.cs-sos-n span:last-child { font-size: 11px; color: var(--ink-2); }
+.cs-keyc { display: flex; flex-direction: column; gap: 3px; font-size: 11px; }
+/* builder: a block per location, and the template switch */
+.cs-locf { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); }
+.cs-locf-n { width: 20px; height: 20px; border-radius: 50%; background: var(--raised-2); display: inline-grid; place-items: center; font-size: 11px; font-weight: 700; flex: none; }
+.cs-tpl-seg { align-self: flex-start; }
 @container (max-width: 760px) {
+  .cs-safety { grid-template-columns: minmax(0, 1fr); }
   .cs-doc-head { grid-template-columns: minmax(0, 1fr); }
   .cs-doc-day { align-items: flex-start; text-align: start; }
   .cs-crew { grid-template-columns: minmax(0, 1fr); }
@@ -216,6 +247,15 @@ button.bid-ver.on { background: var(--raised); box-shadow: inset 3px 0 0 var(--p
 .cs-doc.cs-kl .cs-general, .cs-doc.cs-kl .cs-sec-t { color: #F6EBD9; }
 .cs-kl-brand { display: inline-flex; align-items: center; margin-inline-end: auto; }
 .cs-kl-brand img { height: 22px; width: auto; display: block; }
+
+/* paper: keep rows and section titles together across page breaks */
+.cs-print .cs-t tr, .cs-print .cs-sos-n, .cs-print .cs-hc-row, .cs-print .cs-notes { break-inside: avoid; }
+.cs-print .cs-sec-t { break-after: avoid; }
+.cs-print .cs-sec { break-inside: auto; }
+.cs-print .cs-safety-sec, .cs-print .cs-doc-head { break-inside: avoid; }
+.cs-doc.cs-kl .cs-t th { background: #F3ECDF; }
+.cs-doc.cs-kl .cs-t tr.cs-prep td { background: #F7F2E8; }
+.cs-doc.cs-kl .cs-link { color: #0F5C57; }
 
 @media print {
   .rail, .topbar, .prod-head, .client-banner, .cs-top, .cs-bar, .cs-build-col, .page-head { display: none !important; }

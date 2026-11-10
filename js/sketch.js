@@ -165,7 +165,9 @@
     const corner = opts.wide ? 0 : 12, cw = 1.6;
     if (!opts.wide) out.push(`<g stroke="${C.cream}" stroke-width="${cw}" opacity=".55" fill="none"><path d="M6 ${6 + corner} V6 H${6 + corner}"/><path d="M${W - 6 - corner} 6 H${W - 6} V${6 + corner}"/><path d="M${W - 6} ${H - 6 - corner} V${H - 6} H${W - 6 - corner}"/><path d="M${6 + corner} ${H - 6} H6 V${H - 6 - corner}"/></g>`);
     const tilt = m === 'handheld' ? ` transform="rotate(-2.2 ${W / 2} ${H / 2})"` : '';
-    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false" class="sk"><g${tilt}>${out.join('')}</g></svg>`;
+    // a Nano Banana picture covers the drawing once its signed link arrives (MPH.illus fills href); until then, or if it fails, the drawing shows
+    const pic = typeof spec.image === 'string' ? `<image data-media="${spec.image.replace(/[^\w./-]/g, '')}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>` : '';
+    return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false" class="sk"><g${tilt}>${out.join('')}</g>${pic}</svg>`;
   }
 
   MPH.sketch = sketch;

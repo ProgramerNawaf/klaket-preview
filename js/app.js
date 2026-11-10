@@ -131,6 +131,8 @@
     while (viewCache.size > 30) viewCache.delete(viewCache.keys().next().value);
   };
   MPH.clearCache = () => { viewCache.clear(); prodCache = null; };
+  MPH.route = () => parse();
+  MPH.refresh = () => { MPH.clearCache(); return render(); }; // after the assistant changed data
 
   /* ------------------------------------------------------------ auth screens
      Split layout: a minimal form beside an interactive picture of Klaket's agents at work: the brief, the ideas, the
@@ -264,7 +266,7 @@
     if (!still) timer = setTimeout(tick, 3600);
   }
   /* shared frame for sign-in, sign-up, onboarding and invite screens: form on the start side, picture on the end side */
-  const authShell = (inner) => `
+  const authShell = (inner, art = authArt()) => `
     <div class="auth2">
       <main class="auth-panel">
         <div class="auth-inner">
@@ -272,7 +274,7 @@
           ${inner}
         </div>
       </main>
-      ${authArt()}
+      ${art}
     </div>`;
 
   /* borderless floating-label field. The label sits inside and floats up once there's a value. */
@@ -335,7 +337,7 @@
         <div id="au-error" hidden></div>
         <button class="btn btn-primary auth-submit" type="submit" id="au-submit"><span id="au-btn-text">${copy.button}</span>${ui.icon('arrow-right')}</button>
       </form>
-      <a class="auth-demo" href="${esc(cfg.demoUrl)}" target="_blank" rel="noopener">${ui.icon('play')}Just looking? Watch the click-through demo</a>`);
+      <a class="auth-demo" href="${esc(cfg.demoUrl)}" target="_blank" rel="noopener">${ui.icon('play')}Just looking? Watch the click-through demo</a>`, MPH.filmSet ? MPH.filmSet.html(authArt()) : authArt());
   }
 
   function mountAuth(mode, next) {
@@ -343,7 +345,9 @@
     const err = document.getElementById('au-error');
     const show = (m, bad = true) => { err.hidden = false; err.innerHTML = ui.errorBox(m); icons(); if (bad) shake(form); };
     wireGlow(document.getElementById('app'));
-    wireAgents(document.getElementById('app'));
+    // the film set plays first; after its clap and splash, the agents picture takes over (and starts its own steps)
+    if (MPH.filmSet) MPH.filmSet.mount(document.getElementById('app'), { onReveal: () => wireAgents(document.getElementById('app')) });
+    else wireAgents(document.getElementById('app'));
     settleOpen(form);
 
     // switch Sign in / Create account in place: the pill slides, the name field opens, copy changes
@@ -646,6 +650,8 @@
         <div class="crumbs">${crumbs}</div>
         <span class="spacer"></span>
         ${right}${houseSwitch}${preview}
+        ${MPH.assistant && MPH.assistant.enabled() && !(access && access.isClient) ? `<button class="btn btn-sm btn-outline" data-act="assistant" title="Ask Saud, Klaket's assistant">${ui.icon('sparkles')}<span>${MPH.state.lang === 'ar' ? 'اسأل سعود' : 'Ask Saud'}</span></button>` : ''}
+        ${themeSwitch()}
         <button class="btn btn-sm btn-ghost" data-act="toggle-lang">${MPH.state.lang === 'ar' ? 'EN' : 'عربي'}</button>
       </header>`;
   }
@@ -695,24 +701,11 @@
       `<a class="btn btn-outline" href="${esc(cfg.demoUrl)}#p.desert-launch.${esc(r.view)}" target="_blank" rel="noopener">${ui.icon('external-link')}Open ${esc(label)} in the demo</a>`)}</div>`;
   }
 
-  /* ------------------------------------------------------------ design preview dock (stakeholder review of 5 styles)
-     Lives outside #app so renders don't replace it. Picks the style pack and the theme; both are remembered. */
-  function styleDock() {
-    if (!MPH.theme || document.getElementById('style-dock')) return;
-    const el = document.createElement('div');
-    el.id = 'style-dock'; el.className = 'style-dock'; el.setAttribute('role', 'group'); el.setAttribute('aria-label', 'Design preview');
-    const draw = () => {
-      el.innerHTML = `<span class="sd-label mono">PREVIEW</span>
-        <select class="select" id="sd-style" aria-label="Style">${MPH.theme.STYLES.map((x) => `<option value="${x.id}" ${MPH.theme.style === x.id ? 'selected' : ''} title="${esc(x.note)}">${esc(x.label)}</option>`).join('')}</select>
-        <div class="seg" role="radiogroup" aria-label="Theme">${[['light', 'sun'], ['dark', 'moon'], ['system', 'monitor']].map(([v, i]) =>
-          `<button type="button" role="radio" aria-checked="${MPH.theme.choice === v}" aria-label="${v}" title="${v[0].toUpperCase() + v.slice(1)}" class="${MPH.theme.choice === v ? 'on' : ''}" data-dock-theme="${v}">${ui.icon(i)}</button>`).join('')}</div>`;
-      icons(el);
-    };
-    el.addEventListener('change', (e) => { if (e.target.id === 'sd-style') MPH.theme.setStyle(e.target.value); });
-    el.addEventListener('click', (e) => { const b = e.target.closest('[data-dock-theme]'); if (b) { MPH.theme.set(b.dataset.dockTheme); draw(); } });
-    draw();
-    document.body.appendChild(el);
-  }
+  /* ------------------------------------------------------------ light / dark / system, in the top bar
+     Three icons on wide screens; on phones only the current one shows and tapping it moves to the next. */
+  const THEME_ICONS = [['light', 'sun', 'Light'], ['dark', 'moon', 'Dark'], ['system', 'monitor', 'System (follows your device)']];
+  const themeSwitch = () => !MPH.theme ? '' : `<div class="seg tb-theme" role="radiogroup" aria-label="${t('Theme')}">${THEME_ICONS.map(([v, i, l]) =>
+    `<button type="button" role="radio" aria-checked="${MPH.theme.choice === v}" aria-label="${t(l)}" title="${t(l)}" class="${MPH.theme.choice === v ? 'on' : ''}" data-act="theme" data-v="${v}">${ui.icon(i)}</button>`).join('')}</div>`;
 
   /* ------------------------------------------------------------ render */
   let renderSeq = 0;
@@ -730,7 +723,6 @@
     }
     if (!MPH.session) await api.loadSession();
     if (MPH.theme) MPH.theme.forUser(MPH.session && MPH.session.user ? MPH.session.user.id : null);
-    styleDock();
     if (seq !== renderSeq) return;
 
     // signed-out routes
@@ -808,6 +800,7 @@
   }
 
   let viewSeq = 0;
+  let lastWhere = '';
   /* after drawing from the cache: re-read, store, and redraw if the data changed and the screen is still untouched */
   function revalidate(r, prod, access, seq, mySeq, root, view, ctx, key, hit) {
     let touched = false;
@@ -858,11 +851,26 @@
       t, ui, esc, api, sb: MPH.sb, state: MPH.state, session: MPH.session,
     };
     const key = cacheKey(r, prod, clientish);
+    /* while an AI agent works: re-read quietly and redraw only when the data changed (no loading flash) */
+    let shown = null;
+    ctx.poll = async () => {
+      const fresh = await view.load(ctx);
+      if (seq !== renderSeq || mySeq !== viewSeq || !root.isConnected || snapshot(fresh) === shown) return;
+      const content = document.getElementById('content'), top = content ? content.scrollTop : 0;
+      await renderView(r, prod, access, seq, { data: fresh });
+      if (content && content.isConnected) content.scrollTop = top;
+    };
+    // a new screen (not a redraw of the same one) gets the entrance motion
+    const where = `${r.productionId || r.section}.${r.view}`;
+    const entered = where !== lastWhere;
+    lastWhere = where;
     const draw = async (data) => {
+      shown = view.load ? snapshot(data) : null;
       root.innerHTML = view.render(ctx, data);
       icons(root);
       if (view.mount) await view.mount(root, ctx, data);
       icons(root);
+      document.dispatchEvent(new CustomEvent('mph:view', { detail: { root, ctx, data, view: r.view, fresh: entered } }));
     };
     try {
       let data;
@@ -893,6 +901,17 @@
     const el = e.target.closest('[data-act]');
     if (!el) return;
     const a = el.dataset.act;
+    if (a === 'theme') {
+      const sw = el.closest('.tb-theme');
+      // on phones only the current icon shows: tapping it moves to the next choice
+      const compact = sw && getComputedStyle(sw.querySelector('button:not(.on)') || el).display === 'none';
+      const order = THEME_ICONS.map(([v]) => v);
+      MPH.theme.set(compact ? order[(order.indexOf(MPH.theme.choice) + 1) % order.length] : el.dataset.v);
+      if (sw) sw.outerHTML = themeSwitch();
+      icons();
+      return;
+    }
+    if (a === 'assistant') { MPH.assistant.toggle(); return; }
     if (a === 'toggle-lang') { MPH.state.lang = MPH.state.lang === 'ar' ? 'en' : 'ar'; MPH.saveState(); render(); }
     else if (a === 'preview-client') {
       MPH.state.previewClient = !MPH.state.previewClient;

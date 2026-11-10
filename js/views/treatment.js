@@ -329,10 +329,14 @@
       return ui.panel({ body: ui.empty('gallery-vertical-end', 'No treatment yet', 'The director’s treatment appears here once the client has approved the script.') });
     }
     const busy = !!d.job;
+    const approved = d.script && d.script.status === 'approved';
     const action = busy ? `<span class="small muted">${ui.spinner()} The Treatment Agent is writing the deck. It takes about 15 minutes.</span>`
-      : d.script ? `<button class="btn btn-primary" data-tr="deck-write">${ui.icon('sparkles')}Run Treatment Agent</button><span class="tiny faint">From script v${esc(d.script.version)}${d.script.status === 'approved' ? ', approved by the client' : ', not approved yet'}.</span>`
+      : approved ? `<button class="btn btn-primary" data-tr="deck-write">${ui.icon('sparkles')}Run Treatment Agent</button><span class="tiny faint">From script v${esc(d.script.version)}, approved by the client.</span>`
+      : d.script ? `<a class="btn btn-primary" href="#p.${esc(pid)}.script">${ui.icon('file-check')}Approve the script first</a><button class="btn btn-ghost btn-sm" data-tr="deck-write">Write it from the draft anyway</button>`
       : `<a class="btn btn-primary" href="#p.${esc(pid)}.script">${ui.icon('file-text')}Add the script first</a><span class="tiny faint">The treatment is written from the script.</span>`;
+    const waitNote = !busy && d.script && !approved ? needsApproval(ctx, d) : '';
     return `
+      ${waitNote}
       <div class="tr-start">
         <section class="tr-start-card tr-start-ai ${busy ? 'is-running' : ''}">
           <div class="tr-start-art">${MPH.art.step('treatment')}</div>
@@ -429,6 +433,17 @@
       <div class="dk-deck">${MPH.trDeck.slides(t.deck, deckOpts(ctx, d, t)).join('')}</div>`;
   }
 
+  /* the script isn't approved yet: the deck, its frames and the lookbook are only written from an approved script
+     (the agent starts by itself on approval), so say what to do */
+  function needsApproval(ctx, d) {
+    const { ui } = ctx;
+    const sent = d.script.status === 'sent';
+    return `<div class="callout market tr-wait" role="status">${ui.icon('file-clock')}<div class="grow stack tight">
+        <span class="strong">${sent ? `Script v${esc(d.script.version)} is waiting for the client’s approval.` : `Approve script v${esc(d.script.version)} first.`}</span>
+        <span class="small muted">The treatment deck, its pictures and the lookbook are made from the approved script. ${sent ? 'They start by themselves as soon as the client approves it, or when you record their approval on their behalf.' : 'Send the script to the client, or record their approval on their behalf, and the Treatment Agent starts by itself.'}</span></div>
+      <a class="btn btn-sm btn-outline" href="#p.${esc(ctx.production.id)}.script">${ui.icon('file-text')}Open the script</a></div>`;
+  }
+
   /* the Treatment Agent: writing now, or ready to write from the approved script */
   function agentHtml(ctx, d) {
     const { ui } = ctx;
@@ -439,6 +454,7 @@
         <span class="small muted">${waiting ? `Waiting to retry: ${esc(d.job.last_error || 'the AI service is busy')}.` : 'It writes the pages first (a few minutes), then paints a frame for every picture. You can leave this page; you’ll get a notification.'}</span></div></div>`;
     }
     const hasDeck = d.versions.some((v) => v.source === 'ai' && v.script_id === (d.script && d.script.id));
+    if (d.script && d.script.status !== 'approved' && !hasDeck && d.versions.length) return needsApproval(ctx, d);
     if (d.script && d.script.status === 'approved' && !hasDeck) {
       if (!d.versions.length) return ''; // the start page offers it
       return `<div class="callout">${ui.icon('sparkles')}<div class="grow"><span class="strong">The client approved script v${esc(d.script.version)}.</span> <span class="muted">The Treatment Agent writes the deck and lookbook from it, with a painted frame for each scene and shot.</span></div>
