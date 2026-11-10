@@ -9,7 +9,7 @@ function integrationsPanel(ctx, d) {
   const gRow = `
     <div class="list-row">${ui.icon('calendar-plus')}
       <div class="grow stack tight" style="gap:2px"><span class="small strong">Google Calendar</span>
-        <span class="tiny muted">${g ? `Connected as ${esc(g.account_email || 'your Google account')} since ${MPH.date(g.connected_at)}. “Book kickoff meeting” on a brief creates the event and its Meet link on this calendar.` : 'Connect the calendar kickoff meetings are booked on. Klaket asks only to create and edit calendar events.'}</span></div>
+        <span class="tiny muted">${g ? `Connected as ${esc(g.account_email || 'your Google account')} since ${MPH.date(g.connected_at)}. “Book kickoff meeting” on a brief creates the event and its Meet link on this calendar, open to anyone with the link so nobody waits to be let in. If it was connected before open links existed, disconnect and connect again to allow that.` : 'Connect the calendar kickoff meetings are booked on. Klaket asks only to create and edit calendar events.'}</span></div>
       ${g ? `${ui.pill('Connected', 'ok', 'check')}<button class="btn btn-xs btn-ghost" data-int-off="google_calendar">Disconnect</button>` : `<button class="btn btn-sm btn-primary" data-int="google">${ui.icon('link')}Connect Google Calendar</button>`}
     </div>`;
   const rs = (r && r.settings) || {};
@@ -121,7 +121,7 @@ MPH.view('team', {
     // back from Google's consent screen
     const back = new URLSearchParams(location.search).get('google');
     if (back) {
-      const msg = { connected: 'Google Calendar connected', gmail_connected: 'Gmail connected. Label client emails MPH/Briefs to read them into briefs.', gmail_watch_failed: 'Gmail connected, but watching the MPH/Briefs label failed. Check GMAIL_PUBSUB_TOPIC, then Renew watch.', cancelled: 'Google Calendar wasn’t connected: access was cancelled', missing_scope: 'Google Calendar wasn’t connected: the calendar permission was left unticked. Connect again and tick “View and edit events on all your calendars”.', no_refresh_token: 'Google didn’t grant offline access. Remove MPH from your Google account’s third-party access and connect again.' }[back] || `Google Calendar wasn’t connected (${back}). Try again.`;
+      const msg = { connected: 'Google Calendar connected', gmail_connected: 'Gmail connected. Label client emails MPH/Briefs to read them into briefs.', gmail_watch_failed: 'Gmail connected, but watching the MPH/Briefs label failed. Check GMAIL_PUBSUB_TOPIC, then Renew watch.', cancelled: 'Google Calendar wasn’t connected: access was cancelled', missing_scope: 'Google Calendar wasn’t connected: a permission was left unticked. Connect again and tick both the calendar events and the Google Meet settings permissions.', no_refresh_token: 'Google didn’t grant offline access. Remove MPH from your Google account’s third-party access and connect again.' }[back] || `Google Calendar wasn’t connected (${back}). Try again.`;
       /connected$/.test(back) ? ctx.toast(msg, 'calendar-check') : ctx.toastError(new Error(msg));
       const u = new URL(location.href); u.searchParams.delete('google'); history.replaceState(null, '', u.toString());
     }

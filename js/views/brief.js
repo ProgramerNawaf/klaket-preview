@@ -538,6 +538,7 @@
       return `<div class="callout ${past ? '' : 'info'} bf-guard bf-kickoff">${ui.icon('video')}<span class="small grow">
         <span class="strong">Kickoff ${past ? 'held' : 'booked'}:</span> ${esc(when)} · ${plural((k.invitees || []).length, 'guest')} invited.
         ${past && !fromMeeting ? 'When Fireflies finishes the transcript, it fills this brief.' : ''}
+        ${!past && k.meet_link ? `<br>${ui.icon(k.meet_access === 'open' ? 'door-open' : 'door-closed')} ${k.meet_access === 'open' ? 'Anyone with the link joins without waiting, Fireflies too' : '<span class="strong">Guests and Fireflies wait to be let in</span>'}` : ''}
         ${NOTETAKER[st] && !(past && st === 'not_requested') ? `<br>${ui.icon('audio-lines')} <span class="${st === 'failed' ? 'strong' : ''}">${esc(NOTETAKER[st])}</span>${k.notetaker_error ? `: ${esc(k.notetaker_error)}` : ''}` : ''}</span>
         <span class="row wrap" style="gap:6px;justify-content:flex-end">
         ${soon && k.meet_link && !['joined', 'transcribed', 'requested'].includes(st) ? `<button class="btn btn-sm btn-ghost" data-bf="notetaker-add" data-ev="${esc(k.id)}" title="If Fireflies hasn't joined by itself">${ui.icon('audio-lines')}Add Fireflies now</button>` : ''}
@@ -759,7 +760,7 @@
         ctx.sb.from('brief_usage_rights').select('*').eq('production_id', pid),
         canWrite(ctx) ? ctx.sb.from('brief_sources').select('id, type, title, received_at, status, error, extraction, attachments, created_at').eq('production_id', pid).order('received_at', { ascending: false }) : none,
         canWrite(ctx) ? ctx.sb.from('brief_field_suggestions').select('*').eq('production_id', pid).in('status', ['pending', 'accepted']).order('created_at') : none,
-        canWrite(ctx) ? ctx.sb.from('events').select('id, title, starts_at, ends_at, meet_link, invitees, notetaker_status, notetaker_error, agenda, calendar_link, external_id').eq('production_id', pid).eq('kind', 'kickoff').order('starts_at') : none,
+        canWrite(ctx) ? ctx.sb.from('events').select('id, title, starts_at, ends_at, meet_link, invitees, notetaker_status, notetaker_error, agenda, calendar_link, external_id, meet_access, meet_access_error').eq('production_id', pid).eq('kind', 'kickoff').order('starts_at') : none,
         canWrite(ctx) ? ctx.sb.from('production_stakeholders').select('*').eq('production_id', pid) : none,
         canWrite(ctx) ? ctx.sb.from('approval_requests').select('*, approval_recipients(*), approval_responses(*)').eq('production_id', pid).eq('target_type', 'brief').order('created_at', { ascending: false }) : none,
         canWrite(ctx) ? ctx.sb.from('brief_insights').select('*').eq('production_id', pid).order('created_at') : none,
@@ -1372,6 +1373,8 @@
             <dl class="kv">
               <dt>Guests</dt><dd>${(k.invitees || []).length ? (k.invitees || []).map((g) => `<div>${g.name ? `${esc(g.name)} <span class="muted">${esc(g.email)}</span>` : esc(g.email)}</div>`).join('') : '<span class="muted">Nobody invited by Google yet</span>'}</dd>
               <dt>Agenda</dt><dd dir="auto">${k.agenda ? esc(k.agenda) : '<span class="muted">—</span>'}</dd>
+              <dt>Who can join</dt><dd>${k.meet_access === 'open' ? `${ui.icon('door-open')} Anyone with the link joins straight away, without being let in. That includes Fireflies.`
+                : `${ui.icon('door-closed')} People who weren’t invited, and Fireflies, wait until someone in the meeting lets them in.${k.meet_access_error ? `<div class="tiny muted">${esc(k.meet_access_error)}</div>` : ''}${!past && k.meet_link ? `<div><button class="btn btn-xs btn-outline" data-ko="open-meet">${ui.icon('door-open')}Let anyone with the link in</button></div>` : ''}`}</dd>
               <dt>Notetaker</dt><dd>${ui.icon('audio-lines')} ${esc(NOTETAKER[st] || st)}${k.notetaker_error ? `<div class="tiny muted">${esc(k.notetaker_error)}</div>` : ''}</dd>
             </dl>
             <details class="bf-invite-prev"><summary class="small">The invite text</summary><pre class="small" dir="auto">${esc(inviteText(k))}</pre></details>`,
@@ -1382,6 +1385,16 @@
           if (b.dataset.ko === 'copy-link') copyText(link, 'Meet link');
           else if (b.dataset.ko === 'copy-invite') copyText(inviteText(k), 'Invite');
           else if (b.dataset.ko === 'edit') { ctx.closeOverlay(); openKickoff(k); }
+          else if (b.dataset.ko === 'open-meet') {
+            b.disabled = true; b.innerHTML = `${ui.spinner()}Opening…`;
+            ctx.api.integrations('open_meet', { event_id: k.id }).then((out) => {
+              Object.assign(k, out.event);
+              ctx.closeOverlay(); openMeeting(k);
+              if (k.meet_access === 'open') ctx.toast('Anyone with the link can now join without waiting', 'door-open');
+              else ctx.toastError(new Error(k.meet_access_error || 'Google Meet kept the meeting closed.'));
+              ctx.reload();
+            }).catch((ex) => { b.disabled = false; b.innerHTML = `${ui.icon('door-open')}Let anyone with the link in`; MPH.icons(); ctx.toastError(ex); });
+          }
         });
         MPH.icons();
         if (o.booked || o.saved) ctx.reload();
