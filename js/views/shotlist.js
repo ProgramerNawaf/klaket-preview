@@ -326,6 +326,61 @@
       </div>`;
   }
 
+  /* ------------------------------------------------------------ reading an uploaded shot list
+     A photo, or a PDF of up to two pages, is read in one call. A longer PDF is cut into two-page parts (pdf-lib, in
+     the browser) and read three at a time, because one call over a long list runs past the server's time limit. A
+     part that is still too slow is halved, down to one page. The shots come back in page order. */
+  const IMPORT_PAGES = 2, IMPORT_PARALLEL = 3;
+  const loadLib = (src, name) => window[name] ? Promise.resolve(window[name]) : new Promise((ok, bad) => {
+    const el = document.createElement('script'); el.src = src; el.onload = () => ok(window[name]); el.onerror = () => bad(new Error('A PDF helper couldn’t load. Check the connection and try again.'));
+    document.head.appendChild(el);
+  });
+  async function readShotList(ctx, file, stage) {
+    const pid = ctx.production.id;
+    const ask = (path, pages) => ctx.api.ai('import_shots', { production_id: pid, file_path: path, ...(pages ? { pages } : {}) });
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    let src = null, n = 1;
+    if (isPdf) {
+      const PDFLib = await loadLib('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js', 'PDFLib');
+      src = await PDFLib.PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true });
+      n = src.getPageCount();
+    }
+    if (!isPdf || n <= IMPORT_PAGES) {
+      const path = await ctx.api.uploadMedia(pid, file, 'internal', 'shotlists');
+      try { return await ask(path); } catch (err) { if (err.code !== 'too_slow' || !isPdf || n < 2) throw err; }
+    }
+    const parts = [];
+    for (let a = 0; a < n; a += IMPORT_PAGES) parts.push({ idx: Array.from({ length: Math.min(IMPORT_PAGES, n - a) }, (_, k) => a + k) });
+    const uploaded = [];
+    const stamp = Date.now();
+    let made = 0;
+    const next = () => parts.find((x) => !x.out && !x.busy);
+    const worker = async () => {
+      for (let part = next(); part; part = next()) {
+        part.busy = true;
+        try {
+          const out = await PDFLib.PDFDocument.create();
+          (await out.copyPages(src, part.idx)).forEach((pg) => out.addPage(pg));
+          const f = new File([await out.save()], `${stamp}-part-${++made}.pdf`, { type: 'application/pdf' });
+          const path = await ctx.api.uploadMedia(pid, f, 'internal', 'shotlists/parts');
+          uploaded.push(path);
+          const a = part.idx[0] + 1, b = part.idx[part.idx.length - 1] + 1;
+          part.out = await ask(path, `${a === b ? a : `${a}–${b}`} of ${n}`);
+        } catch (err) {
+          if (err.code !== 'too_slow' || part.idx.length < 2) throw err;
+          const h = Math.ceil(part.idx.length / 2);
+          parts.splice(parts.indexOf(part), 1, { idx: part.idx.slice(0, h) }, { idx: part.idx.slice(h) });
+        }
+        stage(`Read ${parts.filter((x) => x.out).length} of ${parts.length} parts (${n} pages)`);
+      }
+    };
+    stage(`Reading ${n} pages in ${parts.length} parts`);
+    try { await Promise.all(Array.from({ length: Math.min(IMPORT_PARALLEL, parts.length) }, worker)); }
+    finally { if (uploaded.length) ctx.api.removeMedia(uploaded).catch(() => {}); }
+    const notes = [...new Set(parts.map((x) => String((x.out && x.out.notes) || '').trim()).filter(Boolean))];
+    return { shots: parts.flatMap((x) => (x.out && x.out.shots) || []), notes: notes.join(' ') };
+  }
+
   /* ------------------------------------------------------------ import an existing shot list
      The file is saved under the production's internal files, the AI reads it into shots matched to scenes, and the
      user ticks what to add (like suggested shots). Codes from the document are kept; missing ones continue the scene's. */
@@ -344,11 +399,10 @@
     const sceneOpts = (sel) => `<option value="">Choose a scene…</option>${scenes.map((sc) => `<option value="${esc(sc.id)}" ${sc.id === sel ? 'selected' : ''}>Sc. ${esc(sc.num)} · ${esc(sc.heading || sc.location || '')}</option>`).join('')}`;
 
     const run = async () => {
-      paint(`<div class="sl-ai-running"><span class="spin"></span><div class="stack tight" style="gap:2px"><span class="strong">Reading ${esc(file.name)}…</span><span class="small muted">The AI copies every shot from your list and files each one under its scene. A long list takes up to a minute. Nothing is added until you choose.</span></div></div>`,
+      paint(`<div class="sl-ai-running"><span class="spin"></span><div class="stack tight" style="gap:2px"><span class="strong">Reading ${esc(file.name)}…</span><span class="small muted">The AI copies every shot from your list and files each one under its scene. A long list is read a few pages at a time and takes a minute or two. Nothing is added until you choose.</span><span class="small strong" data-im-stage></span></div></div>`,
         '<button class="btn btn-ghost" data-close>Cancel</button>');
       try {
-        const path = await ctx.api.uploadMedia(ctx.production.id, file, 'internal', 'shotlists');
-        preview(await ctx.api.ai('import_shots', { production_id: ctx.production.id, file_path: path }));
+        preview(await readShotList(ctx, file, (msg) => { const m = body.querySelector('[data-im-stage]'); if (m) m.textContent = msg; }));
       } catch (ex) {
         paint(ui.errorBox(ex.message || String(ex)), `<button class="btn btn-ghost" data-close>Close</button><button class="btn btn-primary" data-im-retry>${ui.icon('rotate-ccw')}Try again</button>`);
         foot.querySelector('[data-im-retry]').addEventListener('click', run);
