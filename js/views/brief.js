@@ -507,22 +507,44 @@
       </section>`;
   }
 
-  /* the kickoff meeting booked from this brief (Google Calendar + Meet; the Fireflies notetaker records it) */
-  const NOTETAKER = { requested: 'Fireflies asked to join', joined: 'Fireflies is in the meeting', transcribed: 'Fireflies transcribed this meeting', failed: 'Fireflies couldn’t join' };
+  /* the words to send a guest by hand (WhatsApp, email): when, the Meet link and the recording notice, in both languages */
+  const riyadh = (iso, o) => new Intl.DateTimeFormat(o.lang || 'en-GB', Object.assign({ timeZone: 'Asia/Riyadh' }, o)).format(new Date(iso));
+  function inviteText(k) {
+    const day = (lang) => riyadh(k.starts_at, { lang, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const t = (iso) => riyadh(iso, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const span = `${t(k.starts_at)}${k.ends_at ? `–${t(k.ends_at)}` : ''}`;
+    const link = safeUrl(k.meet_link);
+    return [
+      k.title, `${day('ar-SA-u-nu-latn-ca-gregory')} · ${span} (توقيت الرياض)`, link ? `رابط الاجتماع: ${link}` : '', 'سيتم تسجيل الاجتماع ونسخه بواسطة Fireflies.ai لإعداد الموجز.',
+      '', k.title, `${day('en-GB')} · ${span} (Riyadh time)`, link ? `Join with Google Meet: ${link}` : '', k.agenda ? `Agenda: ${k.agenda}` : '',
+      'This meeting will be recorded and transcribed by Fireflies.ai to prepare your brief.',
+    ].filter((x, i, a) => x || (i && a[i - 1])).join('\n');
+  }
+
+  /* the kickoff meetings booked from this brief (Google Calendar + Meet; Fireflies joins as each one starts) */
+  const NOTETAKER = { not_requested: 'Fireflies joins by itself when the meeting starts', requested: 'Fireflies asked to join', joined: 'Fireflies is in the meeting', transcribed: 'Fireflies transcribed this meeting', failed: 'Fireflies couldn’t join' };
   function kickoffHtml(ctx, d) {
-    const k = (d.kickoffs || []).slice(-1)[0];
-    if (!k || !canWrite(ctx)) return '';
+    const all = d.kickoffs || [];
+    if (!all.length || !canWrite(ctx)) return '';
     const { ui } = ctx;
-    const when = `${MPH.date(k.starts_at, 'long')}, ${MPH.date(k.starts_at, 'time')}`;
-    const past = new Date(k.ends_at || k.starts_at) < new Date();
-    const soon = !past && new Date(k.starts_at) - Date.now() < 30 * 60e3; // from half an hour before until it ends
+    const upcoming = all.filter((k) => new Date(k.ends_at || k.starts_at) >= new Date());
+    const shown = upcoming.length ? upcoming : all.slice(-1);
     const fromMeeting = (d.sources || []).some((x) => x.type === 'meeting');
-    return `<div class="callout ${past ? '' : 'info'} bf-guard">${ui.icon('video')}<span class="small grow">
-      <span class="strong">Kickoff ${past ? 'held' : 'booked'}:</span> ${esc(when)} · ${plural((k.invitees || []).length, 'guest')} invited.
-      ${past && !fromMeeting ? 'When Fireflies finishes the transcript, it fills this brief.' : ''}
-      ${NOTETAKER[k.notetaker_status] ? `<br>${ui.icon('audio-lines')} <span class="${k.notetaker_status === 'failed' ? 'strong' : ''}">${esc(NOTETAKER[k.notetaker_status])}</span>${k.notetaker_error ? `: ${esc(k.notetaker_error)}` : ''}` : ''}</span>
-      ${soon && k.meet_link && !['joined', 'transcribed'].includes(k.notetaker_status) ? `<button class="btn btn-sm btn-ghost" data-bf="notetaker-add" data-ev="${esc(k.id)}" title="If Fireflies hasn't joined from your calendar">${ui.icon('audio-lines')}Add Fireflies to this meeting</button>` : ''}
-      ${k.meet_link && !past ? `<a class="btn btn-sm btn-outline" href="${esc(safeUrl(k.meet_link))}" target="_blank" rel="noopener noreferrer">${ui.icon('video')}Join the Meet</a>` : ''}</div>`;
+    return shown.map((k) => {
+      const when = `${MPH.date(k.starts_at, 'long')}, ${MPH.date(k.starts_at, 'time')}`;
+      const past = new Date(k.ends_at || k.starts_at) < new Date();
+      const soon = !past && new Date(k.starts_at) - Date.now() < 30 * 60e3; // from half an hour before until it ends
+      const st = k.notetaker_status || 'not_requested';
+      return `<div class="callout ${past ? '' : 'info'} bf-guard bf-kickoff">${ui.icon('video')}<span class="small grow">
+        <span class="strong">Kickoff ${past ? 'held' : 'booked'}:</span> ${esc(when)} · ${plural((k.invitees || []).length, 'guest')} invited.
+        ${past && !fromMeeting ? 'When Fireflies finishes the transcript, it fills this brief.' : ''}
+        ${NOTETAKER[st] && !(past && st === 'not_requested') ? `<br>${ui.icon('audio-lines')} <span class="${st === 'failed' ? 'strong' : ''}">${esc(NOTETAKER[st])}</span>${k.notetaker_error ? `: ${esc(k.notetaker_error)}` : ''}` : ''}</span>
+        <span class="row wrap" style="gap:6px;justify-content:flex-end">
+        ${soon && k.meet_link && !['joined', 'transcribed', 'requested'].includes(st) ? `<button class="btn btn-sm btn-ghost" data-bf="notetaker-add" data-ev="${esc(k.id)}" title="If Fireflies hasn't joined by itself">${ui.icon('audio-lines')}Add Fireflies now</button>` : ''}
+        ${k.meet_link && !past ? `<button class="btn btn-sm btn-ghost" data-bf="ko-copy" data-ev="${esc(k.id)}" title="Copy the Meet link to send it yourself">${ui.icon('link')}Copy link</button>` : ''}
+        <button class="btn btn-sm btn-ghost" data-bf="ko-view" data-ev="${esc(k.id)}">${ui.icon('calendar-search')}Details</button>
+        ${k.meet_link && !past ? `<a class="btn btn-sm btn-outline" href="${esc(safeUrl(k.meet_link))}" target="_blank" rel="noopener noreferrer">${ui.icon('video')}Join the Meet</a>` : ''}</span></div>`;
+    }).join('');
   }
 
   function sourcesHtml(ctx, d) {
@@ -737,7 +759,7 @@
         ctx.sb.from('brief_usage_rights').select('*').eq('production_id', pid),
         canWrite(ctx) ? ctx.sb.from('brief_sources').select('id, type, title, received_at, status, error, extraction, attachments, created_at').eq('production_id', pid).order('received_at', { ascending: false }) : none,
         canWrite(ctx) ? ctx.sb.from('brief_field_suggestions').select('*').eq('production_id', pid).in('status', ['pending', 'accepted']).order('created_at') : none,
-        canWrite(ctx) ? ctx.sb.from('events').select('id, title, starts_at, ends_at, meet_link, invitees, notetaker_status, notetaker_error').eq('production_id', pid).eq('kind', 'kickoff').order('starts_at') : none,
+        canWrite(ctx) ? ctx.sb.from('events').select('id, title, starts_at, ends_at, meet_link, invitees, notetaker_status, notetaker_error, agenda, calendar_link, external_id').eq('production_id', pid).eq('kind', 'kickoff').order('starts_at') : none,
         canWrite(ctx) ? ctx.sb.from('production_stakeholders').select('*').eq('production_id', pid) : none,
         canWrite(ctx) ? ctx.sb.from('approval_requests').select('*, approval_recipients(*), approval_responses(*)').eq('production_id', pid).eq('target_type', 'brief').order('created_at', { ascending: false }) : none,
         canWrite(ctx) ? ctx.sb.from('brief_insights').select('*').eq('production_id', pid).order('created_at') : none,
@@ -1256,33 +1278,46 @@
 
       /* ---------- kickoff meeting: Google Calendar event with a Meet link, booked on the workspace's calendar */
       const CONSENT = 'This meeting will be recorded and transcribed by Fireflies.ai to prepare your brief. Attendees will receive project approval emails from Klaket.';
-      const openKickoff = () => {
+      const localParts = (iso) => { const x = new Date(iso); const pad = (n) => String(n).padStart(2, '0'); return { date: `${x.getFullYear()}-${pad(x.getMonth() + 1)}-${pad(x.getDate())}`, time: `${pad(x.getHours())}:${pad(x.getMinutes())}` }; };
+      const copyText = async (text, what) => {
+        try { await navigator.clipboard.writeText(text); ctx.toast(`${what} copied. Paste it into WhatsApp or an email.`, 'copy'); }
+        catch (e) { window.prompt(`Copy the ${what.toLowerCase()}:`, text); }
+      };
+      const kickoffById = (id) => (d.kickoffs || []).find((x) => x.id === id);
+
+      /* book a kickoff, or change one (existing: the event row) */
+      const openKickoff = (existing) => {
         const p = ctx.production;
         const f = (latestOf(d) || {}).fields || {};
         const next = new Date(); next.setDate(next.getDate() + 1);
         while ([5, 6].includes(next.getDay())) next.setDate(next.getDate() + 1); // Friday, Saturday
         const iso = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}-${String(next.getDate()).padStart(2, '0')}`;
-        const guests = [f.approver && f.approver.email ? `${f.approver.name ? f.approver.name + ' ' : ''}<${f.approver.email}>` : ''].filter(Boolean).join('\n');
+        const at = existing ? localParts(existing.starts_at) : { date: iso, time: '10:00' };
+        const len0 = existing && existing.ends_at ? Math.round((new Date(existing.ends_at) - new Date(existing.starts_at)) / 60000) : 45;
+        const lens = [...new Set([30, 45, 60, 90, len0])].sort((a, b) => a - b);
+        const guests = existing ? (existing.invitees || []).map((g) => (g.name ? `${g.name} <${g.email}>` : g.email)).join('\n')
+          : [f.approver && f.approver.email ? `${f.approver.name ? f.approver.name + ' ' : ''}<${f.approver.email}>` : ''].filter(Boolean).join('\n');
         const el = ctx.modal(ctx.frame({
-          title: 'Book the kickoff meeting',
-          sub: 'A Google Calendar event with a Meet link, on your workspace’s connected calendar. Guests get Google’s invite.',
+          title: existing ? 'Change the kickoff meeting' : 'Book the kickoff meeting',
+          sub: existing ? 'Google Calendar sends the guests the update. The Meet link stays the same.' : 'A Google Calendar event with a Meet link, on your workspace’s connected calendar. Guests get Google’s invite, and you can copy the link to send it yourself.',
           body: `
-            <div class="field"><label for="ko-title">Title</label><input id="ko-title" class="input" dir="auto" maxlength="200" value="${esc(`Klaket kickoff — ${p.title}${p.code ? ` [${p.code}]` : ''}`)}"><span class="tiny faint">Keep the production code in the title: it helps match Fireflies’ transcript to this production.</span></div>
+            <div class="field"><label for="ko-title">Title</label><input id="ko-title" class="input" dir="auto" maxlength="200" value="${esc(existing ? existing.title : `Klaket kickoff — ${p.title}${p.code ? ` [${p.code}]` : ''}`)}"><span class="tiny faint">Keep the production code in the title: it helps match Fireflies’ transcript to this production.</span></div>
             <div class="bf-grid">
-              <div class="field"><label for="ko-date">Date</label><input id="ko-date" class="input" type="date" value="${iso}"></div>
-              <div class="field"><label for="ko-time">Start</label><input id="ko-time" class="input" type="time" value="10:00" step="900"></div>
-              <div class="field"><label for="ko-len">Length</label><select id="ko-len" class="select">${[30, 45, 60, 90].map((m) => `<option value="${m}" ${m === 45 ? 'selected' : ''}>${m} minutes</option>`).join('')}</select></div>
+              <div class="field"><label for="ko-date">Date</label><input id="ko-date" class="input" type="date" value="${at.date}"></div>
+              <div class="field"><label for="ko-time">Start</label><input id="ko-time" class="input" type="time" value="${at.time}" step="300"></div>
+              <div class="field"><label for="ko-len">Length</label><select id="ko-len" class="select">${lens.map((m) => `<option value="${m}" ${m === len0 ? 'selected' : ''}>${m} minutes</option>`).join('')}</select></div>
             </div>
             <div class="field"><label for="ko-guests">Guests <span class="faint">(one per line: an email, or a name and &lt;email&gt;)</span></label>
               <textarea id="ko-guests" class="textarea" rows="4" dir="ltr" placeholder="Yousef Al-Rashid <yousef@brand.sa>">${esc(guests)}</textarea></div>
-            <div class="field"><label for="ko-notes">Agenda <span class="faint">(optional)</span></label><textarea id="ko-notes" class="textarea" rows="2" dir="auto" maxlength="2000"></textarea></div>
+            <div class="field"><label for="ko-notes">Agenda <span class="faint">(optional)</span></label><textarea id="ko-notes" class="textarea" rows="2" dir="auto" maxlength="2000">${esc(existing ? existing.agenda || '' : '')}</textarea></div>
             <div class="callout info">${ui.icon('shield-check')}<span class="small"><span class="strong">Every invite says:</span> “${esc(CONSENT)}”</span></div>
             <div id="ko-err"></div>`,
-          foot: `<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="ko-go">${ui.icon('calendar-plus')}Book and send invites</button>`,
+          foot: `<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="ko-go">${ui.icon(existing ? 'save' : 'calendar-plus')}${existing ? 'Save and update guests' : 'Book the meeting'}</button>`,
         }), { wide: true });
         const err = (m, extra = '') => { el.querySelector('#ko-err').innerHTML = m ? ui.errorBox(m) + extra : ''; MPH.icons(); };
         el.querySelector('#ko-go').addEventListener('click', async (e) => {
           const go = e.currentTarget;
+          const label = go.innerHTML;
           const date = el.querySelector('#ko-date').value, time = el.querySelector('#ko-time').value;
           const start = new Date(`${date}T${time || '10:00'}`);
           if (!date || isNaN(start)) return err('Choose the date and the start time.');
@@ -1293,21 +1328,63 @@
           }).filter((a) => a.email);
           const bad = attendees.find((a) => !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a.email));
           if (bad) return err(`“${bad.email}” isn’t an email address.`);
-          go.disabled = true; go.innerHTML = `${ui.spinner()}Booking…`; err('');
+          go.disabled = true; go.innerHTML = `${ui.spinner()}${existing ? 'Saving…' : 'Booking…'}`; err('');
+          const fields = { title: txt(el.querySelector('#ko-title').value, 200), start: start.toISOString(), end: end.toISOString(), attendees, notes: txt(el.querySelector('#ko-notes').value, 2000) };
           try {
-            const out = await ctx.api.integrations('book_kickoff', {
-              production_id: pid, title: txt(el.querySelector('#ko-title').value, 200), start: start.toISOString(), end: end.toISOString(),
-              attendees, notes: txt(el.querySelector('#ko-notes').value, 2000) || undefined,
-            });
+            const out = existing
+              ? await ctx.api.integrations('update_kickoff', Object.assign({ event_id: existing.id }, fields))
+              : await ctx.api.integrations('book_kickoff', Object.assign({ production_id: pid }, fields, { notes: fields.notes || undefined }));
+            const row = out.event;
+            d.kickoffs = (d.kickoffs || []).filter((x) => x.id !== row.id).concat(row).sort((a, b) => String(a.starts_at).localeCompare(String(b.starts_at)));
             ctx.closeOverlay();
-            ctx.toast(`Kickoff booked with a Meet link. ${plural(out.invited.length, 'guest')} invited.`, 'calendar-check');
-            if (out.blocked.length) ctx.toastError(new Error(`Not invited (this isn’t production, so invites only go to the test allowlist): ${out.blocked.join(', ')}`));
-            ctx.reload();
+            openMeeting(row, { booked: !existing, saved: !!existing, blocked: out.blocked || [] });
           } catch (ex) {
-            go.disabled = false; go.innerHTML = `${ui.icon('calendar-plus')}Book and send invites`; MPH.icons();
+            go.disabled = false; go.innerHTML = label; MPH.icons();
             err(ex.message, /Connect Google Calendar/.test(ex.message) ? `<a class="btn btn-sm btn-outline" href="#team" data-close>${ui.icon('plug')}Open Team → Integrations</a>` : '');
           }
         });
+      };
+
+      /* a kickoff's details: when, guests, the Meet link to copy or share, Fireflies, and Change */
+      const openMeeting = (k, o = {}) => {
+        const past = new Date(k.ends_at || k.starts_at) < new Date();
+        const link = safeUrl(k.meet_link);
+        const st = k.notetaker_status || 'not_requested';
+        const mins = k.ends_at ? Math.round((new Date(k.ends_at) - new Date(k.starts_at)) / 60000) : null;
+        const blocked = o.blocked || [];
+        ctx.modal(ctx.frame({
+          title: esc(k.title),
+          sub: `${esc(MPH.date(k.starts_at, 'long'))}, ${esc(MPH.date(k.starts_at, 'time'))}${mins ? ` · ${mins} minutes` : ''}`,
+          body: `
+            ${o.booked ? `<div class="callout">${ui.icon('calendar-check')}<span class="small"><span class="strong">Booked.</span> Copy the link or the invite below to send it yourself${blocked.length ? '' : ', or let Google’s invite reach the guests'}.</span></div>` : ''}
+            ${o.saved ? `<div class="callout">${ui.icon('check')}<span class="small"><span class="strong">Saved.</span> Google Calendar sent the guests the update.</span></div>` : ''}
+            ${blocked.length ? `<div class="callout market">${ui.icon('mail-x')}<span class="small"><span class="strong">Google didn’t invite ${esc(blocked.join(', '))}.</span> This isn’t the live Klaket, so invites only go to the test allowlist. Copy the invite and send it yourself.</span></div>` : ''}
+            <div class="bf-meet-link">
+              <input class="input mono small" readonly value="${esc(link || 'No Meet link')}" aria-label="Meet link" dir="ltr">
+              ${link ? `<button class="btn btn-sm btn-outline" data-ko="copy-link">${ui.icon('copy')}Copy link</button>` : ''}
+            </div>
+            <div class="row wrap" style="gap:8px">
+              <button class="btn btn-sm btn-primary" data-ko="copy-invite">${ui.icon('clipboard-copy')}Copy invite</button>
+              <a class="btn btn-sm btn-outline" href="https://wa.me/?text=${encodeURIComponent(inviteText(k))}" target="_blank" rel="noopener">${ui.wa(14)}Share on WhatsApp</a>
+              ${link && !past ? `<a class="btn btn-sm btn-ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">${ui.icon('video')}Join the Meet</a>` : ''}
+              ${safeUrl(k.calendar_link) ? `<a class="btn btn-sm btn-ghost" href="${esc(safeUrl(k.calendar_link))}" target="_blank" rel="noopener noreferrer">${ui.icon('calendar')}Open in Google Calendar</a>` : ''}
+            </div>
+            <dl class="kv">
+              <dt>Guests</dt><dd>${(k.invitees || []).length ? (k.invitees || []).map((g) => `<div>${g.name ? `${esc(g.name)} <span class="muted">${esc(g.email)}</span>` : esc(g.email)}</div>`).join('') : '<span class="muted">Nobody invited by Google yet</span>'}</dd>
+              <dt>Agenda</dt><dd dir="auto">${k.agenda ? esc(k.agenda) : '<span class="muted">—</span>'}</dd>
+              <dt>Notetaker</dt><dd>${ui.icon('audio-lines')} ${esc(NOTETAKER[st] || st)}${k.notetaker_error ? `<div class="tiny muted">${esc(k.notetaker_error)}</div>` : ''}</dd>
+            </dl>
+            <details class="bf-invite-prev"><summary class="small">The invite text</summary><pre class="small" dir="auto">${esc(inviteText(k))}</pre></details>`,
+          foot: `<button class="btn btn-ghost" data-close>Close</button>${!past && k.external_id ? `<button class="btn btn-outline" data-ko="edit">${ui.icon('pencil')}Change</button>` : ''}`,
+        }), { wide: true }).addEventListener('click', (e) => {
+          const b = e.target.closest('[data-ko]');
+          if (!b) return;
+          if (b.dataset.ko === 'copy-link') copyText(link, 'Meet link');
+          else if (b.dataset.ko === 'copy-invite') copyText(inviteText(k), 'Invite');
+          else if (b.dataset.ko === 'edit') { ctx.closeOverlay(); openKickoff(k); }
+        });
+        MPH.icons();
+        if (o.booked || o.saved) ctx.reload();
       };
 
       /* ---------- suggestions: accept, correct, remove (the AI Breakdown's review pattern) */
@@ -1448,6 +1525,8 @@
         else if (act === 'voice') openVoiceMemo();
         else if (act === 'behalf' && cur) MPH.approve.onBehalf(ctx, { type: 'brief', id: cur.id, title: `Brief v${cur.version}` });
         else if (act === 'kickoff') openKickoff();
+        else if (act === 'ko-view') { const k = kickoffById(b.dataset.ev); if (k) openMeeting(k); }
+        else if (act === 'ko-copy') { const k = kickoffById(b.dataset.ev); if (k) copyText(safeUrl(k.meet_link), 'Meet link'); }
         else if (act === 'notetaker-add') {
           b.disabled = true;
           ctx.api.integrations('notetaker_add', { event_id: b.dataset.ev })

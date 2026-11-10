@@ -107,3 +107,10 @@
 @keyframes bf-rec-pulse { 50% { opacity: .3; } }
 @media (prefers-reduced-motion: reduce) { .bf-rec-dot { animation: none; } }
 .bf-rec-play { width: 100%; height: 36px; margin-bottom: 10px; }
+
+/* kickoff meetings: the callout's actions, and the details dialog's link row and invite preview */
+.bf-kickoff { flex-wrap: wrap; }
+.bf-meet-link { display: flex; gap: 8px; }
+.bf-meet-link .input { flex: 1; min-width: 0; }
+.bf-invite-prev summary { cursor: pointer; color: var(--muted); }
+.bf-invite-prev pre { white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font-ui); background: var(--raised); border-radius: var(--radius); padding: 10px 12px; margin: 8px 0 0; }
