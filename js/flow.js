@@ -229,7 +229,7 @@
 
   /* ------------------------------------------------------------ one "agent at work" card for every AI wait */
   const AGENT_STEPS = {
-    brief: { name: ['Brief Agent', 'وكيل البريف'], steps: [['Reading the email', 'يقرأ الإيميل'], ['Finding the deliverables', 'يحدد التسليمات'], ['Checking budget and dates', 'يراجع الميزانية والمواعيد'], ['Spotting what’s missing', 'يرصد الناقص'], ['Writing suggestions for you', 'يكتب لك الاقتراحات']] },
+    brief: { name: ['Brief Agent', 'وكيل البريف'], steps: [['Reading the source', 'يقرأ المصدر'], ['Finding the deliverables', 'يحدد التسليمات'], ['Checking budget and dates', 'يراجع الميزانية والمواعيد'], ['Spotting what’s missing', 'يرصد الناقص'], ['Writing suggestions for you', 'يكتب لك الاقتراحات']] },
     concepts: { name: ['Creative Agent', 'الوكيل الإبداعي'], steps: [['Reading the approved brief', 'يقرأ البريف المعتمد'], ['Listening to the client’s words', 'يسمع كلام العميل'], ['Sketching three routes', 'يرسم ثلاث أفكار'], ['Pricing each idea against the budget', 'يسعّر كل فكرة مقابل الميزانية'], ['Polishing the pitch lines', 'يصقل جمل العرض']] },
   };
   function agentCard(kind, callout) {

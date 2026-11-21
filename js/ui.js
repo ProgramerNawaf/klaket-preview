@@ -71,7 +71,7 @@
     ? `<span class="prod-thumb" style="width:${size}px;height:${size}px;display:block;overflow:hidden;flex:none">${MPH.sketch(prod.cover, { wide: true })}</span>`
     : UI.prodThumbPlain(prod, size);
   UI.prodThumbPlain = (prod, size = 38) =>
-    `<span class="prod-thumb" style="${UI.coverStyle(prod)};width:${size}px;height:${size}px;display:grid;place-items:center;color:var(--paper);font:500 ${Math.round(size * 0.36)}px/1 var(--font-display)">${esc(UI.initials(prod.title))}</span>`;
+    `<span class="prod-thumb" style="${UI.coverStyle(prod)};width:${size}px;height:${size}px;display:grid;place-items:center;color:var(--paper);font:500 ${Math.max(11, Math.round(size * 0.36))}px/1 var(--font-display)">${esc(UI.initials(prod.title))}</span>`;
 
   UI.stat = (value, label, extra = '') => `<div class="stat"><span class="v">${value}</span><span class="l">${esc(label)}</span>${extra}</div>`;
 

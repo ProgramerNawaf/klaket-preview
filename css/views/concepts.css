@@ -38,3 +38,68 @@
 .cc-older summary { cursor: pointer; }
 .cc-assume ul { margin: 6px 0 0; padding-inline-start: 18px; }
 @media (max-width: 760px) { .cc-grid { grid-template-columns: minmax(0, 1fr); } .cc-score-row { grid-template-columns: 70px auto minmax(0, 1fr); } }
+
+/* ------------------------------------------------------------------ the card you compare
+   The three routes only mean something next to each other, so a card is a fixed, scannable summary: tier,
+   title, logline, scorecard. The idea itself opens in a reading panel. */
+.cc-grid { align-items: stretch; }
+.cc-idea { padding: 16px; gap: 8px; }
+.cc-idea.is-writing { border-color: var(--accent-line); box-shadow: 0 0 0 2px var(--accent-soft); }
+.cc-saud { margin-inline-start: auto; }
+.cc-title { font-size: 20px; }
+.cc-idea .cc-logline { font-size: 14.5px; display: -webkit-box; -webkit-line-clamp: 4; line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.cc-from { display: flex; align-items: flex-start; gap: 6px; margin: 0; color: var(--muted); }
+.cc-idea .cc-from span { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cc-from svg.lucide { width: 14px; height: 14px; flex: none; margin-top: 2px; color: var(--accent); }
+.cc-writing { margin: 0; align-items: center; }
+
+/* the scorecard at a glance */
+.cc-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; border-top: 1px solid var(--line); padding-top: 10px; margin-top: auto; }
+.cc-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; }
+.cc-cell.cc-wide { grid-column: 1 / -1; }
+.cc-cell .row { flex-wrap: wrap; gap: 6px; }
+.cc-all { color: var(--ok); display: inline-flex; align-items: center; gap: 4px; }
+.cc-miss { color: var(--text); display: inline-flex; align-items: center; gap: 4px; }
+.cc-all svg.lucide, .cc-miss svg.lucide { width: 14px; height: 14px; }
+.cc-actions { margin-top: 0; }
+
+/* the set's own note, and a recommendation you can actually read */
+.cc-asked { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border-inline-start: 3px solid var(--accent); background: var(--accent-soft); border-radius: var(--radius); }
+.cc-asked svg.lucide { width: 15px; height: 15px; color: var(--accent); flex: none; margin-top: 1px; }
+.cc-rec-why { margin: 0; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cc-rec-why.is-open { display: block; }
+.cc-more { align-self: flex-start; }
+
+/* the reading panel */
+.cc-h { display: flex; align-items: center; gap: 7px; margin: 18px 0 8px; font: 600 13px/1.3 var(--font-ui); letter-spacing: .03em; text-transform: uppercase; color: var(--muted); }
+.cc-h svg.lucide { width: 14px; height: 14px; color: var(--accent); }
+.cc-h:first-child { margin-top: 0; }
+.cc-row { display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 4px 10px; align-items: center; padding-block: 6px; }
+.cc-row + .cc-row { border-top: 1px solid var(--line); }
+.cc-row p { grid-column: 1 / -1; margin: 0; }
+.cc-hist { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.cc-hist li { padding-inline-start: 14px; border-inline-start: 2px solid var(--line); }
+.cc-hist li.is-now { border-color: var(--accent); }
+.cc-hist p { margin: 4px 0 0; }
+
+/* Ask Saud */
+.cc-ask-of { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--raised); margin-bottom: 12px; }
+.cc-ask-log { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cc-nudges { display: flex; flex-wrap: wrap; gap: 6px; margin: -2px 0 12px; }
+.cc-nudge { cursor: pointer; border: 1px solid var(--line); background: var(--surface); font: inherit; font-size: 12.5px; }
+.cc-nudge:hover { border-color: var(--accent-line); background: var(--accent-soft); }
+.cc-nudge.is-on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.cc-keeps, .cc-past { margin-bottom: 10px; }
+.cc-keeps summary, .cc-past summary { cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.cc-keeps summary svg.lucide, .cc-past summary svg.lucide { width: 14px; height: 14px; }
+.cc-keeps-list { list-style: none; margin: 8px 0 6px; padding: 0; display: grid; gap: 5px; }
+.cc-keeps-list li { display: flex; align-items: flex-start; gap: 7px; }
+.cc-keeps-list svg.lucide { width: 14px; height: 14px; flex: none; margin-top: 2px; color: var(--accent); }
+.cc-past-list { margin: 8px 0 0; padding-inline-start: 18px; display: grid; gap: 4px; }
+@media (max-width: 760px) { .cc-strip { grid-template-columns: 1fr 1fr; } }
+
+/* an idea nobody scored */
+.cc-unscored { display: flex; align-items: center; gap: 6px; margin: 0 0 auto; color: var(--muted); }
+.cc-unscored svg.lucide { width: 14px; height: 14px; flex: none; }
+/* the header holds a lot on a narrow card: let it wrap on its own line, tidily */
+.cc-idea-head { row-gap: 6px; }

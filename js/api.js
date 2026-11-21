@@ -3,8 +3,13 @@
 (function () {
   const cfg = window.MPH_CONFIG;
   const configured = !/PLACEHOLDER/.test(cfg.supabaseUrl + cfg.supabaseKey);
+  /* PKCE, not the default implicit flow. An implicit sign-in comes back with the session in the URL *hash*
+     (#access_token=...), and this app routes on the hash: the router would try to open a section called
+     "access_token" while the client was still reading it, which is the blank screen after a Google sign-in.
+     PKCE comes back as ?code= in the query string instead, so the hash stays the router's alone. It is also
+     the flow Supabase and OAuth both recommend now; implicit is deprecated. */
   const sb = configured ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' },
   }) : null;
   MPH.sb = sb;
 
@@ -33,6 +38,33 @@
       clientProductions: (clientRows || []).map((r) => r.production_id),
     };
     return MPH.session;
+  };
+
+  /* Come back to this page, not to the site root: the app can be served from a sub-path (GitHub Pages
+     serves it under /mph-platform/), and the hash is dropped on purpose so the router starts clean. */
+  api.authRedirect = () => location.origin + location.pathname + location.search.replace(/[?&](code|error|error_description|state)=[^&]*/g, '').replace(/^&/, '?');
+
+  /* Sign in with a Google account. Returns { error } like the password calls, so the screen handles both the
+     same way; on success the browser leaves for Google and comes back to authRedirect() with ?code=. */
+  api.signInWithGoogle = () => sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: api.authRedirect(),
+      // a refresh token from Google, and an account chooser rather than silently reusing one session
+      queryParams: { access_type: 'offline', prompt: 'select_account' },
+    },
+  });
+
+  /* Google hands errors back on the URL (access_denied when someone closes the chooser). Read it once,
+     then take it off the URL so a refresh does not show it again. */
+  api.takeAuthError = () => {
+    const q = new URLSearchParams(location.search);
+    const e = q.get('error_description') || q.get('error');
+    if (!e) return null;
+    ['error', 'error_description', 'error_code', 'state'].forEach((k) => q.delete(k));
+    const qs = q.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : '') + location.hash);
+    return e.replace(/\+/g, ' ');
   };
 
   api.signIn = (email, password) => sb.auth.signInWithPassword({ email, password });

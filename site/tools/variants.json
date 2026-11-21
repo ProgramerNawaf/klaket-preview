@@ -333,11 +333,7 @@
       "reel",
       "The wall claps, the pile falls, the camera rolls",
       {
-        "companies": false,
-        "journeyAttrs": "data-scenes",
-        "js": [
-          "sections/journey-strip.js"
-        ]
+        "companies": false
       }
     ]
   ]

@@ -15,7 +15,7 @@
     const batches = [];
     for (let i = 0; i < ids.length; i += BATCH) batches.push(ids.slice(i, i + BATCH));
     const specs = {};
-    let next = 0, done = 0;
+    let next = 0, done = 0, failed = 0, reason = '';
     const worker = async () => {
       while (next < batches.length) {
         const b = batches[next++];
@@ -29,11 +29,18 @@
           replaced.push(...oldImages((before || []).filter((r) => r.id === it.id), 'illustration'));
         }
         ctx.api.removeMedia(replaced).catch(() => {});
+        failed += out.failed || 0;
+        if (!reason && out.reason) reason = out.reason;
         done += b.length;
         if (onProgress) onProgress(done, ids.length, specs);
       }
     };
     await Promise.all(Array.from({ length: Math.min(PARALLEL, batches.length) }, worker));
+    /* A picture that was never painted leaves the drawn placeholder behind, which looks like a poor picture
+       rather than a missing one. Say which it is, and why, so it can be run again or the key fixed. */
+    if (failed && ctx.toast) {
+      ctx.toast(`${failed} of ${ids.length} ${ctx.t ? ctx.t('pictures could not be painted') : 'pictures could not be painted'}${reason ? ` — ${reason}` : ''}. ${ctx.t ? ctx.t('Those keep their drawing. Try again.') : 'Those keep their drawing. Try again.'}`, 'image-off');
+    }
     return specs;
   }
 

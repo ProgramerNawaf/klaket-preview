@@ -307,6 +307,15 @@
   };
   const settleOpen = (root) => root.querySelectorAll('.au-collapse:not([inert])').forEach((el) => el.classList.add('settled'));
 
+  /* Google's mark, in their four colours. Drawn inline like the rest of the art, and never recoloured or
+     redrawn: their branding rules require the real one on a sign-in button. */
+  const GOOGLE_G = `<svg class="g-mark" viewBox="0 0 18 18" width="18" height="18" aria-hidden="true" focusable="false">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z"/>
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18Z"/>
+      <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33Z"/>
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z"/>
+    </svg>`;
+
   const AUTH_COPY = {
     login: { title: 'Welcome back', sub: 'Sign in to your workspace.', button: 'Sign in' },
     signup: { title: 'Create your account', sub: 'For everyone in production: producers, crew, talent, agencies and brands. Free to start.', button: 'Create account' },
@@ -337,6 +346,8 @@
         <div id="au-error" hidden></div>
         <button class="btn btn-primary auth-submit" type="submit" id="au-submit"><span id="au-btn-text">${copy.button}</span>${ui.icon('arrow-right')}</button>
       </form>
+      <div class="auth-or"><span>or</span></div>
+      <button type="button" class="btn btn-outline auth-google" id="au-google">${GOOGLE_G}<span id="au-google-text">Continue with Google</span></button>
       <a class="auth-demo" href="${esc(cfg.demoUrl)}" target="_blank" rel="noopener">${ui.icon('play')}Just looking? Watch the click-through demo</a>`, MPH.filmSet ? MPH.filmSet.html(authArt()) : authArt());
   }
 
@@ -371,6 +382,30 @@
       (signup ? document.getElementById('au-name') : document.getElementById('au-email')).focus({ preventScroll: true });
     };
     if (sw) sw.addEventListener('click', (e) => { const b = e.target.closest('[data-mode-to]'); if (b && b.dataset.modeTo !== mode) setMode(b.dataset.modeTo); });
+
+    /* Continue with Google. One button for both modes: Google decides whether this is a new account or a
+       returning one, and a first sign-in lands on onboarding exactly as a new password account does. */
+    const gBtn = document.getElementById('au-google');
+    if (gBtn) {
+      // a refused or cancelled chooser comes back on the URL, not as a thrown error
+      const back = api.takeAuthError && api.takeAuthError();
+      if (back) show(back);
+      gBtn.addEventListener('click', async () => {
+        if (!api.signInWithGoogle) return show('Google sign-in is not available in this build.');
+        gBtn.disabled = true;
+        document.getElementById('au-google-text').textContent = 'Taking you to Google…';
+        err.hidden = true;
+        const { error } = await api.signInWithGoogle();
+        if (error) {
+          gBtn.disabled = false;
+          document.getElementById('au-google-text').textContent = 'Continue with Google';
+          show(/provider is not enabled/i.test(error.message)
+            ? 'Google sign-in is not switched on for this workspace yet.'
+            : error.message);
+        }
+        // on success the browser leaves for Google; nothing after this runs
+      });
+    }
 
     const eye = document.getElementById('au-eye');
     if (eye) eye.addEventListener('click', () => {

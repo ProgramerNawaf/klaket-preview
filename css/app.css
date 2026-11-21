@@ -477,7 +477,7 @@ p { margin: 0; }
   font-size: 11px; font-weight: 700; color: var(--ink);
   background: hsl(var(--h) 45% 72%);
 }
-.av.sm { width: 22px; height: 22px; font-size: 10px; }
+.av.sm { width: 22px; height: 22px; font-size: 11px; }
 .av.lg { width: 44px; height: 44px; font-size: 15px; }
 .av.xl { width: 72px; height: 72px; font-size: 24px; }
 .av-stack { display: inline-flex; }
@@ -632,3 +632,7 @@ a.list-row:hover, .list-row.link:hover { background: var(--bg); cursor: pointer;
   .tb-theme button:not(.on) { display: none; }
   .tb-theme button.on { background: transparent; box-shadow: none; }
 }
+
+/* English copy inside the Arabic layout: keep the words in their own order, keep the block on the right.
+   Without it a sentence's trailing full stop jumps to the front and numbers swap sides. */
+html[dir="rtl"] .ltr-copy, html[dir="rtl"] .bf-ltr { direction: ltr; text-align: right; }

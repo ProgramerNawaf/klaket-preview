@@ -59,7 +59,7 @@
   const ESSENTIALS = [['objective', 'objective'], ['audience', 'target audience'], ['budget_max_sar', 'budget'], ['delivery_date', 'delivery date']];
 
   /* per-production UI state that outlives re-renders */
-  const S = { ver: {}, hide: {} };
+  const S = { ver: {}, hide: {}, undo: {}, focus: {}, step: {}, mode: {} };
   const AUDIO_RE = /\.(webm|m4a|mp4|mp3|mpeg|wav|ogg|oga|opus|flac|aac)$/i;
   const AUDIO_ACCEPT = 'audio/*,.opus,.m4a,.ogg';
   const VOICE_MAX_MIN = 20;
@@ -73,6 +73,7 @@
   });
 
   /* ------------------------------------------------------------ helpers */
+  const rowKindOf = (f) => (f === 'deliverable' ? 'deliverables' : f === 'usage_right' ? 'usage' : null);
   const plural = (n, one, many) => `${n} ${n === 1 ? one : (many || one + 's')}`;
   const txt = (v, max = 4000) => { const s = String(v ?? '').trim(); return s ? s.slice(0, max) : ''; };
   const numOrNull = (v) => { const s = String(v ?? '').replace(/[,\s]/g, ''); if (!s) return null; const n = Number(s); return Number.isFinite(n) && n >= 0 ? Math.round(n) : null; };
@@ -350,8 +351,10 @@
     </div>`;
   }
 
-  /* the latest finished read: what it filled, what's still missing, the AI's notes */
-  function lastHtml(ctx, d) {
+  /* the latest finished read: what it filled, what's still missing, the AI's notes.
+     `inset` folds it into the review deck as a single line you can open, so the screen holds one object
+     instead of a banner and a list that repeat each other. */
+  function lastHtml(ctx, d, inset) {
     const { ui } = ctx;
     const pid = ctx.production.id;
     const last = (d.sources || []).filter((x) => x.status === 'done' && x.extraction).sort((a, b) => String(b.extraction.ran_at || '').localeCompare(String(a.extraction.ran_at || '')))[0];
@@ -363,65 +366,218 @@
     if (!last || S.hide[pid] === last.id) return '';
     const x = last.extraction, c = x.counts || {};
     const miss = x.missing_info || [];
-    return `<div class="callout ${(x.conflicts || []).length ? 'market' : 'info'} bf-last">${ui.icon(SRC[last.type][0])}
+    const headline = inset
+      ? `${plural(c.applied || 0, 'field')} filled straight away${miss.length ? ` · ${plural(miss.length, 'thing')} still missing` : ' · nothing missing'}${(x.notes || []).length ? ` · ${plural(x.notes.length, 'note')}` : ''}`
+      : '';
+    const body = `
       <div class="grow stack tight" style="gap:4px">
-        <span class="small"><span class="strong">Read ${esc(srcTitle(d, last.id))}:</span> ${plural(c.applied || 0, 'field')} filled, ${plural(c.pending || 0, 'suggestion')} to review${c.conflicts ? `, ${plural(c.conflicts, 'conflict')}` : ''}.</span>
+        ${inset ? '' : `<span class="small"><span class="strong">Read ${esc(srcTitle(d, last.id))}:</span> ${plural(c.applied || 0, 'field')} filled, ${plural(c.pending || 0, 'suggestion')} to review${c.conflicts ? `, ${plural(c.conflicts, 'conflict')}` : ''}.</span>`}
         <span class="small">${miss.length ? `Still missing: ${miss.map((m) => `<span class="chip bf-miss">${esc(labelOf(m) === m ? m.replace(/_/g, ' ') : labelOf(m))}</span>`).join(' ')}` : 'Goal, audience, platform, budget, deadline and approver are all covered.'}</span>
         ${(x.questions || []).length ? `<span class="small bf-qs">Must-ask: ${x.questions.map((q) => `<span class="bf-q ${q.status === 'answered' ? 'ok' : 'no'}">${ui.icon(q.status === 'answered' ? 'check' : 'minus')}${esc(q.key)}</span>`).join(' ')}</span>` : ''}
         ${(x.low_confidence || []).length ? `<span class="small">Vague, confirm with the client: ${x.low_confidence.map((m) => `<span class="chip">${esc(labelOf(m))}</span>`).join(' ')}</span>` : ''}
         ${x.insights && (x.insights.voice || x.insights.sparks) ? `<span class="small">${ui.icon('quote')} ${plural(x.insights.voice || 0, 'client quote')}, ${plural(x.insights.sparks || 0, 'concept spark')}, ${plural(x.insights.action_items || 0, 'action item')} saved for the Creative Agent.</span>` : ''}
         ${x.stakeholders && x.stakeholders.without_email ? `<span class="small">${ui.icon('user-x')} ${plural(x.stakeholders.without_email, 'person', 'people')} named without an email: add it under People.</span>` : ''}
         ${(x.notes || []).length ? `<ul class="bf-notes small muted">${x.notes.map((n) => `<li dir="auto">${esc(n)}</li>`).join('')}</ul>` : ''}
-      </div>
+      </div>`;
+    if (inset) {
+      return `<details class="bf-rv-read">
+        <summary><span class="small bf-ltr" dir="ltr">${ui.icon('list-checks')}What the agent made of it <span class="muted">· ${esc(headline)}</span></span></summary>
+        <div class="bf-rv-read-body">${body}</div>
+      </details>`;
+    }
+    return `<div class="callout ${(x.conflicts || []).length ? 'market' : 'info'} bf-last">${ui.icon(SRC[last.type][0])}${body}
       <button class="btn btn-ghost btn-xs btn-icon" data-bf-hide="${esc(last.id)}" aria-label="Dismiss">${ui.icon('x')}</button></div>`;
   }
 
-  function sugRow(ctx, d, sg, editable) {
+  /* ------------------------------------------------------------ the review deck
+     What the Brief Agent proposes, as decisions a producer can take quickly. Three buckets, in the order a
+     producer cares about them: what needs them to choose (a conflict in the source, or something vague),
+     what the source said clearly, and what the agent inferred and is less sure of. One decision at a time:
+     every row takes the keyboard (A accept, C correct, R remove), conflicts are a pick-one, and the last
+     few decisions can be undone from the header. */
+  const BANDS = [[0.9, 'Clearly said', 'ok'], [HIGH, 'Said in the source', ''], [0.5, 'The agent worked this out', 'warn'], [-1, 'Vague in the source', 'warn']];
+  const bandOf = (c) => BANDS.find(([min]) => (Number(c) || 0) >= min) || BANDS[3];
+  const BUCKETS = [
+    { id: 'decide', title: 'Needs you to decide', icon: 'git-compare', hint: 'The source says more than one thing, or says it vaguely. Pick what goes in the brief.' },
+    { id: 'clear', title: 'Said clearly', icon: 'check-check', hint: 'Straight from the source. Skim and accept.' },
+    { id: 'check', title: 'Worth a look', icon: 'eye', hint: 'The agent worked these out rather than heard them. Read before you accept.' },
+  ];
+  const bucketOf = (x) => (x.conflict ? 'decide' : (Number(x.confidence) || 0) >= HIGH ? 'clear' : 'check');
+  const fieldOrder = (x) => { const i = ALL_FIELDS.findIndex((f) => f.k === x.field); return i < 0 ? 100 + Object.keys(ROW_LABEL).indexOf(x.field) : i; };
+  const ago = (iso) => {
+    const s = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+    if (!Number.isFinite(s) || s < 0) return '';
+    if (s < 90) return 'just now';
+    if (s < 5400) return `${Math.round(s / 60)} min ago`;
+    if (s < 36 * 3600) return `${Math.round(s / 3600)} h ago`;
+    return MPH.date(iso, 'long');
+  };
+  /* a conflict's options are strings; turn one into the value the field actually stores, and back */
+  const coerce = (k, raw) => {
+    const def = fieldDef(k);
+    if (!def) return txt(raw, 300);
+    if (def.type === 'money' || def.type === 'int') return numOrNull(raw);
+    if (def.type === 'date') { const m = /\d{4}-\d{2}-\d{2}/.exec(String(raw || '')); return m ? m[0] : txt(raw, 300); }
+    if (def.type === 'refs') return textToRefs(raw);
+    if (def.type === 'approver') return { name: txt(raw, 200), email: '' };
+    return txt(raw, def.type === 'area' ? 4000 : 300);
+  };
+  const rawOf = (k, v) => {
+    if (isEmpty(v)) return '';
+    const def = fieldDef(k);
+    if (def && def.type === 'approver') return String(v.name || v.email || '');
+    if (def && def.type === 'refs') return refsToText(v);
+    return typeof v === 'object' ? JSON.stringify(v) : String(v);
+  };
+  /* every value this conflict puts on the table: the agent's pick first, then the others the source gave */
+  function optionsOf(d, sg) {
+    const c = sg.conflict || {};
+    const out = [];
+    const add = (raw, quote, who, tag) => {
+      const key = String(raw ?? '').trim();
+      if (!key || out.some((o) => o.key === key)) return;
+      out.push({ key, quote: quote || '', who: who || '', tag: tag || '' });
+    };
+    add(rawOf(sg.field, sg.value), sg.source_quote, [sg.speaker, sg.said_at].filter(Boolean).join(' · '), 'the agent’s pick');
+    (c.values || []).forEach((v) => add(v.value, v.quote, [v.speaker, v.timestamp].filter(Boolean).join(' · '), 'also said'));
+    if (!isEmpty(c.value) && c.with !== 'source') add(rawOf(sg.field, c.value), '', '', c.with === 'brief' ? (c.by === 'human' ? 'you wrote this' : 'already in the brief') : `from ${srcTitle(d, c.source_id)}`);
+    return out.length > 1 ? out : [];
+  }
+
+  /* one suggestion: the field it fills, the value, what it replaces, and the words behind it */
+  function sugRow(ctx, d, sg, editable, cur, prevQuote) {
     const { ui } = ctx;
-    const c = sg.conflict;
+    const [, bandLabel, bandKind] = bandOf(sg.confidence);
+    const pct = `${Math.round((Number(sg.confidence) || 0) * 100)}% sure`;
     const said = [sg.speaker, sg.said_at].filter(Boolean).map(esc).join(' · ');
-    const other = !c ? '' : c.with === 'brief'
-      ? `${c.by === 'human' ? 'You set' : 'The brief has'} ${fmtVal(sg.field, c.value)}${c.source_id ? ` (from ${esc(srcTitle(d, c.source_id))})` : ''}`
-      : c.with === 'source'
-        ? ((c.values || []).length
-          ? `the source says different things. ${c.values.map((v) => `<span class="bf-conf-v" dir="auto">${esc(v.value)}</span> <span class="tiny muted" dir="auto">“${esc(v.quote)}”${v.speaker ? ` (${esc(v.speaker)}${v.timestamp ? `, ${esc(v.timestamp)}` : ''})` : ''}</span>`).join(' · ')}${c.note ? `<br><span class="tiny muted" dir="auto">${esc(c.note)}</span>` : ''}`
-          : `${esc(c.note || 'Vague in the source: confirm with the client.')}`)
-        : `${esc(srcTitle(d, c.source_id))} says ${fmtVal(sg.field, c.value)}`;
+    const opts = optionsOf(d, sg);
+    const key = sg.field === 'reference' ? 'references' : sg.field;
+    const now = cur && !rowKindOf(sg.field) ? (cur.fields || {})[key] : null;
+    const replaces = !isEmpty(now) && sg.field !== 'reference'
+      ? `<div class="bf-s-was">${ui.icon('corner-down-right')}<span class="tiny muted">replaces</span> <span class="tiny" dir="auto">${fmtVal(sg.field, now)}</span></div>` : '';
+    const quote = !sg.source_quote ? ''
+      : sg.source_quote === prevQuote
+        ? `<p class="bf-s-q is-same">${ui.icon('arrow-up')}<span class="tiny faint">same words as above</span></p>`
+        : `<p class="bf-s-q" dir="auto">“${esc(sg.source_quote)}”${said ? `<span class="bf-said mono">${said}</span>` : ''}</p>`;
+    const note = sg.conflict && sg.conflict.note ? `<p class="bf-s-note" dir="auto">${esc(sg.conflict.note)}</p>` : '';
+
+    /* a conflict with real alternatives is a pick-one, not an accept-or-not */
+    if (opts.length && editable) {
+      return `
+        <li class="bf-s is-decide" data-sug="${esc(sg.id)}" tabindex="0" aria-label="${esc(labelOf(sg.field))}, needs a decision">
+          <div class="bf-s-body">
+            <div class="bf-s-head"><span class="bf-s-f">${esc(labelOf(sg.field))}</span><span class="bf-s-band ${bandKind}" dir="ltr">${ui.icon('git-compare')}${opts.length} different answers</span></div>
+            ${note}
+            <div class="bf-opts" role="radiogroup" aria-label="${esc(labelOf(sg.field))}">
+              ${opts.map((o, i) => `
+                <label class="bf-opt">
+                  <input type="radio" name="bf-o-${esc(sg.id)}" value="${esc(o.key)}" ${i === 0 ? 'checked' : ''}>
+                  <span class="bf-opt-main">
+                    <span class="bf-opt-v" dir="auto">${fmtVal(sg.field, coerce(sg.field, o.key))}${o.tag ? `<span class="bf-opt-tag" dir="ltr">${esc(o.tag)}</span>` : ''}</span>
+                    ${o.quote ? `<span class="bf-opt-q" dir="auto">“${esc(o.quote)}”${o.who ? ` <span class="bf-said mono">${esc(o.who)}</span>` : ''}</span>` : ''}
+                  </span>
+                  <kbd class="bf-kbd">${i + 1}</kbd>
+                </label>`).join('')}
+              <label class="bf-opt bf-opt-own">
+                <input type="radio" name="bf-o-${esc(sg.id)}" value="__own">
+                <span class="bf-opt-main"><span class="bf-opt-v">Something else</span>
+                  <input class="input bf-opt-in" data-bf-own dir="auto" placeholder="${esc(fieldDef(sg.field) && fieldDef(sg.field).type === 'money' ? 'A figure in SAR' : 'Type what goes in the brief')}" aria-label="Your own value">
+                </span>
+              </label>
+            </div>
+          </div>
+          <div class="bf-s-act">
+            <button class="btn btn-xs btn-primary" data-bf-sug="pick">${ui.icon('check')}Use this</button>
+            <button class="btn btn-xs btn-ghost btn-icon" data-bf-sug="remove" aria-label="Leave this field empty" title="Leave empty — R">${ui.icon('x')}</button>
+          </div>
+        </li>`;
+    }
+
     return `
-      <li class="bf-sug ${c ? 'is-conflict' : ''}" data-sug="${esc(sg.id)}">
-        <div class="bf-sug-main">
-          <div class="row wrap tight"><span class="bf-sug-f">${esc(labelOf(sg.field))}</span><span class="bf-sug-v" dir="auto">${fmtVal(sg.field, sg.value)}</span></div>
-          ${sg.source_quote ? `<span class="bf-sug-q" dir="auto">“${esc(sg.source_quote)}”${said ? ` <span class="bf-said mono">${said}</span>` : ''}</span>` : ''}
-          <span class="tiny muted bf-sug-meta">${pctPill(ui, sg.confidence)} from <button type="button" class="bf-link" data-bf-src="${esc(sg.source_id || '')}">${esc(srcTitle(d, sg.source_id))}</button>${sg.reason ? ` · <span dir="auto">${esc(sg.reason)}</span>` : ''}</span>
-          ${c ? `<span class="small bf-conf">${ui.icon(c.with === 'source' && !(c.values || []).length ? 'circle-help' : 'git-compare')}${c.with === 'source' && !(c.values || []).length ? 'Check: ' : 'Conflict: '}${other}</span>` : ''}
+      <li class="bf-s ${sg.conflict ? 'is-check' : ''}" data-sug="${esc(sg.id)}" tabindex="0" aria-label="${esc(labelOf(sg.field))}">
+        <div class="bf-s-body">
+          <div class="bf-s-head">
+            <span class="bf-s-f">${esc(labelOf(sg.field))}</span>
+            <span class="bf-s-v" dir="auto">${fmtVal(sg.field, sg.value)}</span>
+            ${sg.conflict ? `<span class="bf-s-band warn" dir="ltr">${ui.icon('circle-help')}Confirm with the client</span>`
+              : bandKind ? `<span class="bf-s-band ${bandKind}" dir="ltr" title="${esc(pct)}">${ui.icon(bandKind === 'ok' ? 'check-check' : 'circle-alert')}${esc(bandLabel)}</span>` : ''}
+          </div>
+          ${replaces}
+          ${note}
+          ${quote}
+          ${sg.reason ? `<p class="bf-s-why" dir="auto">${esc(sg.reason)}</p>` : ''}
         </div>
-        <div class="bf-sug-act">
-          ${editable ? `<button class="btn btn-xs btn-primary" data-bf-sug="accept">${ui.icon('check')}Accept</button><button class="btn btn-xs btn-outline" data-bf-sug="correct">${ui.icon('pencil')}Correct</button>` : ''}
-          <button class="btn btn-xs btn-ghost" data-bf-sug="remove">${ui.icon('x')}Remove</button>
+        <div class="bf-s-act">
+          ${editable ? `<button class="btn btn-xs btn-primary" data-bf-sug="accept" title="Accept — A">${ui.icon('check')}Accept</button>
+          <button class="btn btn-xs btn-outline btn-icon" data-bf-sug="correct" aria-label="Correct this value" title="Correct — C">${ui.icon('pencil')}</button>` : ''}
+          <button class="btn btn-xs btn-ghost btn-icon" data-bf-sug="remove" aria-label="Remove this suggestion" title="Remove — R">${ui.icon('x')}</button>
         </div>
       </li>`;
   }
 
-  function reviewHtml(ctx, d) {
+  function reviewHtml(ctx, d, stepId) {
     if (!canWrite(ctx)) return '';
     const { ui } = ctx;
     const pid = ctx.production.id;
     const latest = latestOf(d);
     const editable = !!latest && latest.status === 'draft';
-    let html = runs.has(pid)
+    const running = runs.has(pid);
+    let html = running
       ? `<div class="callout info bf-run" role="status"><span class="spin"></span><span class="small"><span class="strong">The Brief Agent is reading the source…</span> This takes a minute or two. You can keep working or leave this page; the suggestions will be here when it’s done.</span></div>`
-      : lastHtml(ctx, d);
-    const order = (x) => { const i = ALL_FIELDS.findIndex((f) => f.k === x.field); return i < 0 ? 100 + Object.keys(ROW_LABEL).indexOf(x.field) : i; };
-    const pend = (d.suggestions || []).filter((x) => x.status === 'pending').sort((a, b) => (!!b.conflict - !!a.conflict) || order(a) - order(b));
-    if (!pend.length) return html;
+      : '';
+    const inStep = (x) => !stepId || stepOfField(x.field) === stepId;
+    const all = (d.suggestions || []).filter(inStep);
+    const pend = all.filter((x) => x.status === 'pending').sort((a, b) => fieldOrder(a) - fieldOrder(b));
+    const settled = all.filter((x) => x.status !== 'pending');
+    const undoTop = (S.undo[pid] || [])[0];
+    if (!pend.length) {
+      const read = running || stepId ? '' : lastHtml(ctx, d);
+      if (!settled.length || (stepId && pendingOf(d).length)) return html + read;
+      /* the end of the job, said plainly: what went in, and the way back if a decision was wrong */
+      const took = settled.filter((x) => x.status === 'accepted').length;
+      return `${html}<div class="callout bf-guard">${ui.icon('badge-check')}
+        <span class="small grow"><span class="strong">Every suggestion is reviewed.</span> ${plural(took, 'value')} went into the brief${settled.length - took ? `, ${settled.length - took} left out` : ''}.</span>
+        ${undoTop ? `<button class="btn btn-sm btn-ghost" data-bf="undo">${ui.icon('undo-2')}Undo ${esc(undoTop.label)}</button>` : ''}</div>${read}`;
+    }
+    const total = pend.length + settled.length;
+    const doneN = settled.length;
     const high = pend.filter((x) => x.confidence >= HIGH && !x.conflict);
+    const srcIds = [...new Set(pend.map((x) => x.source_id).filter(Boolean))];
+    const src = srcIds.length === 1 ? srcOf(d, srcIds[0]) : null;
+    const undo = undoTop;
+    const byBucket = (id) => pend.filter((x) => bucketOf(x) === id);
+
     html += `
       <section class="bf-group bf-review" id="bf-review">
-        <header class="bf-group-head">${ui.icon('sparkles')}<h3 class="h3">Suggestions to review</h3><span class="count">${pend.length}</span><span class="spacer"></span>
-          ${editable && high.length ? `<button class="btn btn-sm btn-outline" data-bf="accept-high" title="Accepts every suggestion at ${Math.round(HIGH * 100)}% or more that doesn’t conflict with the brief">${ui.icon('check-check')}Accept ${plural(high.length, 'high-confidence suggestion')}</button>` : ''}
+        <header class="bf-rv-head">
+          <span class="bf-rv-ic">${ui.icon('sparkles')}</span>
+          <div class="grow stack tight" style="gap:3px;min-width:0">
+            <h3 class="h3 bf-ltr" dir="ltr">${plural(pend.length, 'suggestion')} to review${stepId ? ' here' : ''}</h3>
+            <span class="tiny muted bf-rv-from bf-ltr" dir="ltr">${src
+              ? `From <button type="button" class="bf-link" data-bf-src="${esc(src.id)}">${esc(src.title || SRC[src.type][1])}</button> · ${esc(SRC[src.type][1].toLowerCase())} · read ${esc(ago(src.extraction && src.extraction.ran_at || src.received_at))}`
+              : `From ${plural(srcIds.length, 'source')}`}</span>
+          </div>
+          ${undo ? `<button class="btn btn-sm btn-ghost bf-rv-undo" data-bf="undo" title="Undo — U">${ui.icon('undo-2')}Undo ${esc(undo.label)}</button>` : ''}
+          ${editable && high.length ? `<button class="btn btn-sm btn-outline" data-bf="accept-high" data-step="${esc(stepId || '')}" title="Accepts everything the source said clearly and nothing that needs a decision">${ui.icon('check-check')}Accept the ${high.length} clear ${high.length === 1 ? 'one' : 'ones'}</button>` : ''}
         </header>
+        ${doneN ? `<div class="bf-rv-bar">${ui.bar(total ? doneN / total : 0, 'bf-rv-prog')}<span class="tiny muted" dir="ltr">${doneN} of ${total} decided</span></div>` : ''}
+        ${running || stepId ? '' : lastHtml(ctx, d, true)}
         ${editable ? '' : `<div class="callout market">${ui.icon('lock')}<span class="small grow">v${esc(latest.version)} was sent, so it can’t change. Start a new version to apply these suggestions.</span><button class="btn btn-sm btn-primary" data-bf="new-version">${ui.icon('copy-plus')}Start v${esc(latest.version + 1)}</button></div>`}
-        <ul class="bf-sugs">${pend.map((x) => sugRow(ctx, d, x, editable)).join('')}</ul>
+        ${BUCKETS.map((b) => {
+          const rows = byBucket(b.id);
+          if (!rows.length) return '';
+          let prevQuote = null;
+          const items = rows.map((x) => { const h = sugRow(ctx, d, x, editable, latest, prevQuote); prevQuote = x.source_quote; return h; }).join('');
+          return `
+            <div class="bf-bucket is-${b.id}">
+              <div class="bf-bucket-head">${ui.icon(b.icon)}<span class="bf-bucket-t">${esc(b.title)}</span><span class="count">${rows.length}</span>
+                <span class="tiny faint grow bf-bucket-hint bf-ltr" dir="ltr">${esc(b.hint)}</span>
+                ${editable && b.id !== 'decide' ? `<button class="btn btn-xs btn-ghost" data-bf="accept-bucket" data-bucket="${b.id}" data-step="${esc(stepId || '')}">${ui.icon('check-check')}Accept all ${rows.length}</button>` : ''}
+              </div>
+              <ul class="bf-sugs bf-deck">${items}</ul>
+            </div>`;
+        }).join('')}
+        <p class="tiny faint bf-rv-keys bf-ltr" dir="ltr">${ui.icon('keyboard')}Click a suggestion, then: <kbd>A</kbd> accept · <kbd>C</kbd> correct · <kbd>R</kbd> remove · <kbd>1</kbd>–<kbd>9</kbd> pick an answer · <kbd>↑</kbd><kbd>↓</kbd> move · <kbd>U</kbd> undo</p>
       </section>`;
     return html;
   }
@@ -635,6 +791,95 @@
       </section>`;
   }
 
+  /* ------------------------------------------------------------ the brief, one section at a time
+     A brief is read and approved in pieces, not in one scroll: each section carries the agent's suggestions
+     for its own fields and the inputs those suggestions fill, so a decision and its result sit on one screen.
+     The rail across the top is the map; Previous and Next walk it. "Whole brief" still shows everything at
+     once, for reading it end to end, printing it, or checking it before it goes to the client. */
+  const STEPS = [
+    { id: 'client', title: 'Client', icon: 'building-2', group: 'client', why: 'Who the brief is for, and who signs it off.' },
+    { id: 'goal', title: 'Goal', icon: 'target', group: 'goal', why: 'What the film has to do, for whom, in what voice.' },
+    { id: 'deliverables', title: 'Deliverables', icon: 'clapperboard', rows: 'deliverables', why: 'Every film to be made, with its length, ratio and platform.' },
+    { id: 'usage', title: 'Usage rights', icon: 'scale', rows: 'usage', why: 'Where the films may run, where, and for how long.' },
+    { id: 'money', title: 'Money and time', icon: 'calendar-clock', group: 'money', why: 'The budget range and the dates everything hangs on.' },
+    { id: 'rules', title: 'Mandatories', icon: 'list-checks', group: 'rules', why: 'What must appear, and how feedback comes back.' },
+    { id: 'people', title: 'People', icon: 'users', why: 'Everyone on the client side, and who approves.' },
+    { id: 'finish', title: 'Finish', icon: 'badge-check', why: 'Check the whole brief, then hand it on.' },
+  ];
+  const stepOf = (id) => STEPS.find((s) => s.id === id) || STEPS[0];
+  /* which section a suggestion belongs to */
+  const stepOfField = (f) => {
+    if (f === 'deliverable') return 'deliverables';
+    if (f === 'usage_right') return 'usage';
+    if (f === 'reference') return 'rules';
+    const g = GROUPS.find((gr) => gr.fields.some((x) => x.k === f));
+    return g ? g.id : 'finish';
+  };
+  const pendingOf = (d, stepId) => (d.suggestions || []).filter((x) => x.status === 'pending' && (!stepId || stepOfField(x.field) === stepId));
+  /* where to open: the first section still waiting on a decision, else the first one */
+  function currentStep(ctx, d) {
+    const pid = ctx.production.id;
+    if (S.step[pid] && STEPS.some((s) => s.id === S.step[pid])) return S.step[pid];
+    const first = STEPS.find((s) => pendingOf(d, s.id).length);
+    return (first || STEPS[0]).id;
+  }
+
+  function railHtml(ctx, d, now) {
+    const { ui } = ctx;
+    const i = STEPS.findIndex((s) => s.id === now);
+    return `<nav class="bf-rail" aria-label="Brief sections">
+      ${STEPS.map((s, n) => {
+        const left = pendingOf(d, s.id).length;
+        const state = s.id === now ? 'is-now' : n < i ? 'is-past' : '';
+        return `<button type="button" class="bf-rail-s ${state} ${left ? 'has-left' : ''}" data-bf="step" data-step="${s.id}" ${s.id === now ? 'aria-current="step"' : ''}>
+          <span class="bf-rail-n">${left ? esc(String(left)) : ui.icon(s.id === now ? s.icon : 'check')}</span>
+          <span class="bf-rail-t">${esc(s.title)}</span>
+        </button>`;
+      }).join('')}
+    </nav>`;
+  }
+
+  function pagerHtml(ctx, d, now) {
+    const { ui } = ctx;
+    const i = STEPS.findIndex((s) => s.id === now);
+    const prev = STEPS[i - 1], next = STEPS[i + 1];
+    const left = pendingOf(d, now).length;
+    return `<div class="bf-pager">
+      ${prev ? `<button class="btn btn-outline" data-bf="step" data-step="${prev.id}">${ui.icon('arrow-left')}${esc(prev.title)}</button>` : '<span></span>'}
+      <span class="tiny muted bf-pager-mid bf-ltr" dir="ltr">Section ${i + 1} of ${STEPS.length}${left ? ` · ${plural(left, 'suggestion')} still open here` : ''}</span>
+      ${next ? `<button class="btn ${left ? 'btn-outline' : 'btn-primary'}" data-bf="step" data-step="${next.id}">${esc(next.title)}${ui.icon('arrow-right')}</button>` : '<span></span>'}
+    </div>`;
+  }
+
+  /* one section: its suggestions first, then the inputs they fill */
+  function stepHtml(ctx, d, cur, editable, now) {
+    const { ui } = ctx;
+    const s = stepOf(now);
+    const left = pendingOf(d, now).length;
+    let body;
+    if (s.group) body = groupHtml(ctx, d, GROUPS.find((x) => x.id === s.group), cur, editable);
+    else if (s.id === 'deliverables') body = deliverablesHtml(ctx, d, rowsOf(d, cur, 'deliverables'), editable);
+    else if (s.id === 'usage') body = usageHtml(ctx, d, rowsOf(d, cur, 'usage'), editable);
+    else if (s.id === 'people') body = peopleHtml(ctx, d);
+    if (body) body = `<div class="bf-step-own">${body}</div>`;
+    /* the last section is the whole brief read back, so nothing is signed off unseen */
+    else body = `${summaryHtml(ctx, d, cur)}${lastHtml(ctx, d)}${reviewedHtml(ctx, d)}
+      <p class="eyebrow">${ui.icon('scroll-text')} The brief as it stands</p>${docHtml(ctx, d, cur, false)}${insightsHtml(ctx, d)}${sourcesHtml(ctx, d)}`;
+    return `
+      <section class="bf-step" id="bf-step">
+        <header class="bf-step-head">
+          <span class="bf-step-ic">${ui.icon(s.icon)}</span>
+          <div class="grow stack tight" style="gap:2px;min-width:0">
+            <h2 class="h2 bf-step-t bf-ltr" dir="ltr">${esc(s.title)}</h2>
+            <span class="tiny muted bf-ltr" dir="ltr">${esc(s.why)}</span>
+          </div>
+          ${left || !canWrite(ctx) || !(d.suggestions || []).length ? '' : `<span class="tiny muted bf-ltr" dir="ltr">${ui.icon('check')}Nothing waiting here</span>`}
+        </header>
+        ${reviewHtml(ctx, d, now)}
+        ${body}
+      </section>`;
+  }
+
   function startHtml(ctx) {
     const { ui } = ctx;
     if (!canWrite(ctx)) {
@@ -659,11 +904,19 @@
       eyebrow: 'Step 0 · Client-visible',
       title: ctx.t('Brief'),
       sub: cur ? `${esc(cur.fields?.brand || cur.fields?.client_company || ctx.production.title)} · ${plural(d.versions.length, 'version')}` : 'What the client asked for, in a form every later step can read. The client approves it before anything else starts.',
-      actions: canWrite(ctx) ? `<button class="btn btn-sm btn-ghost" data-bf="kickoff">${ui.icon('calendar-plus')}Book kickoff meeting</button><button class="btn btn-sm btn-ghost" data-bf="voice" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('mic')}Record a voice memo</button>${cur ? `<button class="btn btn-sm btn-outline" data-bf="add-source" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('sparkles')}Fill from a source</button>` : ''}` : '',
+      actions: canWrite(ctx) ? `${cur ? `<span class="seg bf-mode" role="group" aria-label="How to read the brief">
+        <button class="btn btn-sm ${S.mode[ctx.production.id] === 'all' ? 'btn-ghost' : 'btn-outline is-on'}" data-bf="mode" data-mode="steps">${ui.icon('list-ordered')}Step by step</button>
+        <button class="btn btn-sm ${S.mode[ctx.production.id] === 'all' ? 'btn-outline is-on' : 'btn-ghost'}" data-bf="mode" data-mode="all">${ui.icon('scroll-text')}Whole brief</button>
+      </span>` : ''}<button class="btn btn-sm btn-ghost" data-bf="kickoff">${ui.icon('calendar-plus')}Book kickoff meeting</button><button class="btn btn-sm btn-ghost" data-bf="voice" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('mic')}Record a voice memo</button>${cur ? `<button class="btn btn-sm btn-outline" data-bf="add-source" ${runs.has(ctx.production.id) ? 'disabled' : ''}>${ui.icon('sparkles')}Fill from a source</button>` : ''}` : '',
     });
     if (!cur) return `<div class="page bf-page">${head}${kickoffHtml(ctx, d)}${reviewHtml(ctx, d)}${startHtml(ctx)}${peopleHtml(ctx, d)}${sourcesHtml(ctx, d)}</div>`;
     const editable = isEditable(ctx, d, cur);
-    return `<div class="page bf-page">${head}${barHtml(ctx, d, cur)}${approvalHtml(ctx, d, cur)}${kickoffHtml(ctx, d)}${reviewHtml(ctx, d)}${reviewedHtml(ctx, d)}${summaryHtml(ctx, d, cur)}${docHtml(ctx, d, cur, editable)}${insightsHtml(ctx, d)}${sourcesHtml(ctx, d)}</div>`;
+    const top = `${head}${barHtml(ctx, d, cur)}${approvalHtml(ctx, d, cur)}${kickoffHtml(ctx, d)}`;
+    if (S.mode[ctx.production.id] === 'all') {
+      return `<div class="page bf-page">${top}${reviewHtml(ctx, d)}${reviewedHtml(ctx, d)}${summaryHtml(ctx, d, cur)}${docHtml(ctx, d, cur, editable)}${insightsHtml(ctx, d)}${sourcesHtml(ctx, d)}</div>`;
+    }
+    const now = currentStep(ctx, d);
+    return `<div class="page bf-page is-steps">${top}${railHtml(ctx, d, now)}${stepHtml(ctx, d, cur, editable, now)}${pagerHtml(ctx, d, now)}</div>`;
   }
 
   function clientPage(ctx, d) {
@@ -1401,37 +1654,74 @@
       };
 
       /* ---------- suggestions: accept, correct, remove (the AI Breakdown's review pattern) */
-      const rowKind = (f) => (f === 'deliverable' ? 'deliverables' : f === 'usage_right' ? 'usage' : null);
+      const rowKind = rowKindOf;
+      /* every decision is reversible for as long as this screen is open: each one leaves a step on the undo
+         stack that puts the brief, the row and the suggestion back exactly as they were. */
+      const pushUndo = (label, fn) => { S.undo[pid] = [{ label, fn }, ...(S.undo[pid] || [])].slice(0, 12); };
+      const del = async (q) => { const { error } = await q; if (error) throw new Error(error.message); };
       const acceptSug = async (sg, value, via) => {
         const target = latestOf(d);
         if (!target || target.status !== 'draft') throw new Error('This version was sent. Start a new version to apply suggestions.');
         await saver.flush();
         const now = new Date().toISOString();
         const kind = rowKind(sg.field);
+        const was = { status: sg.status, value: sg.value };
+        let revert;
         if (kind) {
           const sort = d[kind].filter((r) => r.brief_id === target.id).reduce((m, r) => Math.max(m, (r.sort || 0) + 1), 0);
-          d[kind].push(ctx.api.must(await ctx.sb.from(table[kind]).insert({ ...value, brief_id: target.id, production_id: pid, sort, suggestion_id: sg.id }).select().single()));
+          const row = ctx.api.must(await ctx.sb.from(table[kind]).insert({ ...value, brief_id: target.id, production_id: pid, sort, suggestion_id: sg.id }).select().single());
+          d[kind].push(row);
+          revert = async () => { await del(ctx.sb.from(table[kind]).delete().eq('id', row.id)); d[kind] = d[kind].filter((r) => r.id !== row.id); };
         } else {
           const key = sg.field === 'reference' ? 'references' : sg.field;
+          const hadV = key in target.fields, hadM = key in target.field_meta;
+          const prevV = target.fields[key], prevM = target.field_meta[key];
           target.fields[key] = sg.field === 'reference' ? [...(Array.isArray(target.fields.references) ? target.fields.references : []), value] : value;
           // accepting is a human decision: later AI suggestions will never overwrite it
           target.field_meta[key] = { by: 'human', via, source_id: sg.source_id, suggestion_id: sg.id, at: now, user: ctx.session.user.id };
           ctx.api.must(await ctx.sb.from('briefs').update({ fields: target.fields, field_meta: target.field_meta }).eq('id', target.id));
+          revert = async () => {
+            if (hadV) target.fields[key] = prevV; else delete target.fields[key];
+            if (hadM) target.field_meta[key] = prevM; else delete target.field_meta[key];
+            ctx.api.must(await ctx.sb.from('briefs').update({ fields: target.fields, field_meta: target.field_meta }).eq('id', target.id));
+          };
         }
         ctx.api.must(await ctx.sb.from('brief_field_suggestions').update({ status: 'accepted', value, decided_by: ctx.session.user.id, decided_at: now }).eq('id', sg.id));
         Object.assign(sg, { status: 'accepted', value, decided_at: now });
         // a field holds one value, so the other open suggestions for it are settled
+        const gone = [];
         if (!kind && sg.field !== 'reference') {
           const rest = d.suggestions.filter((x) => x.status === 'pending' && x.field === sg.field);
           if (rest.length) {
             ctx.api.must(await ctx.sb.from('brief_field_suggestions').update({ status: 'superseded', decided_at: now }).in('id', rest.map((x) => x.id)));
-            rest.forEach((x) => { x.status = 'superseded'; });
+            rest.forEach((x) => { x.status = 'superseded'; gone.push(x); });
           }
         }
+        pushUndo(`${labelOf(sg.field)}`, async () => {
+          await revert();
+          ctx.api.must(await ctx.sb.from('brief_field_suggestions').update({ status: was.status, value: was.value, decided_by: null, decided_at: null }).eq('id', sg.id));
+          Object.assign(sg, was, { decided_at: null });
+          if (gone.length) {
+            ctx.api.must(await ctx.sb.from('brief_field_suggestions').update({ status: 'pending', decided_at: null }).in('id', gone.map((x) => x.id)));
+            gone.forEach((x) => { x.status = 'pending'; });
+          }
+        });
       };
       const removeSug = async (sg) => {
         ctx.api.must(await ctx.sb.from('brief_field_suggestions').update({ status: 'rejected', decided_by: ctx.session.user.id, decided_at: new Date().toISOString() }).eq('id', sg.id));
         sg.status = 'rejected';
+        pushUndo(`${labelOf(sg.field)}`, async () => {
+          ctx.api.must(await ctx.sb.from('brief_field_suggestions').update({ status: 'pending', decided_by: null, decided_at: null }).eq('id', sg.id));
+          sg.status = 'pending';
+        });
+      };
+      const doUndo = async (btn) => {
+        const stack = S.undo[pid] || [];
+        const top = stack[0];
+        if (!top) return;
+        if (btn) { btn.disabled = true; btn.innerHTML = `${ui.spinner()}Undoing…`; }
+        try { await top.fn(); S.undo[pid] = stack.slice(1); ctx.toast(`Put back: ${top.label}`, 'undo-2'); repaint(); }
+        catch (ex) { if (btn) btn.disabled = false; ctx.toastError(ex); }
       };
       const readIn = (def, box) => {
         if (def.type === 'approver') {
@@ -1442,7 +1732,7 @@
         if (def.type === 'money' || def.type === 'int') return numOrNull(v);
         return txt(v, def.type === 'area' ? 4000 : 300) || null;
       };
-      const openCorrect = (sg) => {
+      const openCorrectModal = (sg) => {
         const def = fieldDef(sg.field);
         const v = sg.value || {};
         const inp = (c, label, val, extra = '') => `<div class="field"><label>${label}</label><input class="input" data-c="${c}" dir="auto" value="${esc(val ?? '')}" ${extra}></div>`;
@@ -1480,28 +1770,110 @@
           catch (ex) { btn.disabled = false; ctx.toastError(ex); }
         });
       };
-      const acceptHigh = async (btn) => {
-        const list = d.suggestions.filter((x) => x.status === 'pending' && x.confidence >= HIGH && !x.conflict);
+      /* correcting a plain field happens where you are reading it; only the table rows (a deliverable, a usage
+         right, a reference) have enough parts to be worth a dialog. */
+      const openCorrect = (sg, row) => {
+        const def = fieldDef(sg.field);
+        if (!def || !row) return openCorrectModal(sg);
+        const open = row.querySelector('[data-bf-edit]');
+        if (open) { const f = open.querySelector('[data-bf-f]'); if (f) f.focus(); return; }
+        const box = document.createElement('div');
+        box.className = 'bf-s-edit';
+        box.dataset.bfEdit = '1';
+        box.innerHTML = `<div class="field"><span class="tiny muted">${esc(def.label)}</span>${fieldInput(def, sg.value)}</div>
+          <div class="row wrap tight"><button class="btn btn-xs btn-primary" data-bf-sug="save">${ui.icon('check')}Save and accept</button><button class="btn btn-xs btn-ghost" data-bf-sug="cancel">Cancel</button><span class="tiny faint">Esc to cancel</span></div>`;
+        box.querySelectorAll('[id]').forEach((x) => x.removeAttribute('id'));
+        row.querySelector('.bf-s-body').appendChild(box);
+        MPH.icons(box);
+        const f = box.querySelector('[data-bf-f]');
+        if (f) { f.focus(); if (f.select) f.select(); }
+      };
+      const pickedValue = (sg, row) => {
+        const sel = row.querySelector('.bf-opts input[type=radio]:checked');
+        if (!sel) return undefined;
+        const own = row.querySelector('[data-bf-own]');
+        const v = coerce(sg.field, sel.value === '__own' ? (own ? own.value : '') : sel.value);
+        return isEmpty(v) ? undefined : v;
+      };
+      /* a batch is one decision to the person who made it, so it is one step on the undo stack */
+      const acceptMany = async (list, btn) => {
+        if (!list.length) return;
+        const base = (S.undo[pid] || []).length;
         btn.disabled = true; btn.innerHTML = `${ui.spinner()}Accepting…`;
         let n = 0;
         try { for (const sg of list) { if (sg.status !== 'pending') continue; await acceptSug(sg, sg.value, 'accepted'); n++; } }
         catch (ex) { ctx.toastError(ex); }
+        const stack = S.undo[pid] || [];
+        const mine = stack.slice(0, Math.max(0, stack.length - base));
+        if (mine.length > 1) S.undo[pid] = [{ label: plural(mine.length, 'suggestion'), fn: async () => { for (const u of mine) await u.fn(); } }, ...stack.slice(mine.length)];
         ctx.toast(`Accepted ${plural(n, 'suggestion')}`, 'check-check');
         repaint();
       };
+      const here = (btn) => (x) => !btn.dataset.step || stepOfField(x.field) === btn.dataset.step;
+      const acceptHigh = (btn) => acceptMany(d.suggestions.filter((x) => x.status === 'pending' && x.confidence >= HIGH && !x.conflict).filter(here(btn)), btn);
+      const acceptBucket = (btn) => acceptMany(d.suggestions.filter((x) => x.status === 'pending' && bucketOf(x) === btn.dataset.bucket).filter(here(btn)), btn);
+
+      /* the review deck takes the keyboard: the focused suggestion is the one the keys act on */
+      const deckRows = () => [...root.querySelectorAll('.bf-deck > [data-sug]')];
+      const repaintDeck = (idx) => {
+        repaint();
+        if (idx == null || idx < 0) return;
+        const rows = deckRows();
+        const el = rows[Math.min(idx, rows.length - 1)];
+        if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'nearest' }); }
+      };
+      root.addEventListener('keydown', (e) => {
+        const row = e.target.closest && e.target.closest('.bf-deck > [data-sug]');
+        if (!row || e.metaKey || e.ctrlKey || e.altKey) return;
+        const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+        const rows = deckRows();
+        const i = rows.indexOf(row);
+        const move = (n) => { const el = rows[Math.max(0, Math.min(rows.length - 1, i + n))]; if (el) { el.focus(); el.scrollIntoView({ block: 'nearest' }); } };
+        const press = (sel) => { const b = row.querySelector(sel); if (b) { e.preventDefault(); b.click(); } };
+        if (typing) {
+          if (e.key === 'Escape') { const box = row.querySelector('[data-bf-edit]'); if (box) { e.preventDefault(); box.remove(); row.focus(); } return; }
+          if (e.key === 'Enter' && row.querySelector('[data-bf-edit]') && e.target.tagName !== 'TEXTAREA') press('[data-bf-sug="save"]');
+          return;
+        }
+        if (e.key === 'ArrowDown') { e.preventDefault(); return move(1); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); return move(-1); }
+        const k = e.key.toLowerCase();
+        if (k === 'a' || e.key === 'Enter') return press('[data-bf-sug="accept"], [data-bf-sug="pick"]');
+        if (k === 'c') return press('[data-bf-sug="correct"]');
+        if (k === 'r' || e.key === 'Backspace') return press('[data-bf-sug="remove"]');
+        if (k === 'u') { e.preventDefault(); return doUndo(root.querySelector('[data-bf="undo"]')); }
+        if (/^[1-9]$/.test(e.key)) {
+          const opt = row.querySelectorAll('.bf-opts input[type=radio]')[Number(e.key) - 1];
+          if (opt) { e.preventDefault(); opt.checked = true; opt.closest('.bf-opt').classList.add('fl-flash'); }
+        }
+      });
 
       root.addEventListener('click', async (e) => {
         const sb = e.target.closest('[data-bf-sug]');
         if (sb) {
-          const sg = sugOf(d, sb.closest('[data-sug]').dataset.sug);
-          if (!sg || sg.status !== 'pending') return;
+          const row = sb.closest('[data-sug]');
+          const sg = sugOf(d, row.dataset.sug);
+          if (!sg) return;
           const act = sb.dataset.bfSug;
-          if (act === 'correct') return openCorrect(sg);
+          if (act === 'cancel') { const box = row.querySelector('[data-bf-edit]'); if (box) box.remove(); row.focus(); return; }
+          if (sg.status !== 'pending') return;
+          if (act === 'correct') return openCorrect(sg, row);
+          const idx = deckRows().indexOf(row);
           sb.disabled = true;
           try {
             if (act === 'accept') { await acceptSug(sg, sg.value, 'accepted'); ctx.toast(`${labelOf(sg.field)} accepted`, 'check'); }
-            else await removeSug(sg);
-            repaint();
+            else if (act === 'pick') {
+              const value = pickedValue(sg, row);
+              if (value === undefined) { sb.disabled = false; return ctx.toast('Pick one of the answers, or type your own', 'pencil'); }
+              await acceptSug(sg, value, 'corrected');
+              ctx.toast(`${labelOf(sg.field)} decided`, 'check');
+            } else if (act === 'save') {
+              const value = readIn(fieldDef(sg.field), row.querySelector('[data-bf-edit]'));
+              if (isEmpty(value)) { sb.disabled = false; return ctx.toast('Enter a value, or remove the suggestion instead', 'pencil'); }
+              await acceptSug(sg, value, 'corrected');
+              ctx.toast(`${labelOf(sg.field)} corrected and accepted`, 'check');
+            } else { await removeSug(sg); ctx.toast(`${labelOf(sg.field)} removed`, 'x'); }
+            repaintDeck(idx);
           } catch (ex) { sb.disabled = false; ctx.toastError(ex); }
           return;
         }
@@ -1570,6 +1942,10 @@
           }, (err) => { b.disabled = false; ctx.toastError(err); });
         }
         else if (act === 'accept-high') acceptHigh(b);
+        else if (act === 'accept-bucket') acceptBucket(b);
+        else if (act === 'undo') doUndo(b);
+        else if (act === 'step') { saver.flush(); S.step[pid] = b.dataset.step; repaint(); const el = root.querySelector('#bf-step'); if (el) el.scrollIntoView({ block: 'start' }); }
+        else if (act === 'mode') { saver.flush(); S.mode[pid] = b.dataset.mode; repaint(); }
       });
     },
   });

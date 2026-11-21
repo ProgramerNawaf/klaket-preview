@@ -54,7 +54,7 @@
 @keyframes fs-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 @keyframes fs-wheel { 0% { opacity: 1; transform: translateY(0); } 80% { opacity: 0; transform: translateY(9px); } 100% { opacity: 0; } }
 .fs-foot { position: absolute; inset-inline: clamp(24px, 4vw, 56px); bottom: 22px; display: flex; justify-content: flex-end; }
-.fs-foot .mono { font-size: 10.5px; letter-spacing: .16em; color: rgba(246, 235, 217, .55); }
+.fs-foot .mono { font-size: 11px; letter-spacing: .16em; color: rgba(246, 235, 217, .55); }
 html[lang="ar"] .fs-head .eyebrow, html[lang="ar"] .fs-cue, html[lang="ar"] .fs-foot .mono { font-family: var(--font-ar); letter-spacing: 0; font-weight: 600; }
 
 /* phones and narrow windows: a banner under the form that plays as the page scrolls past it */

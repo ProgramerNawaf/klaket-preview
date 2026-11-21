@@ -114,3 +114,155 @@
 .bf-meet-link .input { flex: 1; min-width: 0; }
 .bf-invite-prev summary { cursor: pointer; color: var(--muted); }
 .bf-invite-prev pre { white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--font-ui); background: var(--raised); border-radius: var(--radius); padding: 10px 12px; margin: 8px 0 0; }
+
+/* ------------------------------------------------------------------ the review deck (bf-rv / bf-bucket / bf-s)
+   The Brief Agent's suggestions as a set of decisions, not a list of rows: one header that names the source
+   once, three buckets in the order a producer cares about, and a card per suggestion that takes the keyboard.
+   The old .bf-sug rules above still dress the read-only list inside a source's drawer. */
+.bf-review { display: block; padding: 0; overflow: hidden; border-color: var(--accent-line, var(--line-2)); }
+.bf-rv-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 16px; }
+.bf-rv-ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--accent-soft); color: var(--accent); }
+.bf-rv-ic svg.lucide { width: 17px; height: 17px; }
+.bf-rv-from { overflow-wrap: anywhere; }
+.bf-rv-undo { color: var(--accent); }
+.bf-rv-bar { display: flex; align-items: center; gap: 10px; padding: 0 16px 12px; }
+.bf-rv-bar .bar { flex: 1; min-width: 80px; }
+.bf-rv-bar .tiny { flex: none; font-variant-numeric: tabular-nums; }
+.bf-rv-keys { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 0; padding: 10px 16px 14px; border-top: 1px solid var(--line); }
+.bf-rv-keys svg.lucide { width: 13px; height: 13px; }
+kbd, .bf-kbd { font: 600 11px/1.5 var(--font-mono); background: var(--raised); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; color: var(--text-2); }
+
+/* a bucket: a labelled band of suggestions that belong together */
+.bf-bucket + .bf-bucket { border-top: 1px solid var(--line); }
+.bf-bucket-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 9px 16px; background: var(--fill-1); border-block: 1px solid var(--line); }
+.bf-bucket-head > svg.lucide { width: 15px; height: 15px; color: var(--muted); flex: none; }
+.bf-bucket-t { font-weight: 600; font-size: 13px; }
+.bf-bucket-hint { flex: 1 1 200px; min-width: 0; }
+.bf-bucket.is-decide .bf-bucket-head { background: var(--warn-soft); border-color: var(--warn-line); }
+.bf-bucket.is-decide .bf-bucket-head > svg.lucide, .bf-bucket.is-decide .bf-bucket-t { color: var(--text); }
+.bf-deck { display: block; }
+
+/* one suggestion */
+.bf-s { display: flex; gap: 14px; align-items: flex-start; padding: 11px 16px; border-bottom: 1px solid var(--line); outline: 0; }
+.bf-s:last-child { border-bottom: 0; }
+.bf-s:hover { background: var(--fill-1); }
+.bf-s:focus-visible, .bf-s:focus-within { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.bf-s.is-decide { box-shadow: inset 3px 0 0 var(--warn-line); }
+.bf-s.is-decide:focus-visible, .bf-s.is-decide:focus-within { box-shadow: inset 3px 0 0 var(--accent); }
+.bf-s-body { flex: 1; min-width: 0; display: grid; gap: 5px; }
+.bf-s-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; min-width: 0; }
+.bf-s-f { font: 600 11px/1.6 var(--font-ui); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); flex: none; }
+.bf-s-v { font-size: 14.5px; color: var(--text); overflow-wrap: anywhere; min-width: 0; }
+.bf-s-band { font-size: 11.5px; color: var(--muted); display: inline-flex; align-items: center; gap: 4px; flex: none; margin-inline-start: auto; }
+.bf-s-band svg.lucide { width: 13px; height: 13px; }
+.bf-s-band.ok { color: var(--ok); }
+.bf-s-band.warn { color: var(--text); }
+.bf-s-was { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+.bf-s-was svg.lucide { width: 12px; height: 12px; color: var(--faint); flex: none; align-self: center; }
+.bf-s-was .tiny:last-child { color: var(--text-2); text-decoration: line-through; text-decoration-color: var(--line-2); overflow-wrap: anywhere; }
+.bf-s-q { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--text-2); font-style: italic; border-inline-start: 2px solid var(--line-2); padding-inline-start: 9px; overflow-wrap: anywhere; }
+.bf-s-q .bf-said { margin-inline-start: 6px; font-style: normal; }
+.bf-s-q.is-same { display: flex; align-items: center; gap: 4px; border: 0; padding-inline-start: 11px; font-style: normal; }
+.bf-s-q.is-same svg.lucide { width: 12px; height: 12px; color: var(--faint); }
+.bf-s-why, .bf-s-note { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); overflow-wrap: anywhere; }
+.bf-s-note { color: var(--text-2); }
+.bf-s-act { display: flex; gap: 6px; flex: none; align-items: center; padding-block-start: 1px; }
+.bf-s-act .btn { opacity: .82; transition: opacity .12s ease; }
+.bf-s:hover .bf-s-act .btn, .bf-s:focus-within .bf-s-act .btn { opacity: 1; }
+
+/* a conflict: the answers the source gave, as a pick-one */
+.bf-opts { display: grid; gap: 6px; margin-block-start: 2px; }
+.bf-opt { display: flex; align-items: flex-start; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; background: var(--surface); }
+.bf-opt:hover { border-color: var(--line-2); background: var(--fill-1); }
+.bf-opt input[type=radio] { margin: 3px 0 0; flex: none; accent-color: var(--primary); }
+.bf-opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.bf-opt-main { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.bf-opt-v { font-size: 14px; font-weight: 600; color: var(--text); display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; overflow-wrap: anywhere; }
+.bf-opt-tag { font: 500 10.5px/1.6 var(--font-ui); letter-spacing: .03em; text-transform: uppercase; color: var(--muted); background: var(--raised); border-radius: 5px; padding: 1px 6px; flex: none; }
+.bf-opt:has(input:checked) .bf-opt-tag { background: var(--surface); }
+.bf-opt-q { font-size: 12.5px; line-height: 1.5; color: var(--text-2); font-style: italic; overflow-wrap: anywhere; }
+.bf-opt-q .bf-said { font-style: normal; }
+.bf-opt-own .bf-opt-in { margin-block-start: 2px; }
+.bf-opt .bf-kbd { flex: none; align-self: center; }
+.bf-opt-own .bf-opt-v { font-weight: 500; color: var(--muted); }
+
+/* correcting a value where you are reading it */
+.bf-s-edit { display: grid; gap: 8px; margin-block-start: 4px; padding: 10px; border: 1px solid var(--accent-line); border-radius: var(--radius); background: var(--accent-soft); }
+.bf-s-edit .field { gap: 4px; }
+
+@media (max-width: 760px) {
+  .bf-s { flex-direction: column; gap: 9px; }
+  .bf-s-act { align-self: stretch; }
+  .bf-s-act .btn { flex: 1; }
+  .bf-s-act .btn-icon { flex: 0 0 46px; }
+  .bf-s-band { margin-inline-start: 0; }
+  .bf-bucket-hint { display: none; }
+  .bf-rv-keys { display: none; }
+}
+
+/* the agent's own read of the source, folded into the deck */
+.bf-rv-read { border-top: 1px solid var(--line); }
+.bf-rv-read > summary { cursor: pointer; padding: 9px 16px; color: var(--text-2); list-style: none; }
+.bf-rv-read > summary::-webkit-details-marker { display: none; }
+.bf-rv-read > summary .small { display: flex; align-items: center; gap: 7px; }
+.bf-rv-read > summary svg.lucide { width: 14px; height: 14px; color: var(--muted); flex: none; }
+.bf-rv-read > summary:hover { background: var(--fill-1); }
+.bf-rv-read[open] > summary { border-bottom: 1px solid var(--line); }
+.bf-rv-read-body { padding: 10px 16px 12px; display: flex; }
+.bf-rv-read-body .chip { white-space: nowrap; }
+
+/* tighter conflict options: the answer first, the words that back it right under */
+.bf-opt { padding: 7px 9px; gap: 9px; }
+.bf-opt-main { gap: 2px; }
+.bf-opt-v { font-size: 13.5px; }
+.bf-opt-q { font-size: 12px; }
+.bf-opt-own { align-items: center; }
+.bf-opt-own .bf-opt-main { display: flex; align-items: center; gap: 10px; }
+.bf-opt-own .bf-opt-in { flex: 1; min-width: 0; max-width: 340px; height: 30px; padding-block: 0; font-size: 13px; }
+
+/* .bf-ltr lives in app.css, next to .ltr-copy: the same rule serves both screens. */
+
+/* ------------------------------------------------------------------ the brief, section by section
+   A rail of sections across the top, one section on screen, Previous and Next underneath. */
+.bf-page.is-steps { gap: 14px; }
+.bf-mode { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--radius); background: var(--raised); }
+.bf-mode .btn { border: 0; }
+.bf-mode .btn.is-on { background: var(--surface); box-shadow: 0 1px 2px rgba(18,18,18,.08); }
+
+.bf-rail { display: flex; gap: 4px; overflow-x: auto; padding: 4px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); scrollbar-width: thin; }
+.bf-rail-s { display: flex; align-items: center; gap: 7px; flex: 1 1 auto; min-width: max-content; padding: 8px 12px; border: 1px solid transparent; border-radius: var(--radius); background: none; color: var(--muted); font: 500 13px/1.3 var(--font-ui); cursor: pointer; white-space: nowrap; }
+.bf-rail-s:hover { background: var(--fill-1); color: var(--text); }
+.bf-rail-s.is-now { background: var(--accent-soft); border-color: var(--accent-line); color: var(--text); font-weight: 600; }
+.bf-rail-s.is-past { color: var(--text-2); }
+.bf-rail-n { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; flex: none; background: var(--raised); color: var(--muted); font: 600 11px/1 var(--font-mono); }
+.bf-rail-n svg.lucide { width: 12px; height: 12px; }
+.bf-rail-s.is-now .bf-rail-n { background: var(--primary); color: var(--on-primary); }
+.bf-rail-s.has-left .bf-rail-n { background: var(--warn-soft); border: 1px solid var(--warn-line); color: var(--text); }
+.bf-rail-s.is-past:not(.has-left) .bf-rail-n { color: var(--ok); }
+
+.bf-step { display: grid; gap: 14px; min-width: 0; }
+.bf-step-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bf-step-ic { width: 36px; height: 36px; border-radius: var(--radius); display: grid; place-items: center; flex: none; background: var(--raised); color: var(--accent); }
+.bf-step-ic svg.lucide { width: 18px; height: 18px; }
+.bf-step-t { font-size: 19px; }
+.bf-step-head .tiny.muted svg.lucide { width: 13px; height: 13px; vertical-align: -2px; margin-inline-end: 3px; }
+
+.bf-pager { display: flex; align-items: center; gap: 12px; padding: 12px 0 4px; border-top: 1px solid var(--line); }
+.bf-pager > .btn { flex: none; }
+.bf-pager-mid { flex: 1; text-align: center; min-width: 0; }
+@media (max-width: 760px) {
+  .bf-rail-s .bf-rail-t { display: none; }
+  .bf-rail-s.is-now .bf-rail-t { display: inline; }
+  .bf-rail-s { flex: 0 0 auto; }
+  .bf-pager .btn { flex: 1; }
+  .bf-pager-mid { display: none; }
+}
+
+/* inside a section the step heading already names it: the panel keeps only what you can act on */
+.bf-step-own > .bf-group > .bf-group-head > svg.lucide,
+.bf-step-own > .bf-group > .bf-group-head > .h3,
+.bf-step-own > .bf-group > .bf-group-head > .count { display: none; }
+.bf-step-own > .bf-group > .bf-group-head { justify-content: flex-end; }
+.bf-step-own > .bf-group > .bf-group-head:not(:has(.btn)):not(:has(.lock-note)) { display: none; }
+.bf-step > .eyebrow { display: flex; align-items: center; gap: 6px; margin: 4px 0 -4px; }
+.bf-step > .eyebrow svg.lucide { width: 14px; height: 14px; }
