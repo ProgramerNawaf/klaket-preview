@@ -1,7 +1,8 @@
 /* Shot List (#p.<id>.shotlist)
    Shots grouped by scene, or in shooting order (by shoot day, from the stripboard). Cells save on change and patch
    the DOM in place, rows reorder inside a scene (drag the handle or use the arrows), and "Suggest shots" asks the AI
-   for coverage that the user reviews before anything is written. */
+   for coverage that the user reviews before anything is written.
+   Export PDF: the list on A4 landscape in Klaket colours, through the browser's print window. */
 (function () {
   const SIZES = ['EWS', 'WS', 'MWS', 'MS', 'MCU', 'CU', 'ECU', 'Insert', 'OTS', 'POV', 'Two-shot'];
   const SIZE_NAMES = { EWS: 'Extreme wide shot', WS: 'Wide shot', MWS: 'Medium wide shot', MS: 'Medium shot', MCU: 'Medium close-up', CU: 'Close-up', ECU: 'Extreme close-up', Insert: 'Insert', OTS: 'Over the shoulder', POV: 'Point of view', 'Two-shot': 'Two-shot' };
@@ -282,6 +283,7 @@
         ${ed ? `<label class="btn btn-outline" title="Add the shots from a shot list you already have (PDF or photo)">${ui.icon('file-up')}Upload shot list<input type="file" accept="application/pdf,image/*" data-sl-import hidden></label>` : ''}
         ${ed ? MPH.illus.stylePicker(ctx) : ''}
         ${ed ? `<button class="btn btn-outline" data-illus-all ${d.shots.some((s) => !s.illustration) ? '' : 'hidden'}>${ui.icon('sparkles')}Draw <span data-illus-n>${d.shots.filter((s) => !s.illustration).length}</span> shots with AI</button>` : ''}
+        ${d.shots.length ? `<button class="btn btn-outline" data-sl-export title="A PDF of the shot list in Klaket colours">${ui.icon('file-down')}Export PDF</button>` : ''}
         <div class="seg" role="group" aria-label="Order">
           <button class="${mode === 'scene' ? 'on' : ''}" data-mode="scene" aria-pressed="${mode === 'scene'}">${ui.icon('clapperboard')}By scene</button>
           <button class="${mode === 'order' ? 'on' : ''}" data-mode="order" aria-pressed="${mode === 'order'}">${ui.icon('list-ordered')}Shooting order</button>
@@ -630,6 +632,175 @@
     if (aiReady.has(sc.id)) preview(aiReady.get(sc.id)); else start();
   }
 
+  /* ------------------------------------------------------------ export PDF
+     A print window holding the list on A4 landscape in Klaket colours: a teal band with the wordmark, one table a
+     scene (its column heads repeat when a scene runs over a page) and the wordmark in every page's footer. The
+     browser's Save as PDF makes the file. The order follows the view — scene by scene, or by shoot day in shooting
+     order — and the pictures, descriptions and set tick boxes are each optional. */
+  function exportSections(d, mode) {
+    const hasShots = (sc) => shotsOf(d, sc.id).length > 0;
+    if (mode === 'order') {
+      return orderedGroups(d).map((g) => ({ day: g.day, scenes: g.scenes.filter(hasShots) })).filter((g) => g.scenes.length);
+    }
+    return [{ day: undefined, scenes: d.scenes.slice().sort(sceneOrder).filter(hasShots) }];
+  }
+
+  async function exportPdf(ctx, d, opts) {
+    const { esc } = ctx;
+    const w = window.open('', '_blank'); // opened before any await, so pop-up blockers see the click
+    if (!w) throw new Error('Allow pop-ups for this site to export the PDF.');
+    w.document.write('<!doctype html><title>Preparing the shot list…</title><p style="font:14px sans-serif;padding:24px">Preparing the shot list…</p>');
+    const p = ctx.production;
+    const base = location.href.replace(/[#?].*$/, '').replace(/[^/]*$/, '');
+    const fontLinks = [...document.querySelectorAll('link[rel="stylesheet"]')].filter((l) => /fonts\.googleapis/.test(l.href))
+      .map((l) => `<link rel="stylesheet" href="${esc(l.href)}">`).join('');
+
+    const sections = exportSections(d, opts.mode);
+    const shots = sections.flatMap((g) => g.scenes.flatMap((sc) => shotsOf(d, sc.id)));
+    const pics = opts.pics && shots.some((s) => s.illustration);
+
+    const colGroup = `<colgroup>
+      ${opts.ticks ? '<col class="c-tick">' : ''}${pics ? '<col class="c-pic">' : ''}
+      <col class="c-code"><col class="c-size"><col class="c-angle"><col class="c-move"><col class="c-lens">
+      ${opts.desc ? '<col class="c-desc">' : ''}<col class="${opts.desc ? 'c-subj' : ''}"><col class="c-setup"><col class="c-est">
+    </colgroup>`;
+    const headRow = `<tr>
+      ${opts.ticks ? '<th></th>' : ''}${pics ? '<th>Picture</th>' : ''}
+      <th>Shot</th><th>Size</th><th>Angle</th><th>Movement</th><th>Lens</th>
+      ${opts.desc ? '<th>Description</th>' : ''}<th>Subject</th><th class="r">Setup</th><th class="r">Est.</th>
+    </tr>`;
+    const rowHtml = (s) => `<tr class="${s.done ? 'is-done' : ''}">
+      ${opts.ticks ? `<td class="kx-tick"><span class="kx-box">${s.done ? '✓' : ''}</span></td>` : ''}
+      ${pics ? `<td>${s.illustration ? `<div class="kx-pic">${MPH.sketch(s.illustration)}</div>` : '<div class="kx-pic is-empty"></div>'}</td>` : ''}
+      <td><span class="kx-code">${esc(s.code || '—')}</span></td>
+      <td>${s.size ? `<span class="kx-size">${esc(s.size)}</span>` : ''}</td>
+      <td>${esc(s.angle || '')}</td>
+      <td>${esc(s.movement || '')}</td>
+      <td class="mono">${esc(s.lens || '')}</td>
+      ${opts.desc ? `<td dir="auto">${esc(s.description || '')}</td>` : ''}
+      <td dir="auto" class="dim">${esc(s.subject || '')}</td>
+      <td class="r mono">${s.setup != null ? esc(String(s.setup)) : ''}</td>
+      <td class="r mono">${s.est_minutes != null ? esc(fmtMin(s.est_minutes)) : ''}</td>
+    </tr>`;
+    const sceneHtml = (sc) => `<section class="kx-scene">
+      <h2 class="kx-sc"><span class="kx-scn">Sc. ${esc(sc.num)}</span><span dir="auto">${esc(sc.heading || sc.location || 'Untitled scene')}</span><em>${esc(sceneMeta(d, sc, opts.mode))}</em></h2>
+      <table>${colGroup}<thead>${headRow}</thead><tbody>${shotsOf(d, sc.id).map(rowHtml).join('')}</tbody></table>
+    </section>`;
+    const dayHtml = (g) => {
+      if (g.day === undefined) return '';
+      if (!g.day) return `<h2 class="kx-day is-none"><span>Unscheduled</span><em>${esc(dayMeta(d, null, g.scenes))}</em></h2>`;
+      return `<h2 class="kx-day"><span class="kx-dtag">Day ${esc(String(g.day.day_no))}</span><span>${g.day.date ? esc(MPH.date(g.day.date, 'long')) : 'Date not set'}</span><em>${esc(dayMeta(d, g.day, g.scenes))}</em></h2>`;
+    };
+
+    /* AI pictures are signed lazily on the page; the print window needs them signed up front */
+    const tmp = document.createElement('div');
+    tmp.innerHTML = sections.map((g) => dayHtml(g) + g.scenes.map(sceneHtml).join('')).join('');
+    const lazy = [...tmp.querySelectorAll('svg.sk image[data-media]')];
+    const signed = lazy.length ? await ctx.api.mediaUrls([...new Set(lazy.map((el) => el.getAttribute('data-media')))]).catch(() => ({})) : {};
+    lazy.forEach((el) => { const url = signed[el.getAttribute('data-media')]; if (url) el.setAttribute('href', url); else el.remove(); });
+    const body = tmp.innerHTML;
+
+    const setups = new Set(shots.filter((s) => s.setup != null).map((s) => s.scene_id + ':' + s.setup)).size;
+    const est = shots.reduce((a, s) => a + (Number(s.est_minutes) || 0), 0);
+    const sceneCount = sections.reduce((a, g) => a + g.scenes.length, 0);
+    const when = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    const title = `${p.title} · Shot list`;
+    const sub = [p.code, p.client_name].filter(Boolean).join(' · ');
+    if (w.closed) return w;
+    w.document.close(); w.document.open(); // replace the "Preparing" note
+    w.document.write(`<!doctype html><html lang="en" data-theme="light"><head><meta charset="utf-8"><title>${esc(title)}</title>${fontLinks}
+      <style>
+        @page { size: A4 landscape; margin: 10mm 10mm 15mm; }
+        :root { --ink: #121212; --ink-2: #4A4744; --paper: #F6EBD9; --rule: #E3D7C3; --teal: #0F5C57; --band: #0A3F3C; --tint: #FAF5EC; }
+        html, body { margin: 0; background: #fff; color: var(--ink); font: 400 9pt/1.4 "IBM Plex Sans", "IBM Plex Sans Arabic", sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .kx-head { display: flex; align-items: flex-end; gap: 8mm; background: var(--band); color: var(--paper); border-radius: 4mm; padding: 6mm 7mm; margin-bottom: 5mm; break-inside: avoid; }
+        .kx-head img { height: 8mm; width: auto; display: block; }
+        .kx-head .kx-ti { flex: 1; min-width: 0; }
+        .kx-eye { font: 600 7.5pt/1 "IBM Plex Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: #ACD062; }
+        .kx-head h1 { margin: 1.5mm 0 0; font: 900 19pt/1.1 "Cairo", sans-serif; }
+        .kx-head .kx-sub { font-size: 8.5pt; color: rgba(246, 235, 217, .8); }
+        .kx-meta { text-align: end; font-size: 8.5pt; line-height: 1.6; color: rgba(246, 235, 217, .8); white-space: nowrap; }
+        .kx-meta b { color: var(--paper); font-weight: 600; }
+        .kx-day { display: flex; align-items: baseline; gap: 3mm; margin: 6mm 0 3mm; padding: 2mm 3mm; border-radius: 2mm; background: var(--tint); border-inline-start: 1.2mm solid var(--teal); font: 700 11pt/1.3 "Cairo", sans-serif; break-after: avoid; break-inside: avoid; }
+        .kx-day.is-none { border-inline-start-color: var(--rule); color: var(--ink-2); }
+        .kx-dtag { font: 700 8.5pt "IBM Plex Mono", monospace; color: #fff; background: var(--teal); border-radius: 1.2mm; padding: .8mm 2mm; }
+        .kx-day em, .kx-sc em { margin-inline-start: auto; font: 400 8pt "IBM Plex Sans", sans-serif; font-style: normal; color: var(--ink-2); }
+        .kx-scene { margin-top: 4mm; }
+        .kx-sc { display: flex; align-items: baseline; gap: 3mm; margin: 0 0 2mm; padding-bottom: 1.6mm; border-bottom: .4mm solid var(--teal); font: 700 10.5pt/1.3 "Cairo", sans-serif; break-after: avoid; }
+        .kx-scn { font: 600 8.5pt "IBM Plex Mono", monospace; color: #fff; background: var(--teal); border-radius: 1.2mm; padding: .6mm 2mm; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        thead { display: table-header-group; }
+        th { text-align: start; font: 600 7.5pt/1.2 "IBM Plex Mono", monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--teal); background: #F3ECDF; padding: 1.6mm 2mm; border-bottom: .3mm solid var(--rule); }
+        td { padding: 1.6mm 2mm; border-bottom: .25mm solid var(--rule); vertical-align: top; overflow-wrap: break-word; word-break: normal; hyphens: none; break-inside: avoid; }
+        tr { break-inside: avoid; }
+        tbody tr:nth-child(even) td { background: #FBF7F0; }
+        .r { text-align: end; }
+        .mono { font-family: "IBM Plex Mono", monospace; font-size: 8pt; }
+        .dim { color: var(--ink-2); }
+        .kx-code { font: 700 9pt "IBM Plex Mono", monospace; color: var(--band); }
+        .kx-size { font: 600 7.5pt "IBM Plex Mono", monospace; color: var(--teal); background: #F3ECDF; border-radius: 1mm; padding: .4mm 1.4mm; }
+        .kx-tick { text-align: center; }
+        .kx-box { display: inline-block; width: 3.4mm; height: 3.4mm; line-height: 3.2mm; text-align: center; font-size: 7pt; color: var(--teal); border: .35mm solid var(--teal); border-radius: .8mm; }
+        .kx-pic { aspect-ratio: 16 / 9; border-radius: 1.6mm; overflow: hidden; background: var(--band); border: .25mm solid var(--rule); }
+        .kx-pic.is-empty { background: #F3ECDF; }
+        .kx-pic svg.sk { width: 100%; height: 100%; display: block; }
+        .is-done td { color: var(--ink-2); }
+        .is-done .kx-code { text-decoration: line-through; }
+        .c-tick { width: 7mm } .c-pic { width: 25mm } .c-code { width: 14mm } .c-size { width: 12mm } .c-angle { width: 20mm }
+        .c-move { width: 21mm } .c-lens { width: 13mm } .c-subj { width: 29mm } .c-setup { width: 12mm } .c-est { width: 12mm }
+        .kx-foot { position: fixed; bottom: -9mm; left: 0; right: 0; display: flex; align-items: center; gap: 4mm; font-size: 7.5pt; color: var(--ink-2); }
+        .kx-foot img { height: 4mm; width: auto; }
+        .kx-foot span:last-child { margin-inline-start: auto; }
+      </style></head>
+      <body>
+        <header class="kx-head">
+          <img src="${esc(base)}brand/klaket-wordmark-cream.svg" alt="Klaket">
+          <div class="kx-ti"><div class="kx-eye">Shot list</div><h1 dir="auto">${esc(p.title)}</h1>${sub ? `<div class="kx-sub" dir="auto">${esc(sub)}</div>` : ''}</div>
+          <div class="kx-meta"><b>${esc(plural(shots.length, 'shot'))}</b> · ${esc(plural(sceneCount, 'scene'))}<br>${setups ? `${esc(plural(setups, 'setup'))} · ` : ''}${est ? `${esc(fmtMin(est))} on camera · ` : ''}${esc(when)}</div>
+        </header>
+        ${body}
+        <footer class="kx-foot"><img src="${esc(base)}brand/klaket-wordmark-ink.svg" alt="Klaket"><span dir="auto">${esc(p.title)} · Shot list${opts.mode === 'order' ? ' · shooting order' : ''}</span><span>Exported ${esc(when)}</span></footer>
+      </body></html>`);
+    w.document.close();
+    const ready = w.document.fonts && w.document.fonts.ready ? w.document.fonts.ready : Promise.resolve();
+    const imgs = [...w.document.images].map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r; })));
+    const svgPics = Object.values(signed).map((u) => new Promise((r) => { const i = new Image(); i.onload = i.onerror = r; i.src = u; }));
+    Promise.race([Promise.all([ready, ...imgs, ...svgPics]), new Promise((r) => setTimeout(r, 8000))]).then(() => setTimeout(() => { w.focus(); w.print(); }, 250));
+    return w;
+  }
+
+  function openExport(ctx, d) {
+    const { ui } = ctx;
+    const mode = ctx.state.slMode === 'order' ? 'order' : 'scene';
+    const hasPics = d.shots.some((s) => s.illustration);
+    const planned = d.scenes.filter((sc) => shotsOf(d, sc.id).length).length;
+    const el = ctx.modal(ctx.frame({
+      title: 'Export the shot list',
+      sub: `${plural(d.shots.length, 'shot')} · ${plural(planned, 'scene')}`,
+      body: `
+        <div class="field"><span class="label">Order</span>
+          <div class="stack tight">
+            <label class="row small"><input type="radio" name="sl-x-mode" value="scene" ${mode === 'scene' ? 'checked' : ''}><span class="strong">By scene</span><span class="muted">Scene by scene, as the script runs</span></label>
+            <label class="row small"><input type="radio" name="sl-x-mode" value="order" ${mode === 'order' ? 'checked' : ''}><span class="strong">Shooting order</span><span class="muted">Grouped by shoot day, from the stripboard</span></label>
+          </div></div>
+        <label class="row small"><input type="checkbox" id="sl-x-pics" ${hasPics ? 'checked' : 'disabled'}>Include the pictures${hasPics ? '' : ' <span class="muted">— none drawn yet</span>'}</label>
+        <label class="row small"><input type="checkbox" id="sl-x-desc" checked>Include descriptions</label>
+        <label class="row small"><input type="checkbox" id="sl-x-ticks" checked>Tick boxes, to mark shots off on set</label>
+        <p class="tiny faint">Opens a print window in Klaket colours. Choose “Save as PDF” there. Nothing is shared.</p>`,
+      foot: `<button class="btn btn-ghost" data-close>Cancel</button><button class="btn btn-primary" id="sl-x-go">${ui.icon('file-down')}Export PDF</button>`,
+    }));
+    el.querySelector('#sl-x-go').addEventListener('click', () => {
+      const picked = (el.querySelector('input[name="sl-x-mode"]:checked') || {}).value || 'scene';
+      const done = exportPdf(ctx, d, {
+        mode: picked,
+        pics: el.querySelector('#sl-x-pics').checked,
+        desc: el.querySelector('#sl-x-desc').checked,
+        ticks: el.querySelector('#sl-x-ticks').checked,
+      });
+      done.then(() => { ctx.closeOverlay(); ctx.toast('Choose “Save as PDF” in the print window', 'file-down'); }, (ex) => ctx.toastError(ex));
+    });
+  }
+
   /* ------------------------------------------------------------ view */
   MPH.view('shotlist', {
     async load(ctx) {
@@ -829,6 +1000,7 @@
           if (!s.illustration && ctx.canEdit) illustrateShots(ctx, d, [s.id]); else openPic(ctx, d, s);
           return;
         }
+        if (t.closest('[data-sl-export]')) return openExport(ctx, d);
         if (!ctx.canEdit) return;
         const all = t.closest('[data-illus-all]');
         if (all) { illustrateShots(ctx, d, d.shots.filter((s) => !s.illustration).map((s) => s.id), all); return; }
