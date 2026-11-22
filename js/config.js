@@ -7,7 +7,7 @@ window.MPH_CONFIG = {
   supabaseKey: 'sb_publishable_DKacttTPNeuyEoVdUG1n6w_hXSwmLRI',
   demoUrl: 'https://alomaiir.github.io/mph-prototype/',
   // The Klaket assistant (agent-native sidecar in agent/). Empty hides the Assistant button.
-  agentUrl: '',
+  agentUrl: 'https://klaket-saud.netlify.app',
 };
 // on localhost the assistant runs from `cd agent && pnpm dev`
 if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) window.MPH_CONFIG.agentUrl = 'http://localhost:8091';
